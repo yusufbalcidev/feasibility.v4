@@ -1,0 +1,152 @@
+@model List<feasibility.Entity.Dtos.FeasibilityAmortization.FeasibilityAmortizationListDto>
+@{
+    ViewData["Title"] = "Amortisman Fizibiliteleri";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/feasibility/amortization/index/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <div class="crumb">Fizibiliteler &middot; <strong>Amortisman</strong></div>
+        <h1>Amortisman Fizibiliteleri</h1>
+        <p>Kayıtlı amortisman fizibilitelerini görüntüleyin ve yönetin.</p>
+    </div>
+    <div class="header-actions">
+        <a href="/Feasibility/Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        <a href="/FeasibilityAmortization/Create" class="btn btn-primary">
+            <span class="material-symbols-outlined">add_chart</span> Fizibilite Ekle
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header card-header-tabs">
+        <div class="tab-bar">
+            <button type="button" class="tab-btn active" data-tab="list" onclick="switchTab('list')">
+                <span class="material-symbols-outlined">list</span> Liste
+            </button>
+            <button type="button" class="tab-btn" data-tab="summary" onclick="switchTab('summary')">
+                <span class="material-symbols-outlined">bar_chart</span> Özet
+            </button>
+        </div>
+        <span class="badge badge-info" id="recordBadge">@Model.Count kayıt</span>
+    </div>
+
+    <div id="tab-list" class="tab-pane active">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Fizibilite Adı</th>
+                        <th>Lokasyon</th>
+                        <th>İstasyon Türleri</th>
+                        <th class="text-right">Toplam Yatırım ($)</th>
+                        <th>Durum</th>
+                        <th>Oluşturan</th>
+                        <th>Tarih</th>
+                        <th style="text-align:right;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="listBody">
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <span class="material-symbols-outlined">ev_station</span>
+                                    Henüz fizibilite eklenmemiş. "Fizibilite Ekle" butonuna tıklayarak başlayın.
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model)
+                        {
+                            <tr>
+                                <td><strong>@row.FeasibilityName</strong></td>
+                                <td title="@row.LocationName">@row.LocationName</td>
+                                <td>
+                                    @foreach (var t in row.DeviceTypes)
+                                    {
+                                        <span class="type-badge type-@t.ToLower()">@t</span>
+                                    }
+                                </td>
+                                <td class="text-right mono">$ @row.TotalInvestmentUsd.ToString("#,##0", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</td>
+                                <td>
+                                    @if (row.IsDeleted)
+                                    {
+                                        <span class="badge badge-passive">Pasif</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-active">Aktif</span>
+                                    }
+                                </td>
+                                <td>@(row.CreatedByName ?? "-")</td>
+                                <td>@row.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    <div class="row-actions" style="justify-content:flex-end;">
+                                        <a asp-action="Details" asp-route-id="@row.Id" class="row-action-btn">
+                                            <span class="material-symbols-outlined">visibility</span> Görüntüle
+                                        </a>
+                                        @if (row.IsDeleted)
+                                        {
+                                            <form asp-action="Restore" method="post" style="display:inline;"
+                                                  data-confirm="@row.FeasibilityName fizibilitesini aktif hale getirmek istediğinize emin misiniz?">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@row.Id" />
+                                                <button type="submit" class="row-action-btn">
+                                                    <span class="material-symbols-outlined">check_circle</span> Aktif Et
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@row.Id" class="row-action-btn">
+                                                <span class="material-symbols-outlined">edit</span> Düzenle
+                                            </a>
+                                            <form asp-action="Delete" method="post" style="display:inline;"
+                                                  data-confirm="@row.FeasibilityName fizibilitesini silmek istediğinize emin misiniz?">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@row.Id" />
+                                                <button type="submit" class="row-action-btn danger">
+                                                    <span class="material-symbols-outlined">delete</span> Sil
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-summary" class="tab-pane">
+        <div class="summary-empty">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <p>Özet görünümü için önce fizibilite ekleyiniz.</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function switchTab(t) {
+            document.querySelectorAll('.tab-btn').forEach(function(b) {
+                b.classList.toggle('active', b.dataset.tab === t);
+            });
+            document.getElementById('tab-list').classList.toggle('active', t === 'list');
+            document.getElementById('tab-summary').classList.toggle('active', t === 'summary');
+        }
+
+    </script>
+}

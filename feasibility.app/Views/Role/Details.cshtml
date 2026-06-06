@@ -1,0 +1,80 @@
+@model RoleDetailDto
+@{
+    ViewData["Title"] = "Rol Detayı";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/role/details/style.css" />
+    <link rel="stylesheet" href="~/css/location/details/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>@Model.Name</h1>
+        <p>Rol detayları ve sayfa yetkileri.</p>
+    </div>
+    <div class="header-actions">
+        <a asp-action="Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        @if (!Model.Audit.IsDeleted)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+                <span class="material-symbols-outlined">edit</span> Düzenle
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body detail-grid">
+        <div class="detail-item">
+            <span class="detail-label">Rol Adı</span>
+            <span class="detail-value">@Model.Name</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Kullanıcı Sayısı</span>
+            <span class="detail-value">@Model.UserCount</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Tip</span>
+            <span class="detail-value">@(Model.IsSystem ? "Sistem" : "Özel")</span>
+        </div>
+        <div class="detail-item detail-item-full">
+            <span class="detail-label">Açıklama</span>
+            <span class="detail-value">@(string.IsNullOrWhiteSpace(Model.Description) ? "-" : Model.Description)</span>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-header"><h2>Sayfa Yetkileri</h2></div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Sayfa</th>
+                    <th>Görüntüle</th>
+                    <th>Ekle</th>
+                    <th>Düzenle</th>
+                    <th>Sil</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Permissions)
+                {
+                    <tr>
+                        <td><strong>@p.PageName</strong></td>
+                        <td>@(p.CanView ? "✔" : "—")</td>
+                        <td>@(p.CanCreate ? "✔" : "—")</td>
+                        <td>@(p.CanEdit ? "✔" : "—")</td>
+                        <td>@(p.CanDelete ? "✔" : "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<partial name="_AuditPartial" model="Model.Audit" />

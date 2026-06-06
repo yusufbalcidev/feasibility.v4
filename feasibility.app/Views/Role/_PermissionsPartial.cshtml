@@ -1,0 +1,84 @@
+@model List<RolePagePermissionDto>
+@*
+   NOT: Hidden+checkbox aynı isimde KULLANILMAZ.
+   ASP.NET Core bool binder iki değer geldiğinde "false,true" stringini ilk değer olan false'a çevirir
+   ve checkbox seçili olsa bile kaydedilmez. Bu yüzden sadece checkbox kullanılıyor;
+   unchecked durumda hiç gönderilmez ve bool default'u (false) alır.
+*@
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <h2>Sayfa Yetkileri</h2>
+        <div class="permission-toolbar">
+            <label><input type="checkbox" class="perm-toggle-all" data-target="perm-view" /> Tümünü Görüntüle</label>
+            <label><input type="checkbox" class="perm-toggle-all" data-target="perm-create" /> Tümünü Ekle</label>
+            <label><input type="checkbox" class="perm-toggle-all" data-target="perm-edit" /> Tümünü Düzenle</label>
+            <label><input type="checkbox" class="perm-toggle-all" data-target="perm-delete" /> Tümünü Sil</label>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="permission-grid">
+            <div class="permission-row permission-row-head">
+                <strong>Sayfa</strong>
+                <strong>Görüntüle</strong>
+                <strong>Ekle</strong>
+                <strong>Düzenle</strong>
+                <strong>Sil</strong>
+            </div>
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var p = Model[i];
+                <div class="permission-row">
+                    <div class="permission-label">
+                        <strong>@p.PageName</strong>
+                        <span class="permission-key">@p.PageKey</span>
+                    </div>
+
+                    <input type="hidden" name="Permissions[@i].PageId" value="@p.PageId" />
+                    <input type="hidden" name="Permissions[@i].PageKey" value="@p.PageKey" />
+                    <input type="hidden" name="Permissions[@i].PageName" value="@p.PageName" />
+
+                    <div class="permission-cell">
+                        @if (p.CanView)
+                        {
+                            <input type="checkbox" class="permission-check perm-view" name="Permissions[@i].CanView" value="true" checked="checked" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" class="permission-check perm-view" name="Permissions[@i].CanView" value="true" />
+                        }
+                    </div>
+                    <div class="permission-cell">
+                        @if (p.CanCreate)
+                        {
+                            <input type="checkbox" class="permission-check perm-create" name="Permissions[@i].CanCreate" value="true" checked="checked" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" class="permission-check perm-create" name="Permissions[@i].CanCreate" value="true" />
+                        }
+                    </div>
+                    <div class="permission-cell">
+                        @if (p.CanEdit)
+                        {
+                            <input type="checkbox" class="permission-check perm-edit" name="Permissions[@i].CanEdit" value="true" checked="checked" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" class="permission-check perm-edit" name="Permissions[@i].CanEdit" value="true" />
+                        }
+                    </div>
+                    <div class="permission-cell">
+                        @if (p.CanDelete)
+                        {
+                            <input type="checkbox" class="permission-check perm-delete" name="Permissions[@i].CanDelete" value="true" checked="checked" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" class="permission-check perm-delete" name="Permissions[@i].CanDelete" value="true" />
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

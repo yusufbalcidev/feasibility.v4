@@ -1,0 +1,77 @@
+@model List<ActivityLogListDto>
+@{
+    ViewData["Title"] = "Aktivite Logları";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/activitylog/index/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>Aktivite Logları</h1>
+        <p>Sistemdeki veri değiştiren işlemlerin kaydı (middleware tabanlı). GET istekleri kaydedilmez.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>İşlem Kayıtları</h2>
+        <span class="badge badge-info">@Model.Count kayıt (son 500)</span>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tarih</th>
+                    <th>Kullanıcı</th>
+                    <th>IP</th>
+                    <th>Method</th>
+                    <th>Sayfa</th>
+                    <th>Aksiyon</th>
+                    <th>Tip</th>
+                    <th>Durum</th>
+                    <th>Süre</th>
+                    <th style="text-align:right;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="10"><div class="empty-state"><span class="material-symbols-outlined">history</span>Henüz kayıt bulunmuyor.</div></td></tr>
+                }
+                @foreach (var log in Model)
+                {
+                    <tr>
+                        <td>@log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td>
+                        <td>@(string.IsNullOrEmpty(log.UserName) ? "<anonim>" : log.UserName)</td>
+                        <td>@(log.IpAddress ?? "-")</td>
+                        <td><span class="badge badge-warning">@log.HttpMethod</span></td>
+                        <td>@(log.Controller ?? "-")</td>
+                        <td>@(log.Action ?? "-")</td>
+                        <td><span class="badge badge-info">@log.ActionType</span></td>
+                        <td>
+                            @{
+                                var statusClass = log.StatusCode switch
+                                {
+                                    >= 500 => "badge-passive",
+                                    >= 400 => "badge-warning",
+                                    >= 300 => "badge-info",
+                                    _ => "badge-active"
+                                };
+                            }
+                            <span class="badge @statusClass">@log.StatusCode</span>
+                        </td>
+                        <td>@log.ElapsedMs ms</td>
+                        <td style="text-align:right;">
+                            <a asp-action="Details" asp-route-id="@log.Id" class="row-action-btn">
+                                <span class="material-symbols-outlined">visibility</span> Görüntüle
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,9 @@
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+}
+.detail-item { display: flex; flex-direction: column; gap: 4px; }
+.detail-item-full { grid-column: 1 / -1; }
+.detail-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+.detail-value { font-size: 14px; color: var(--text); font-weight: 500; }

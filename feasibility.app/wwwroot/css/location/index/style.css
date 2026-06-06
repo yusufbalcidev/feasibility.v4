@@ -1,0 +1,48 @@
+.card-header-tabs {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.tab-bar {
+    display: inline-flex;
+    background: var(--surface-2);
+    padding: 4px;
+    border-radius: 10px;
+    gap: 2px;
+}
+.tab-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s, color .15s;
+    font-family: inherit;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+.tab-btn .material-symbols-outlined { font-size: 18px; }
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.locations-map {
+    width: 100%;
+    height: 540px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.row-action-btn form { display: inline; }

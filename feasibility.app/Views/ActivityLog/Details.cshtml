@@ -1,0 +1,109 @@
+@model ActivityLogDetailDto
+@{
+    ViewData["Title"] = "Log Detayı";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/activitylog/details/style.css" />
+    <link rel="stylesheet" href="~/css/location/details/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>Log Detayı</h1>
+        <p>@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") · @Model.Controller / @Model.Action</p>
+    </div>
+    <div class="header-actions">
+        <a asp-action="Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2>Özet</h2></div>
+    <div class="card-body detail-grid">
+        <div class="detail-item">
+            <span class="detail-label">Tarih</span>
+            <span class="detail-value">@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Kullanıcı</span>
+            <span class="detail-value">@(string.IsNullOrWhiteSpace(Model.UserName) ? "<anonim>" : Model.UserName)</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">E-posta</span>
+            <span class="detail-value">@(Model.UserEmail ?? "-")</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">IP</span>
+            <span class="detail-value">@(Model.IpAddress ?? "-")</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Tarayıcı</span>
+            <span class="detail-value">@(Model.UserAgent ?? "-")</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">HTTP</span>
+            <span class="detail-value">@Model.HttpMethod @Model.Path@Model.QueryString</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Sayfa / Aksiyon</span>
+            <span class="detail-value">@(Model.Controller ?? "-") / @(Model.Action ?? "-")</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Tip</span>
+            <span class="detail-value"><span class="badge badge-info">@Model.ActionType</span></span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Durum Kodu</span>
+            <span class="detail-value">@Model.StatusCode</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Yanıt Süresi</span>
+            <span class="detail-value">@Model.ElapsedMs ms</span>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="detail-item detail-item-full">
+                <span class="detail-label">Hata Mesajı</span>
+                <span class="detail-value" style="color:var(--danger);">@Model.ErrorMessage</span>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <h2>Request</h2>
+        <span class="badge badge-info">@(Model.RequestContentType ?? "-")</span>
+    </div>
+    <div class="card-body">
+        @if (string.IsNullOrEmpty(Model.RequestBody))
+        {
+            <p style="color:var(--text-muted);font-size:13px;margin:0;">Bu istek için gövde kaydedilmedi. (Login/Account uç noktalarında ve GET isteklerinde gövde toplanmaz.)</p>
+        }
+        else
+        {
+            <pre class="log-body">@Model.RequestBody</pre>
+        }
+    </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <h2>Response</h2>
+        <span class="badge badge-info">@(Model.ResponseContentType ?? "-")</span>
+    </div>
+    <div class="card-body">
+        @if (string.IsNullOrEmpty(Model.ResponseBody))
+        {
+            <p style="color:var(--text-muted);font-size:13px;margin:0;">Yanıt gövdesi kaydedilmedi (HTML/redirect veya boş yanıt).</p>
+        }
+        else
+        {
+            <pre class="log-body">@Model.ResponseBody</pre>
+        }
+    </div>
+</div>

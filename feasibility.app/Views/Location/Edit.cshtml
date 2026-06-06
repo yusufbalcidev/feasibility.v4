@@ -1,0 +1,114 @@
+@model LocationUpdateDto
+@{
+    ViewData["Title"] = "Lokasyon Düzenle";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var audit = ViewBag.Audit as AuditInfoDto;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="~/css/location/edit/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>Lokasyon Düzenle</h1>
+        <p><strong>@Model.Name</strong></p>
+    </div>
+    <div class="header-actions">
+        <a asp-action="Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Edit" method="post" class="form">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="Name">Lokasyon Adı *</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Description">Açıklama</label>
+                <textarea asp-for="Description" rows="3"></textarea>
+                <span asp-validation-for="Description" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="City">İl *</label>
+                    <select asp-for="City" id="citySelect" data-selected="@Model.City">
+                        <option value="">-- İl Seç --</option>
+                    </select>
+                    <span asp-validation-for="City" class="field-validation-error"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="District">İlçe *</label>
+                    <select asp-for="District" id="districtSelect" data-selected="@Model.District">
+                        <option value="">-- İlçe Seç --</option>
+                    </select>
+                    <span asp-validation-for="District" class="field-validation-error"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Address">Adres</label>
+                <textarea asp-for="Address" rows="2"></textarea>
+                <span asp-validation-for="Address" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group" style="width:100%;">
+                <label>Harita</label>
+                <div id="locationMap" class="leaflet-map"></div>
+                <p class="help">İl/ilçe değiştirdiğinizde harita otomatik konumlanır. İşaretçiyi sürükleyerek veya tıklayarak enlem/boylam güncelleyebilirsiniz.</p>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="Latitude">Enlem *</label>
+                    <input asp-for="Latitude" id="latitudeInput" type="number" step="0.000001" class="form-control" />
+                    <span asp-validation-for="Latitude" class="field-validation-error"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Longitude">Boylam *</label>
+                    <input asp-for="Longitude" id="longitudeInput" type="number" step="0.000001" class="form-control" />
+                    <span asp-validation-for="Longitude" class="field-validation-error"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="LocationTypeMaintenanceId">Lokasyon Bakım Tipi</label>
+                <select asp-for="LocationTypeMaintenanceId" asp-items="ViewBag.LocationTypes">
+                    <option value="">-- Tip Seç --</option>
+                </select>
+                <span asp-validation-for="LocationTypeMaintenanceId" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-symbols-outlined">save</span> Güncelle
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">İptal</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (audit != null)
+{
+    <partial name="_AuditPartial" model="audit" />
+}
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="~/js/location/create/script.js"></script>
+}

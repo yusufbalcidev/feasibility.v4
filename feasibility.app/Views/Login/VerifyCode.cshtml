@@ -1,0 +1,58 @@
+@model VerifyCodeDto
+@{
+    Layout = null;
+    ViewData["Title"] = "Doğrulama Kodu";
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EKA Enerji - Doğrulama Kodu</title>
+    <link rel="stylesheet" href="~/css/layout/site.css" />
+    <link rel="stylesheet" href="~/css/login/login.css" />
+    <link rel="stylesheet" href="~/lib/alertifyjs/css/alertify.min.css" />
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <div class="auth-logo"><img src="~/images/eka-logo-Photoroom.png" alt="EKA Enerji" /></div>
+        <h1>Doğrulama Kodu</h1>
+        <p class="auth-sub"><strong>@Model.Email</strong> adresine gönderilen 6 haneli kodu girin.</p>
+
+        <form asp-action="VerifyCode" method="post" class="form">
+            @Html.AntiForgeryToken()
+            <input asp-for="Email" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="Code">Kod</label>
+                <input asp-for="Code" maxlength="6" autocomplete="off" class="form-control auth-code-input" placeholder="000000" />
+                <span asp-validation-for="Code" class="field-validation-error"></span>
+            </div>
+
+            <div id="codeTimer" class="auth-timer" data-seconds="60">1:00</div>
+
+            <button type="submit" class="btn btn-primary auth-submit">Doğrula</button>
+        </form>
+
+        <form asp-action="ResendCode" method="post" class="form" style="margin-top:8px;">
+            @Html.AntiForgeryToken()
+            <input asp-for="Email" type="hidden" />
+            <button id="resendBtn" type="submit" class="btn btn-secondary auth-submit" disabled>Tekrar Kod Gönder</button>
+        </form>
+
+        <div class="auth-foot"><a href="/Login/Index">← Giriş sayfasına dön</a></div>
+    </div>
+
+    <script src="~/lib/alertifyjs/js/alertify.min.js"></script>
+    <script src="~/js/login/login.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var success = '@(TempData["Success"] as string ?? "")';
+            var error = '@(TempData["Error"] as string ?? "")';
+            if (success) alertify.success(success);
+            if (error) alertify.error(error);
+        });
+    </script>
+</body>
+</html>

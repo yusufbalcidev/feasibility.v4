@@ -1,0 +1,329 @@
+﻿@{
+    ViewData["Title"] = "Şarj İstasyonu Fizibiliteleri";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <style>
+        :root {
+            --slate-900: #111827;
+            --slate-700: #334155;
+            --slate-500: #64748b;
+            --line: #e6eaf2;
+            --canvas: #f4f6fb;
+            --blue: #2563eb;
+            --blue-soft: #eef4ff;
+            --green: #059669;
+            --green-soft: #e8f7f0;
+            --radius: 16px;
+            --radius-sm: 12px;
+            --shadow-sm: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
+            --shadow-md: 0 16px 40px rgba(16,24,40,.10);
+        }
+
+        .fz-scope {
+            font-family: "Plus Jakarta Sans", -apple-system, "Segoe UI", sans-serif;
+            color: var(--slate-900);
+        }
+
+            .fz-scope .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+                line-height: 1;
+            }
+
+        .wrapper {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 2.5rem 1.25rem 3.5rem;
+        }
+
+        /* ---------- Header ---------- */
+        .page-header {
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto 2.5rem;
+        }
+
+            .page-header h1 {
+                font-weight: 800;
+                font-size: 2rem;
+                letter-spacing: -.6px;
+                margin: 0 0 .75rem;
+                color: var(--slate-900);
+            }
+
+            .page-header p {
+                font-size: 1rem;
+                line-height: 1.6;
+                color: var(--slate-500);
+                margin: 0;
+                font-weight: 500;
+            }
+
+        /* ---------- Grid ---------- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* ---------- Card ---------- */
+        .fiz-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            padding: 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            overflow: hidden;
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+            opacity: 0;
+            transform: translateY(12px);
+            animation: fzIn .5s ease forwards;
+        }
+
+            .fiz-card:nth-child(2) {
+                animation-delay: .08s;
+            }
+
+        @@keyframes fzIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fiz-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: #d4ddee;
+            color: inherit;
+        }
+
+        .card-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+        }
+
+        .bar-blue {
+            background: var(--blue);
+        }
+
+        .bar-green {
+            background: var(--green);
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: .35rem;
+            margin-bottom: 1.1rem;
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+            .card-icon .material-symbols-outlined {
+                font-size: 30px;
+            }
+
+        .icon-blue {
+            background: var(--blue-soft);
+            color: var(--blue);
+        }
+
+        .icon-green {
+            background: var(--green-soft);
+            color: var(--green);
+        }
+
+        .card-titles h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0 0 .2rem;
+            letter-spacing: -.2px;
+            color: var(--slate-900);
+        }
+
+        .card-titles span {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--slate-500);
+        }
+
+        .card-desc {
+            font-size: .92rem;
+            line-height: 1.6;
+            color: var(--slate-700);
+            margin: 0 0 1.5rem;
+            flex: 1;
+        }
+
+        .card-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            font-weight: 700;
+            font-size: .92rem;
+            align-self: flex-start;
+            padding: .55rem .9rem .55rem 1.1rem;
+            border-radius: 10px;
+            transition: gap .2s ease, background .2s ease;
+        }
+
+            .card-cta .material-symbols-outlined {
+                font-size: 20px;
+                transition: transform .2s ease;
+            }
+
+        .fiz-card:hover .card-cta .material-symbols-outlined {
+            transform: translateX(3px);
+        }
+
+        .cta-blue {
+            background: var(--blue-soft);
+            color: var(--blue);
+        }
+
+        .cta-green {
+            background: var(--green-soft);
+            color: var(--green);
+        }
+
+        /* ---------- Selected state ---------- */
+        .check-badge {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+            .check-badge .material-symbols-outlined {
+                font-size: 20px;
+                font-variation-settings: 'wght' 600;
+            }
+
+        .selected-blue {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 4px var(--blue-soft);
+        }
+
+        .selected-green {
+            border-color: var(--green);
+            box-shadow: 0 0 0 4px var(--green-soft);
+        }
+
+        .selected-blue .check-badge {
+            display: inline-flex;
+            background: var(--blue);
+        }
+
+        .selected-green .check-badge {
+            display: inline-flex;
+            background: var(--green);
+        }
+
+        @@media (max-width: 720px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+}
+
+<div class="fz-scope">
+    <div class="wrapper">
+
+        <div class="page-header">
+            <h1>Şarj İstasyonu Fizibiliteleri</h1>
+            <p>EKA Enerji ve Teknoloji olarak şarj istasyonu yatırımlarınızın amortisman sürelerini hesaplayın ve tarife fiyatlandırmalarınızı optimize edin.</p>
+        </div>
+
+        <div class="card-grid">
+
+            <!-- Tarife -->
+            <a href="/TarifeFizibilite/Index" class="fiz-card" id="card-tarife" onclick="sel(event,'tarife')">
+                <div class="card-bar bar-blue"></div>
+                <div class="card-head">
+                    <div class="card-icon icon-blue">
+                        <span class="material-symbols-outlined">price_check</span>
+                    </div>
+                    <div class="card-titles">
+                        <h2>Tarife Fizibilitesi</h2>
+                        <span>Şarj Satış Fiyatlandırması (kWh)</span>
+                    </div>
+                </div>
+                <p class="card-desc">
+                    İstasyonunuzun lokasyonunun elektrik maliyetlerini baz alarak, EV kullanıcılarına sunacağınız optimum şarj birim fiyatlarını belirleyin ve kâr marjınızı hesaplayın.
+                </p>
+                <div class="card-cta cta-blue">
+                    <span>Tarife Hesapla</span>
+                    <span class="material-symbols-outlined">arrow_forward</span>
+                </div>
+                <div class="check-badge"><span class="material-symbols-outlined">check</span></div>
+            </a>
+
+            <!-- Amortisman -->
+            <a href="/FeasibilityAmortization/Index" class="fiz-card" id="card-amort" onclick="sel(event,'amort')">
+                <div class="card-bar bar-green"></div>
+                <div class="card-head">
+                    <div class="card-icon icon-green">
+                        <span class="material-symbols-outlined">ev_station</span>
+                    </div>
+                    <div class="card-titles">
+                        <h2>Amortisman Fizibilitesi</h2>
+                        <span>Yatırım Geri Dönüşü (ROI) Analizi</span>
+                    </div>
+                </div>
+                <p class="card-desc">
+                    AC/DC donanım, altyapı, kurulum ve işletme giderlerinizi; günlük kullanım sıklığıyla karşılaştırarak yatırımınızın ne kadar sürede amorti edeceğini raporlayın.
+                </p>
+                <div class="card-cta cta-green">
+                    <span>Amortisman Hesapla</span>
+                    <span class="material-symbols-outlined">arrow_forward</span>
+                </div>
+                <div class="check-badge"><span class="material-symbols-outlined">check</span></div>
+            </a>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function sel(e, id) {
+            document.querySelectorAll('.fiz-card').forEach(c => {
+                c.classList.remove('selected-blue', 'selected-green');
+            });
+            const card = document.getElementById('card-' + id);
+            card.classList.add(id === 'tarife' ? 'selected-blue' : 'selected-green');
+        }
+    </script>
+}

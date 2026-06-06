@@ -1,0 +1,58 @@
+@model LocationDetailDto
+@{
+    ViewData["Title"] = "Lokasyon Detayı";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/location/details/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>@Model.Name</h1>
+        <p>Lokasyon detay bilgileri.</p>
+    </div>
+    <div class="header-actions">
+        <a asp-action="Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        @if (!Model.Audit.IsDeleted)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+                <span class="material-symbols-outlined">edit</span> Düzenle
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body detail-grid">
+        <div class="detail-item">
+            <span class="detail-label">Lokasyon Adı</span>
+            <span class="detail-value">@Model.Name</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Lokasyon Bakım Tipi</span>
+            <span class="detail-value">@(Model.LocationTypeMaintenanceName ?? "-")</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">İl / İlçe</span>
+            <span class="detail-value">@Model.City / @Model.District</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Adres</span>
+            <span class="detail-value">@(string.IsNullOrWhiteSpace(Model.Address) ? "-" : Model.Address)</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Koordinat</span>
+            <span class="detail-value">@Model.Latitude, @Model.Longitude</span>
+        </div>
+        <div class="detail-item detail-item-full">
+            <span class="detail-label">Açıklama</span>
+            <span class="detail-value">@(string.IsNullOrWhiteSpace(Model.Description) ? "-" : Model.Description)</span>
+        </div>
+    </div>
+</div>
+
+<partial name="_AuditPartial" model="Model.Audit" />

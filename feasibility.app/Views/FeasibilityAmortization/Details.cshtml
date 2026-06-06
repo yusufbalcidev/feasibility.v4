@@ -1,0 +1,304 @@
+@using System.Globalization
+@model feasibility.Entity.Dtos.FeasibilityAmortization.FeasibilityAmortizationDetailDto
+@{
+    ViewData["Title"] = Model.FeasibilityName;
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var tr = CultureInfo.GetCultureInfo("tr-TR");
+    Func<decimal, string> tl  = v => v.ToString("#,##0.##", tr);
+    Func<decimal, string> usd = v => "$ " + v.ToString("#,##0", tr);
+    Func<decimal, string> pct = v => "%" + v.ToString("0.0", tr);
+}
+
+@section Styles {
+    <style>
+        .det-header {
+            background: linear-gradient(120deg,#0b1f33 0%,#14304a 60%,#1c3d5a 100%);
+            border-radius: 14px;
+            color:#fff;
+            padding:1.75rem 2rem;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:1.25rem;
+            flex-wrap:wrap;
+            box-shadow:0 12px 30px rgba(16,24,40,.07);
+            margin-bottom:1.5rem;
+        }
+        .det-header h1 { font-size:1.45rem;font-weight:800;margin:0 0 .3rem;letter-spacing:-.4px; }
+        .det-header p  { margin:0;color:rgba(255,255,255,.75);font-size:.9rem; }
+        .det-header-actions { display:flex;gap:.75rem;flex-wrap:wrap; }
+
+        .kpi-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem; }
+        @@media(max-width:900px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+        @@media(max-width:500px){ .kpi-grid{grid-template-columns:1fr;} }
+
+        .kpi-card {
+            background:#fff;
+            border:1px solid #e6eaf2;
+            border-radius:14px;
+            box-shadow:0 1px 3px rgba(16,24,40,.05);
+            padding:1.25rem 1.5rem;
+            display:flex;
+            align-items:center;
+            gap:1rem;
+        }
+        .kpi-icon {
+            width:48px;height:48px;border-radius:10px;
+            display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        }
+        .kpi-icon .material-symbols-outlined { font-size:1.4rem; }
+        .kpi-label { font-size:.72rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:.2rem; }
+        .kpi-val   { font-size:1.35rem;font-weight:800;color:#111827;margin:0; }
+        .kpi-val.pos { color:#059669; }
+        .kpi-val.neg { color:#dc2626; }
+
+        .section-title { font-size:.95rem;font-weight:700;color:#334155;margin:0 0 .75rem;display:flex;align-items:center;gap:.5rem; }
+        .section-title .material-symbols-outlined { font-size:1.1rem;color:#2563eb; }
+
+        .det-grid { display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem; }
+        @@media(max-width:700px){ .det-grid{grid-template-columns:1fr;} }
+
+        .info-card {
+            background:#fff;border:1px solid #e6eaf2;border-radius:14px;
+            box-shadow:0 1px 3px rgba(16,24,40,.05);padding:1.25rem 1.5rem;
+        }
+        .info-row { display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #f1f5f9;font-size:.875rem; }
+        .info-row:last-child { border-bottom:none; }
+        .info-row .lbl { color:#64748b;font-weight:500; }
+        .info-row .val { font-weight:700;color:#111827; }
+        .info-row .val.mono { font-family:monospace;font-size:.9rem; }
+
+        .line-card {
+            background:#fff;border:1px solid #e6eaf2;border-radius:14px;
+            box-shadow:0 1px 3px rgba(16,24,40,.05);padding:1.25rem 1.5rem;margin-bottom:1rem;
+        }
+        .line-card-header { display:flex;align-items:center;gap:.75rem;margin-bottom:1rem; }
+        .device-badge { background:#eef4ff;color:#2563eb;font-size:.8rem;font-weight:800;padding:.3rem .75rem;border-radius:20px; }
+
+        .proj-table { width:100%;border-collapse:collapse;font-size:.85rem; }
+        .proj-table th { background:#f4f6fb;color:#64748b;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.4px;padding:.6rem .9rem;text-align:right;border-bottom:1px solid #e6eaf2; }
+        .proj-table th:first-child { text-align:left; }
+        .proj-table td { padding:.55rem .9rem;text-align:right;border-bottom:1px solid #f1f5f9;color:#111827;font-weight:500; }
+        .proj-table td:first-child { text-align:left;font-weight:700; }
+        .proj-table tr:last-child td { border-bottom:none; }
+        .proj-table .pos { color:#059669; }
+        .proj-table .neg { color:#dc2626; }
+
+        .passive-banner {
+            background:#fef2f2;border:1px solid #fecaca;color:#dc2626;
+            border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;
+            display:flex;align-items:center;gap:.5rem;font-size:.875rem;font-weight:600;
+        }
+    </style>
+}
+
+<div class="det-header">
+    <div>
+        <div style="font-size:.8rem;color:rgba(255,255,255,.6);margin-bottom:.4rem;">
+            Fizibiliteler &middot; Amortisman &middot; <strong>@Model.FeasibilityName</strong>
+        </div>
+        <h1>@Model.FeasibilityName</h1>
+        <p>@Model.LocationName &nbsp;&middot;&nbsp; @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</p>
+    </div>
+    <div class="det-header-actions">
+        <a href="/FeasibilityAmortization/Index" class="btn btn-secondary" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff;">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        @if (!Model.IsDeleted)
+        {
+            <a href="/FeasibilityAmortization/Edit/@Model.Id" class="btn btn-primary" style="background:#2563eb;border-color:#2563eb;color:#fff;">
+                <span class="material-symbols-outlined">edit</span> Düzenle
+            </a>
+        }
+    </div>
+</div>
+
+@if (Model.IsDeleted)
+{
+    <div class="passive-banner">
+        <span class="material-symbols-outlined">warning</span>
+        Bu fizibilite pasif durumda. İndeks sayfasından aktif hale getirebilirsiniz.
+    </div>
+}
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:#eef4ff;color:#2563eb;">
+            <span class="material-symbols-outlined">account_balance_wallet</span>
+        </div>
+        <div>
+            <div class="kpi-label">Toplam Yatırım</div>
+            <div class="kpi-val">@usd(Model.TotalInvestmentUsd)</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:#e8f7f0;color:#059669;">
+            <span class="material-symbols-outlined">restart_alt</span>
+        </div>
+        <div>
+            <div class="kpi-label">Amortisman Süresi</div>
+            <div class="kpi-val @(Model.PaybackYears <= 0 ? "neg" : "")">
+                @(Model.PaybackYears > 0 ? Model.PaybackYears.ToString("0.0", tr) + " Yıl" : "—")
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:#fdf3e3;color:#d97706;">
+            <span class="material-symbols-outlined">trending_up</span>
+        </div>
+        <div>
+            <div class="kpi-label">Yıllık Net Kâr (Yıl 1)</div>
+            <div class="kpi-val @(Model.AnnualNetProfitUsd >= 0 ? "pos" : "neg")">
+                @(Model.AnnualNetProfitUsd >= 0 ? "+" : "")@usd(Model.AnnualNetProfitUsd)
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background:#e5f6fb;color:#0891b2;">
+            <span class="material-symbols-outlined">percent</span>
+        </div>
+        <div>
+            <div class="kpi-label">Yıllık ROI</div>
+            <div class="kpi-val @(Model.RoiPercent >= 0 ? "pos" : "neg")">
+                @(Model.RoiPercent >= 0 ? "+" : "")@pct(Model.RoiPercent)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Genel Bilgiler + Yatırım Dağılımı -->
+<div class="det-grid">
+    <div class="info-card">
+        <div class="section-title">
+            <span class="material-symbols-outlined">info</span> Genel Bilgiler
+        </div>
+        <div class="info-row"><span class="lbl">Fizibilite Adı</span><span class="val">@Model.FeasibilityName</span></div>
+        <div class="info-row"><span class="lbl">Lokasyon</span><span class="val">@Model.LocationName</span></div>
+        <div class="info-row"><span class="lbl">Oluşturan</span><span class="val">@(Model.CreatedByName ?? "—")</span></div>
+        <div class="info-row"><span class="lbl">Tarih</span><span class="val">@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span></div>
+        <div class="info-row"><span class="lbl">Durum</span>
+            <span class="val">
+                @if (Model.IsDeleted)
+                {
+                    <span class="badge badge-passive">Pasif</span>
+                }
+                else
+                {
+                    <span class="badge badge-active">Aktif</span>
+                }
+            </span>
+        </div>
+        <div class="info-row"><span class="lbl">USD/TL Kuru</span><span class="val mono">@tl(Model.UsdRate)</span></div>
+        <div class="info-row"><span class="lbl">EUR/TL Kuru</span><span class="val mono">@tl(Model.EurRate)</span></div>
+        <div class="info-row"><span class="lbl">TL Enflasyonu</span><span class="val mono">%@tl(Model.InflationTl)</span></div>
+        <div class="info-row"><span class="lbl">USD Enflasyonu</span><span class="val mono">%@tl(Model.InflationUsd)</span></div>
+    </div>
+
+    <div class="info-card">
+        <div class="section-title">
+            <span class="material-symbols-outlined">pie_chart</span> Yatırım Dağılımı (TL)
+        </div>
+        <div class="info-row"><span class="lbl">Araç Şarj İstasyonu</span><span class="val mono">@tl(Model.StationUnitCostTl) ₺</span></div>
+        <div class="info-row"><span class="lbl">Yer Sağlayıcı Giriş Bedeli</span><span class="val mono">@tl(Model.ProviderEntryFeeTl) ₺</span></div>
+        <div class="info-row"><span class="lbl">Altyapı Yatırımı</span><span class="val mono">@tl(Model.InfrastructureCostTl) ₺</span></div>
+        <div class="info-row"><span class="lbl">Cihaz + Lokasyon Maliyeti</span><span class="val mono">@tl(Model.DeviceTotalTl) ₺</span></div>
+        <div class="info-row" style="background:#f8faff;border-radius:8px;padding:.6rem .75rem;margin-top:.5rem;">
+            <span class="lbl" style="font-weight:700;color:#111827;">Toplam Yatırım</span>
+            <span class="val mono" style="font-size:1rem;">@tl(Model.TotalInvestmentTl) ₺</span>
+        </div>
+        <div class="info-row"><span class="lbl">Toplam Yatırım (USD)</span><span class="val mono">@usd(Model.TotalInvestmentUsd)</span></div>
+
+        @if (Model.HasRent || Model.AnnualMaintenanceTl > 0 || Model.AnnualAdvertisingRevenueTl > 0)
+        {
+            <div class="section-title" style="margin-top:1rem;">
+                <span class="material-symbols-outlined">receipt_long</span> Yıllık Sabit Kalemler
+            </div>
+            @if (Model.HasRent)
+            {
+                <div class="info-row"><span class="lbl">Yıllık Kira</span><span class="val mono neg" style="color:#dc2626;">-@tl(Model.AnnualRentTl) ₺</span></div>
+            }
+            @if (Model.AnnualMaintenanceTl > 0)
+            {
+                <div class="info-row"><span class="lbl">Garanti Sonrası Bakım</span><span class="val mono neg" style="color:#dc2626;">-@tl(Model.AnnualMaintenanceTl) ₺</span></div>
+            }
+            @if (Model.AnnualAdvertisingRevenueTl > 0)
+            {
+                <div class="info-row"><span class="lbl">Reklam Geliri</span><span class="val mono" style="color:#059669;">+@tl(Model.AnnualAdvertisingRevenueTl) ₺</span></div>
+            }
+            @if (Model.HasLoan && Model.AnnualLoanPaymentTl > 0)
+            {
+                <div class="info-row"><span class="lbl">Yıllık Kredi Ödemesi</span><span class="val mono neg" style="color:#dc2626;">-@tl(Model.AnnualLoanPaymentTl) ₺</span></div>
+            }
+        }
+    </div>
+</div>
+
+<!-- İstasyon Hatları -->
+<div class="section-title" style="margin-bottom:.75rem;">
+    <span class="material-symbols-outlined">ev_station</span> İstasyon Hatları
+</div>
+
+@foreach (var line in Model.DeviceLines)
+{
+    <div class="line-card">
+        <div class="line-card-header">
+            <span class="device-badge">@line.DeviceType</span>
+            <span style="font-size:.875rem;color:#64748b;">
+                @line.DeviceCount cihaz &nbsp;&middot;&nbsp; @line.SocketCount soket
+                &nbsp;&middot;&nbsp; Sözleşme: @line.AgreementGenre (@((line.AgreementRate * 100).ToString("0.#", tr))%)
+            </span>
+        </div>
+
+        <div class="det-grid" style="margin-bottom:.75rem;">
+            <div>
+                <div class="info-row"><span class="lbl">Satış TL/kWh</span><span class="val mono">@tl(line.SalePriceTl) ₺</span></div>
+                <div class="info-row"><span class="lbl">Alış TL/kWh</span><span class="val mono">@tl(line.PurchasePriceTl) ₺</span></div>
+                <div class="info-row"><span class="lbl">Ort. Şarj (kWh)</span><span class="val mono">@tl(line.AvgKwh) kWh</span></div>
+                <div class="info-row"><span class="lbl">Günlük Soket Başı Şarj</span><span class="val mono">@tl(line.DailyChargesPerSocket)</span></div>
+            </div>
+            <div>
+                <div class="info-row"><span class="lbl">Hat Yatırım Maliyeti</span><span class="val mono">@tl(line.LineInvestmentTl) ₺</span></div>
+                <div class="info-row"><span class="lbl">Yıllık Brüt Ciro (Yıl 1)</span><span class="val mono" style="color:#059669;">@tl(line.AnnualRevenueTl) ₺</span></div>
+                <div class="info-row"><span class="lbl">Yıllık Elektrik Maliyeti</span><span class="val mono" style="color:#dc2626;">-@tl(line.AnnualElectricityCostTl) ₺</span></div>
+                <div class="info-row"><span class="lbl">Komisyon (Yıl 1)</span><span class="val mono" style="color:#dc2626;">-@tl(line.AnnualCommissionTl) ₺</span></div>
+                <div class="info-row" style="background:#f8faff;border-radius:8px;padding:.5rem .6rem;">
+                    <span class="lbl" style="font-weight:700;color:#111827;">Hat Net Marjı (Yıl 1)</span>
+                    <span class="val mono @(line.AnnualNetMarginTl >= 0 ? "pos" : "neg")" style="color:@(line.AnnualNetMarginTl >= 0 ? "#059669" : "#dc2626");">
+                        @(line.AnnualNetMarginTl >= 0 ? "+" : "")@tl(line.AnnualNetMarginTl) ₺
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        @if (line.YearProjections.Any())
+        {
+            <div style="overflow-x:auto;">
+                <table class="proj-table">
+                    <thead>
+                        <tr>
+                            <th>Yıl</th>
+                            <th>Günlük Şarj/Soket</th>
+                            <th>Yıllık Ciro (TL)</th>
+                            <th>Elektrik Maliyeti (TL)</th>
+                            <th>Brüt Marj (TL)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var proj in line.YearProjections)
+                        {
+                            var margin = proj.AnnualRevenueTl - proj.AnnualElectricityCostTl;
+                            <tr>
+                                <td>@proj.Year</td>
+                                <td>@tl(proj.DailyChargePerSocket)</td>
+                                <td class="pos">@tl(proj.AnnualRevenueTl) ₺</td>
+                                <td class="neg">-@tl(proj.AnnualElectricityCostTl) ₺</td>
+                                <td class="@(margin >= 0 ? "pos" : "neg")">@(margin >= 0 ? "+" : "")@tl(margin) ₺</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}

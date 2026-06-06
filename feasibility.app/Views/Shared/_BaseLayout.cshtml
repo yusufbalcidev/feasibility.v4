@@ -1,0 +1,171 @@
+@{
+    var pageKey = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+
+    HashSet<string> visiblePages;
+    if (User.IsInRole(RoleSeed.SuperAdminName))
+    {
+        visiblePages = new HashSet<string>(
+            new[]
+            {
+                PageSeed.DashboardKey, PageSeed.LocationKey, PageSeed.LocationTypeMaintenanceKey,
+                PageSeed.UserKey, PageSeed.RoleKey, PageSeed.ActivityLogKey
+            },
+            StringComparer.OrdinalIgnoreCase);
+    }
+    else if (User.Identity?.IsAuthenticated == true &&
+             Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid))
+    {
+        visiblePages = await PermissionService.GetVisiblePagesForUserAsync(uid);
+    }
+    else
+    {
+        visiblePages = new HashSet<string>();
+    }
+
+    string menuItemClass(string key) =>
+        string.Equals(key, pageKey, StringComparison.OrdinalIgnoreCase)
+            ? "menu-link active"
+            : "menu-link";
+
+    var userName = User.Identity?.Name ?? "Kullanıcı";
+    var firstName = User.FindFirst("FirstName")?.Value ?? userName;
+    var lastName = User.FindFirst("LastName")?.Value ?? string.Empty;
+    var displayName = string.IsNullOrWhiteSpace(firstName) ? userName : ($"{firstName} {lastName}").Trim();
+    var initials = string.Concat((firstName + " " + lastName).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2).Select(s => char.ToUpper(s[0])));
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <script>
+            (function () {
+                if (localStorage.getItem('theme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            })();
+    </script>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>@ViewData["Title"] - EKA Enerji</title>
+    <link rel="icon" type="image/png" href="@Url.Content("~/images/eka-logo-Photoroom.png")" />
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/alertifyjs/css/alertify.min.css" />
+    <link rel="stylesheet" href="~/css/layout/site.css" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div id="mobile-overlay" class="mobile-overlay hidden"></div>
+
+    <aside id="sidebar" class="layout-sidebar">
+        <div class="sidebar-header">
+            <img class="sidebar-logo" src="~/images/eka-logo-Photoroom.png" alt="EKA Enerji" />
+            <button id="closeSidebarBtn" class="sidebar-close" type="button">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            @if (visiblePages.Contains(PageSeed.DashboardKey))
+            {
+                <a class="@menuItemClass("Dashboard")" href="/Dashboard/Index">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            }
+            <a class="@menuItemClass("Fizibilite")" href="/Feasibility/Index">
+                <span class="material-symbols-outlined">ev_station</span>
+                <span class="menu-text">Fizibiliteler</span>
+            </a>
+            @if (visiblePages.Contains(PageSeed.LocationKey))
+            {
+                <a class="@menuItemClass("Location")" href="/Location/Index">
+                    <span class="material-symbols-outlined">location_on</span>
+                    <span class="menu-text">Lokasyonlar</span>
+                </a>
+            }
+            @if (visiblePages.Contains(PageSeed.LocationTypeMaintenanceKey))
+            {
+                <a class="@menuItemClass("LocationTypeMaintenance")" href="/LocationTypeMaintenance/Index">
+                    <span class="material-symbols-outlined">category</span>
+                    <span class="menu-text">Lokasyon  Tipleri</span>
+                </a>
+            }
+            @if (visiblePages.Contains(PageSeed.UserKey))
+            {
+                <a class="@menuItemClass("User")" href="/User/Index">
+                    <span class="material-symbols-outlined">group</span>
+                    <span class="menu-text">Kullanıcılar</span>
+                </a>
+            }
+            @if (visiblePages.Contains(PageSeed.RoleKey))
+            {
+                <a class="@menuItemClass("Role")" href="/Role/Index">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                    <span class="menu-text">Roller</span>
+                </a>
+            }
+            @if (visiblePages.Contains(PageSeed.ActivityLogKey))
+            {
+                <a class="@menuItemClass("ActivityLog")" href="/ActivityLog/Index">
+                    <span class="material-symbols-outlined">history</span>
+                    <span class="menu-text">Aktivite Logları</span>
+                </a>
+            }
+        </nav>
+
+        <div class="sidebar-footer">
+            <button id="sidebarThemeToggle" class="sidebar-theme-btn" type="button" title="Tema Değiştir">
+                <span class="material-symbols-outlined">dark_mode</span>
+                <span class="menu-text">Koyu Tema</span>
+            </button>
+        </div>
+    </aside>
+
+    <div class="layout-main">
+        <header class="layout-header">
+            <button id="sidebarToggle" class="sidebar-toggle" type="button">
+                <span class="material-symbols-outlined">menu_open</span>
+            </button>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="header-user">
+                    <div class="user-avatar">@initials</div>
+                    <span class="user-name">@displayName</span>
+
+                    <form asp-controller="Login" asp-action="Logout" method="post" class="logout-form">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="logout-btn" title="Çıkış Yap">
+                            <span class="material-symbols-outlined">logout</span>
+                        </button>
+                    </form>
+                </div>
+            }
+        </header>
+
+        <main class="layout-content">
+            @RenderBody()
+        </main>
+
+        <footer class="layout-footer">
+            <p>Bu uygulama <strong>EKA Enerji ve Teknoloji</strong> tarafından geliştirilmiştir.</p>
+        </footer>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/alertifyjs/js/alertify.min.js"></script>
+    <script src="~/js/layout/site.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var success = '@(TempData["Success"] as string ?? "")';
+            var error = '@(TempData["Error"] as string ?? "")';
+            if (success) alertify.success(success);
+            if (error) alertify.error(error);
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

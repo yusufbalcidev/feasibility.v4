@@ -1,0 +1,51 @@
+@model UserDetailDto
+@{
+    ViewData["Title"] = "Kullanıcı Detayı";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/user/details/style.css" />
+    <link rel="stylesheet" href="~/css/location/details/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>@Model.FirstName @Model.LastName</h1>
+        <p>Kullanıcı detay bilgileri.</p>
+    </div>
+    <div class="header-actions">
+        <a asp-action="Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        @if (!Model.Audit.IsDeleted)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+                <span class="material-symbols-outlined">edit</span> Düzenle
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body detail-grid">
+        <div class="detail-item">
+            <span class="detail-label">Ad Soyad</span>
+            <span class="detail-value">@Model.FirstName @Model.LastName</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Kullanıcı Adı</span>
+            <span class="detail-value">@Model.UserName</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">E-posta</span>
+            <span class="detail-value">@Model.Email</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Rol</span>
+            <span class="detail-value">@(Model.RoleName ?? "-")</span>
+        </div>
+    </div>
+</div>
+
+<partial name="_AuditPartial" model="Model.Audit" />

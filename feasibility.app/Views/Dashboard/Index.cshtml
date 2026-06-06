@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var recentLocations = ViewBag.RecentLocations as List<LocationListDto> ?? new();
+    int locationCount = ViewBag.LocationCount ?? 0;
+    int locationTypeCount = ViewBag.LocationTypeCount ?? 0;
+    int userCount = ViewBag.UserCount ?? 0;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard/dashboard.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Sistemdeki genel istatistikler.</p>
+    </div>
+</div>
+
+<div class="dash-stats">
+    <a href="/Location/Index" class="dash-stat">
+        <div class="dash-stat-icon"><span class="material-symbols-outlined">location_on</span></div>
+        <div>
+            <span class="dash-stat-label">Lokasyon</span>
+            <span class="dash-stat-value">@locationCount</span>
+        </div>
+    </a>
+    <a href="/LocationTypeMaintenance/Index" class="dash-stat">
+        <div class="dash-stat-icon"><span class="material-symbols-outlined">category</span></div>
+        <div>
+            <span class="dash-stat-label">Lokasyon Tipi</span>
+            <span class="dash-stat-value">@locationTypeCount</span>
+        </div>
+    </a>
+    <a href="/User/Index" class="dash-stat">
+        <div class="dash-stat-icon"><span class="material-symbols-outlined">group</span></div>
+        <div>
+            <span class="dash-stat-label">Kullanıcı</span>
+            <span class="dash-stat-value">@userCount</span>
+        </div>
+    </a>
+    <a href="/ActivityLog/Index" class="dash-stat">
+        <div class="dash-stat-icon"><span class="material-symbols-outlined">history</span></div>
+        <div>
+            <span class="dash-stat-label">Aktivite Logları</span>
+            <span class="dash-stat-value">Görüntüle</span>
+        </div>
+    </a>
+</div>
+
+<div class="card" style="margin-top:24px;">
+    <div class="card-header">
+        <h2>Son Eklenen Lokasyonlar</h2>
+        <a href="/Location/Index" class="btn btn-ghost btn-sm">Tümünü Gör</a>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Lokasyon Adı</th>
+                    <th>İl / İlçe</th>
+                    <th>Tip</th>
+                    <th>Ekleyen</th>
+                    <th>Oluşturma Tarihi</th>
+                    <th style="text-align:right;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!recentLocations.Any())
+                {
+                    <tr><td colspan="6"><div class="empty-state"><span class="material-symbols-outlined">pin_drop</span>Henüz lokasyon eklenmemiş.</div></td></tr>
+                }
+                @foreach (var item in recentLocations)
+                {
+                    <tr>
+                        <td><strong>@item.Name</strong></td>
+                        <td>@item.City / @item.District</td>
+                        <td>@(item.LocationTypeMaintenanceName ?? "-")</td>
+                        <td>@(item.CreatedByName ?? "-")</td>
+                        <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                        <td style="text-align:right;">
+                            <a href="/Location/Details/@item.Id" class="row-action-btn">
+                                <span class="material-symbols-outlined">visibility</span> Görüntüle
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

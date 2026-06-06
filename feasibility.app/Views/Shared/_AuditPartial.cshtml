@@ -1,0 +1,46 @@
+@model AuditInfoDto
+<section class="audit-card">
+    <h3>Kayıt Bilgileri</h3>
+    <div class="audit-grid">
+        <div class="audit-item">
+            <span>Oluşturulma</span>
+            <span>@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
+        </div>
+        <div class="audit-item">
+            <span>Ekleyen</span>
+            <span>@(Model.CreatedByName ?? "-")</span>
+        </div>
+        <div class="audit-item">
+            <span>Son Güncelleme</span>
+            <span>@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "-")</span>
+        </div>
+        <div class="audit-item">
+            <span>Güncelleyen</span>
+            <span>@(Model.UpdatedByName ?? "-")</span>
+        </div>
+        <div class="audit-item">
+            <span>Durum</span>
+            <span>
+                @if (Model.IsDeleted)
+                {
+                    <span class="badge badge-passive">Pasif (Silindi)</span>
+                }
+                else
+                {
+                    <span class="badge badge-active">Aktif</span>
+                }
+            </span>
+        </div>
+        @if (Model.IsDeleted)
+        {
+            <div class="audit-item">
+                <span>Silinme</span>
+                <span>@(Model.DeletedAt.HasValue ? Model.DeletedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "-")</span>
+            </div>
+            <div class="audit-item">
+                <span>Silen</span>
+                <span>@(Model.DeletedByName ?? "-")</span>
+            </div>
+        }
+    </div>
+</section>

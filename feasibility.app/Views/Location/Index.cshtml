@@ -1,0 +1,139 @@
+@model List<LocationListDto>
+@{
+    ViewData["Title"] = "Lokasyonlar";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="~/css/location/index/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>Lokasyonlar</h1>
+        <p>Sistemde kayıtlı lokasyonları liste veya harita olarak görüntüleyin.</p>
+    </div>
+    <div class="header-actions">
+        <a asp-action="Create" class="btn btn-primary">
+            <span class="material-symbols-outlined">add_location</span> Yeni Lokasyon
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header card-header-tabs">
+        <div class="tab-bar">
+            <button type="button" class="tab-btn active" data-tab="list">
+                <span class="material-symbols-outlined">list</span> Liste
+            </button>
+            <button type="button" class="tab-btn" data-tab="map">
+                <span class="material-symbols-outlined">map</span> Harita
+            </button>
+        </div>
+        <span class="badge badge-info">@Model.Count kayıt</span>
+    </div>
+
+    <div id="tab-list" class="tab-pane active">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Lokasyon Adı</th>
+                        <th>İl / İlçe</th>
+                        <th>Tip</th>
+                        <th>Durum</th>
+                        <th>Ekleyen</th>
+                        <th>Oluşturma Tarihi</th>
+                        <th style="text-align:right;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">pin_drop</span>Henüz lokasyon eklenmemiş.</div></td></tr>
+                    }
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><strong>@item.Name</strong></td>
+                            <td>@item.City / @item.District</td>
+                            <td>@(item.LocationTypeMaintenanceName ?? "-")</td>
+                            <td>
+                                @if (item.IsDeleted)
+                                {
+                                    <span class="badge badge-passive">Pasif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-active">Aktif</span>
+                                }
+                            </td>
+                            <td>@(item.CreatedByName ?? "-")</td>
+                            <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <div class="row-actions" style="justify-content:flex-end;">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="row-action-btn">
+                                        <span class="material-symbols-outlined">visibility</span> Görüntüle
+                                    </a>
+                                    @if (item.IsDeleted)
+                                    {
+                                        <form asp-action="Restore" asp-route-id="@item.Id" method="post"
+                                              data-confirm="@item.Name lokasyonunu aktif hale getirmek istediğinize emin misiniz?">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="row-action-btn">
+                                                <span class="material-symbols-outlined">check_circle</span> Aktif Et
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="row-action-btn">
+                                            <span class="material-symbols-outlined">edit</span> Düzenle
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post"
+                                              data-confirm="@item.Name lokasyonunu silmek istediğinize emin misiniz?">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="row-action-btn danger">
+                                                <span class="material-symbols-outlined">delete</span> Sil
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-map" class="tab-pane">
+        <div id="locationsMap" class="locations-map"></div>
+    </div>
+</div>
+
+@{
+    var mapData = Model
+        .Where(l => !l.IsDeleted && l.Latitude != 0 && l.Longitude != 0)
+        .Select(l => new
+        {
+            id = l.Id,
+            name = l.Name,
+            city = l.City,
+            district = l.District,
+            type = l.LocationTypeMaintenanceName,
+            lat = l.Latitude,
+            lng = l.Longitude
+        });
+    var mapDataJson = System.Text.Json.JsonSerializer.Serialize(mapData);
+}
+
+<script id="locations-data" type="application/json">@Html.Raw(mapDataJson)</script>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="~/js/location/index/script.js"></script>
+}

@@ -1,0 +1,14 @@
+.log-body {
+    background: #0f172a;
+    color: #cbd5e1;
+    padding: 16px;
+    border-radius: 8px;
+    font-family: 'Fira Code', 'Cascadia Mono', Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    overflow-x: auto;
+    max-height: 480px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

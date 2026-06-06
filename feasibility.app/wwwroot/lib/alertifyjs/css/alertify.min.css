@@ -1,0 +1,22 @@
+/*!
+ * AlertifyJS v1.13.1 - https://alertifyjs.com
+ * Lokal kopya (kısaltılmış stil seti)
+ */
+.alertify-notifier{position:fixed;width:0;overflow:visible;z-index:1982;}
+.alertify-notifier .ajs-message{position:relative;width:260px;padding:12px 16px;border-radius:8px;color:#fff;background:rgba(0,0,0,.85);box-shadow:0 6px 18px rgba(0,0,0,.18);margin:8px 16px;opacity:0;transform:translate3d(0,0,0);transition:opacity .25s,transform .25s;font-family:Inter,Hanken Grotesk,Arial,sans-serif;font-size:14px;line-height:1.4;}
+.alertify-notifier .ajs-message.ajs-visible{opacity:1;}
+.alertify-notifier .ajs-message.ajs-success{background:#0f9d58;}
+.alertify-notifier .ajs-message.ajs-error{background:#d93025;}
+.alertify-notifier .ajs-message.ajs-warning{background:#f29900;}
+.alertify-notifier.ajs-top{top:12px;}
+.alertify-notifier.ajs-bottom{bottom:12px;}
+.alertify-notifier.ajs-right{right:0;}
+.alertify-notifier.ajs-left{left:0;}
+.alertify .ajs-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;width:min(420px,92vw);padding:24px;box-shadow:0 30px 60px -20px rgba(0,0,0,.25);z-index:1981;font-family:Inter,Hanken Grotesk,Arial,sans-serif;}
+.alertify .ajs-header{font-size:18px;font-weight:700;margin-bottom:8px;color:#0f172a;}
+.alertify .ajs-body{font-size:14px;color:#334155;margin-bottom:16px;line-height:1.5;}
+.alertify .ajs-footer{display:flex;gap:8px;justify-content:flex-end;}
+.alertify .ajs-footer .ajs-button{padding:8px 16px;border-radius:8px;border:0;font-size:13px;font-weight:600;cursor:pointer;background:#e2e8f0;color:#0f172a;}
+.alertify .ajs-footer .ajs-button.ajs-ok{background:#0f9d58;color:#fff;}
+.alertify .ajs-footer .ajs-button.ajs-cancel{background:#e2e8f0;color:#0f172a;}
+.alertify-cover{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1980;}

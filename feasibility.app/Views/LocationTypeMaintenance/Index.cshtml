@@ -1,0 +1,89 @@
+@model List<LocationTypeMaintenanceListDto>
+@{
+    ViewData["Title"] = "Lokasyon Bakım Tipleri";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/locationtypemaintenance/index/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>Lokasyon Bakım Tipleri</h1>
+        <p>Lokasyonlara atanacak tipleri yönetin.</p>
+    </div>
+    <div class="header-actions">
+        <a asp-action="Create" class="btn btn-primary">
+            <span class="material-symbols-outlined">add</span> Yeni Tip
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Tip Listesi</h2>
+        <span class="badge badge-info">@Model.Count kayıt</span>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ad</th>
+                    <th>Açıklama</th>
+                    <th>Bağlı Lokasyon</th>
+                    <th>Durum</th>
+                    <th>Ekleyen</th>
+                    <th>Oluşturma</th>
+                    <th style="text-align:right;">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">category</span>Henüz tip eklenmemiş.</div></td></tr>
+                }
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><strong>@item.Name</strong></td>
+                        <td>@(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)</td>
+                        <td>@item.LocationCount</td>
+                        <td>
+                            @if (item.IsDeleted)
+                            {
+                                <span class="badge badge-passive">Pasif</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-active">Aktif</span>
+                            }
+                        </td>
+                        <td>@(item.CreatedByName ?? "-")</td>
+                        <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>
+                            <div class="row-actions" style="justify-content:flex-end;">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="row-action-btn">
+                                    <span class="material-symbols-outlined">visibility</span> Görüntüle
+                                </a>
+                                @if (!item.IsDeleted)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="row-action-btn">
+                                        <span class="material-symbols-outlined">edit</span> Düzenle
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post"
+                                          data-confirm="@item.Name tipini silmek istediğinize emin misiniz?">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="row-action-btn danger">
+                                            <span class="material-symbols-outlined">delete</span> Sil
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
