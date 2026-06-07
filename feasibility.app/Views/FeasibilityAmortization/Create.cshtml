@@ -156,6 +156,12 @@
                 Lokasyona kira ödenecek mi?
             </label>
             <div class="fiz-kira-block hidden" id="kiraBlock"></div>
+            <label class="fiz-chk" style="margin-top:10px;">
+                <input type="checkbox" id="reklamVar" onchange="toggleReklam()" />
+                <span class="fiz-chk-box"><span class="material-symbols-outlined">check</span></span>
+                Lokasyonda reklam geliri elde edilecek mi?
+            </label>
+            <div class="fiz-kira-block hidden" id="reklamBlock"></div>
             <div class="fiz-fin-grid" id="finGrid" style="margin-top:18px;"></div>
         </div>
     </div>
@@ -315,11 +321,13 @@
         ];
         var FIN = [
             { id: "bakim",    label: "Garanti Sonrası Bakım (Yıllık)",   ccy: "TRY", val: 800   },
-            { id: "reklam",   label: "Reklam Geliri",                    ccy: "TRY", val: 500   },
             { id: "sarj",     label: "Araç Şarj İstasyonu Bedeli",       ccy: "TRY", val: 15000 },
             { id: "giris",    label: "Yer Sağlayıcı Proje Giriş Bedeli", ccy: "TRY", val: 3000  },
             { id: "altyapi",  label: "Altyapı Yatırım Bedeli",           ccy: "TRY", val: 9000  },
             { id: "cihaz",    label: "Cihaz Başına Yatırım",             ccy: "TRY", val: 6500  }
+        ];
+        var REKLAM = [
+            { id: "reklam",   label: "Reklam Geliri",                    ccy: "TRY", val: 500   }
         ];
         var DEFAULT_PROJ = [
             [2026,3],[2027,4],[2028,5],[2029,6],[2030,7],
@@ -406,11 +414,12 @@
             '</div>';
         }
 
-        document.getElementById('finGrid').innerHTML   = FIN.map(finFieldHtml).join('');
-        document.getElementById('kiraBlock').innerHTML = KIRA.map(finFieldHtml).join('');
+        document.getElementById('finGrid').innerHTML    = FIN.map(finFieldHtml).join('');
+        document.getElementById('kiraBlock').innerHTML  = KIRA.map(finFieldHtml).join('');
+        document.getElementById('reklamBlock').innerHTML = REKLAM.map(finFieldHtml).join('');
 
         function setFinCcy(id, newCcy) {
-            var all = KIRA.concat(FIN);
+            var all = KIRA.concat(FIN).concat(REKLAM);
             var f = all.find(function(x) { return x.id === id; });
             if (!f) return;
             f.ccy = newCcy;
@@ -427,11 +436,16 @@
                 el.onblur = function(e) { var n = parse(e.target.value); if (n < 0) n = 0; e.target.value = fmt(n, 2); recalcFin(); };
             });
         }
-        bindFinFields(FIN); bindFinFields(KIRA);
+        bindFinFields(FIN); bindFinFields(KIRA); bindFinFields(REKLAM);
 
         function toggleKira() {
             var on = document.getElementById('kiraVar').checked;
             document.getElementById('kiraBlock').classList.toggle('hidden', !on);
+            recalcFin();
+        }
+        function toggleReklam() {
+            var on = document.getElementById('reklamVar').checked;
+            document.getElementById('reklamBlock').classList.toggle('hidden', !on);
             recalcFin();
         }
 
@@ -453,7 +467,7 @@
                 var ky = document.getElementById('kiraY');
                 if (ky) ky.value = fmt(parse(document.getElementById('kira').value) * 12, 2);
             }
-            var all = KIRA.concat(FIN);
+            var all = KIRA.concat(FIN).concat(REKLAM);
             all.forEach(function(f) {
                 var el = document.getElementById(f.id); if (!el) return;
                 var v = parse(el.value);
@@ -609,8 +623,8 @@
                 rentCurrency:                    hasRent ? finCcy('kira') : 0,
                 postWarrantyMaintenanceCost:     finVal('bakim'),
                 postWarrantyMaintenanceCurrency: finCcy('bakim'),
-                advertisingRevenue:              finVal('reklam'),
-                advertisingRevenueCurrency:      finCcy('reklam'),
+                advertisingRevenue:              document.getElementById('reklamVar').checked ? finVal('reklam') : 0,
+                advertisingRevenueCurrency:      document.getElementById('reklamVar').checked ? finCcy('reklam') : 0,
                 stationUnitCost:                 finVal('sarj'),
                 stationUnitCostCurrency:         finCcy('sarj'),
                 providerEntryFee:                finVal('giris'),
@@ -716,6 +730,8 @@
             document.querySelectorAll('.fiz-field').forEach(function(f) { f.classList.remove('bad'); });
             document.getElementById('kiraVar').checked = false;
             document.getElementById('kiraBlock').classList.add('hidden');
+            document.getElementById('reklamVar').checked = false;
+            document.getElementById('reklamBlock').classList.add('hidden');
             document.getElementById('krediVar').checked = false;
             document.getElementById('financePanel').classList.remove('open');
             ['krediTutar','faizOran','vadeAy'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
@@ -723,7 +739,7 @@
             document.getElementById('aylikTaksit').textContent = 'TL 0';
             document.getElementById('toplamOdeme').textContent = 'TL 0';
             var defaults = { kira:'TRY', kiraY:'TRY', bakim:'TRY', reklam:'TRY', sarj:'TRY', giris:'TRY', altyapi:'TRY', cihaz:'TRY' };
-            KIRA.concat(FIN).forEach(function(f) {
+            KIRA.concat(FIN).concat(REKLAM).forEach(function(f) {
                 var el = document.getElementById(f.id); if (el) el.value = fmt(f.val, 2);
                 var defaultCcy = defaults[f.id] || 'TRY';
                 f.ccy = defaultCcy;

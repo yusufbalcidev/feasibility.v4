@@ -5,62 +5,136 @@
 
 @section Styles {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@@24,400,0,0" rel="stylesheet" />
     <style>
         :root {
-            --slate-900: #111827;
-            --slate-700: #334155;
-            --slate-500: #64748b;
-            --line: #e6eaf2;
-            --canvas: #f4f6fb;
+            --ink: #0d1424;
+            --ink-soft: #475569;
+            --muted: #8b96aa;
+            --canvas: #eef1f8;
+            --surface: #ffffff;
+            --line: #e6ebf4;
+            --line-strong: #d6deeb;
             --blue: #2563eb;
-            --blue-soft: #eef4ff;
-            --green: #059669;
-            --green-soft: #e8f7f0;
-            --radius: 16px;
+            --blue-deep: #1d4ed8;
+            --blue-soft: #eef3ff;
+            --blue-ring: rgba(37, 99, 235, .14);
+            --emerald: #0f9d6b;
+            --emerald-deep: #068a5b;
+            --emerald-soft: #e8f7f0;
+            --emerald-ring: rgba(15, 157, 107, .14);
+            --radius: 20px;
             --radius-sm: 12px;
-            --shadow-sm: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
-            --shadow-md: 0 16px 40px rgba(16,24,40,.10);
+            --shadow-sm: 0 1px 2px rgba(13,20,36,.05), 0 4px 12px rgba(13,20,36,.04);
+            --shadow-md: 0 24px 60px -20px rgba(13,20,36,.22), 0 8px 24px -12px rgba(13,20,36,.12);
         }
 
         .fz-scope {
             font-family: "Plus Jakarta Sans", -apple-system, "Segoe UI", sans-serif;
-            color: var(--slate-900);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
         }
+
+            .fz-scope * {
+                box-sizing: border-box;
+            }
 
             .fz-scope .material-symbols-outlined {
                 font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
                 line-height: 1;
             }
 
+        /* page atmosphere */
+        .fz-bg {
+            position: relative;
+            background: radial-gradient(1200px 520px at 50% -8%, rgba(37,99,235,.10), transparent 60%), radial-gradient(900px 480px at 92% 10%, rgba(15,157,107,.08), transparent 55%), linear-gradient(180deg, #f7f9fd 0%, var(--canvas) 100%);
+        }
+
+            .fz-bg::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background-image: radial-gradient(rgba(13,20,36,.045) 1px, transparent 1px);
+                background-size: 26px 26px;
+                -webkit-mask-image: radial-gradient(900px 600px at 50% 0%, #000, transparent 75%);
+                mask-image: radial-gradient(900px 600px at 50% 0%, #000, transparent 75%);
+                pointer-events: none;
+            }
+
         .wrapper {
-            max-width: 980px;
+            position: relative;
+            max-width: 1040px;
             margin: 0 auto;
-            padding: 2.5rem 1.25rem 3.5rem;
+            padding: 4rem 1.5rem 4.5rem;
+            z-index: 1;
         }
 
         /* ---------- Header ---------- */
         .page-header {
+            display: block;
             text-align: center;
-            max-width: 680px;
-            margin: 0 auto 2.5rem;
+            max-width: 660px;
+            margin: 0 auto 3rem;
         }
 
-            .page-header h1 {
-                font-weight: 800;
-                font-size: 2rem;
-                letter-spacing: -.6px;
-                margin: 0 0 .75rem;
-                color: var(--slate-900);
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .4rem .85rem .4rem .65rem;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 100px;
+            box-shadow: var(--shadow-sm);
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            margin-bottom: 1.4rem;
+        }
+
+            .eyebrow .pulse {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--emerald);
+                animation: pulse 2.4s infinite;
             }
 
-            .page-header p {
-                font-size: 1rem;
-                line-height: 1.6;
-                color: var(--slate-500);
-                margin: 0;
-                font-weight: 500;
+        @@keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(15,157,107,.35);
             }
+
+            70% {
+                box-shadow: 0 0 0 8px rgba(15,157,107,0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(15,157,107,0);
+            }
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 2.5rem;
+            line-height: 1.12;
+            letter-spacing: -.03em;
+            margin: 0 0 1rem;
+            background: linear-gradient(180deg, #0d1424 0%, #2a3445 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-header p {
+            font-size: 1.06rem;
+            line-height: 1.65;
+            color: var(--ink-soft);
+            margin: 0;
+            font-weight: 500;
+        }
 
         /* ---------- Grid ---------- */
         .card-grid {
@@ -74,22 +148,22 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            background: #fff;
+            background: var(--surface);
             border: 1px solid var(--line);
             border-radius: var(--radius);
             box-shadow: var(--shadow-sm);
-            padding: 1.75rem;
+            padding: 2rem 2rem 1.75rem;
             text-decoration: none;
             color: inherit;
             overflow: hidden;
-            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+            transition: transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s ease, border-color .28s ease;
             opacity: 0;
-            transform: translateY(12px);
-            animation: fzIn .5s ease forwards;
+            transform: translateY(16px);
+            animation: fzIn .55s cubic-bezier(.2,.7,.3,1) forwards;
         }
 
             .fiz-card:nth-child(2) {
-                animation-delay: .08s;
+                animation-delay: .1s;
             }
 
         @@keyframes fzIn {
@@ -102,7 +176,7 @@
         .fiz-card:hover {
             transform: translateY(-4px);
             box-shadow: var(--shadow-md);
-            border-color: #d4ddee;
+            border-color: var(--line-strong);
             color: inherit;
         }
 
@@ -111,33 +185,47 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 5px;
+            height: 4px;
         }
 
         .bar-blue {
-            background: var(--blue);
+            background: linear-gradient(90deg, var(--blue), #60a5fa);
         }
 
         .bar-green {
-            background: var(--green);
+            background: linear-gradient(90deg, var(--emerald), #34d399);
+        }
+
+        /* big ghost number */
+        .ghost-num {
+            position: absolute;
+            top: .6rem;
+            right: 1.1rem;
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -.04em;
+            color: rgba(13,20,36,.035);
+            pointer-events: none;
+            transition: opacity .2s ease;
         }
 
         .card-head {
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-top: .35rem;
-            margin-bottom: 1.1rem;
+            margin-bottom: 1.25rem;
         }
 
         .card-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            position: relative;
         }
 
             .card-icon .material-symbols-outlined {
@@ -145,35 +233,78 @@
             }
 
         .icon-blue {
-            background: var(--blue-soft);
-            color: var(--blue);
+            background: linear-gradient(160deg, #eff5ff, #dce8ff);
+            color: var(--blue-deep);
+            box-shadow: inset 0 0 0 1px rgba(37,99,235,.12), 0 6px 14px -6px var(--blue-ring);
         }
 
         .icon-green {
-            background: var(--green-soft);
-            color: var(--green);
+            background: linear-gradient(160deg, #ecfaf3, #d7f3e6);
+            color: var(--emerald-deep);
+            box-shadow: inset 0 0 0 1px rgba(15,157,107,.12), 0 6px 14px -6px var(--emerald-ring);
         }
 
         .card-titles h2 {
-            font-size: 1.2rem;
+            font-size: 1.28rem;
             font-weight: 700;
-            margin: 0 0 .2rem;
-            letter-spacing: -.2px;
-            color: var(--slate-900);
+            margin: 0 0 .25rem;
+            letter-spacing: -.02em;
+            color: var(--ink);
         }
 
         .card-titles span {
             font-size: .82rem;
             font-weight: 600;
-            color: var(--slate-500);
+            color: var(--muted);
         }
 
         .card-desc {
-            font-size: .92rem;
-            line-height: 1.6;
-            color: var(--slate-700);
-            margin: 0 0 1.5rem;
-            flex: 1;
+            font-size: .94rem;
+            line-height: 1.65;
+            color: var(--ink-soft);
+            margin: 0 0 1.4rem;
+        }
+
+        /* feature chips */
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin: 0 0 1.6rem;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            font-size: .78rem;
+            font-weight: 600;
+            padding: .38rem .7rem;
+            border-radius: 8px;
+            background: #f4f6fb;
+            border: 1px solid var(--line);
+            color: var(--ink-soft);
+        }
+
+            .chip .material-symbols-outlined {
+                font-size: 15px;
+            }
+
+        .chip-blue .material-symbols-outlined {
+            color: var(--blue);
+        }
+
+        .chip-green .material-symbols-outlined {
+            color: var(--emerald);
+        }
+
+        .card-foot {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 1.25rem;
+            border-top: 1px dashed var(--line-strong);
         }
 
         .card-cta {
@@ -182,29 +313,29 @@
             gap: .5rem;
             font-weight: 700;
             font-size: .92rem;
-            align-self: flex-start;
-            padding: .55rem .9rem .55rem 1.1rem;
+            padding: .6rem .95rem .6rem 1.1rem;
             border-radius: 10px;
-            transition: gap .2s ease, background .2s ease;
+            color: #fff;
+            transition: gap .2s ease, transform .2s ease, box-shadow .2s ease;
         }
 
             .card-cta .material-symbols-outlined {
-                font-size: 20px;
-                transition: transform .2s ease;
+                font-size: 19px;
+                transition: transform .25s ease;
             }
 
         .fiz-card:hover .card-cta .material-symbols-outlined {
-            transform: translateX(3px);
+            transform: translateX(4px);
         }
 
         .cta-blue {
-            background: var(--blue-soft);
-            color: var(--blue);
+            background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+            box-shadow: 0 8px 18px -8px var(--blue);
         }
 
         .cta-green {
-            background: var(--green-soft);
-            color: var(--green);
+            background: linear-gradient(135deg, var(--emerald), var(--emerald-deep));
+            box-shadow: 0 8px 18px -8px var(--emerald);
         }
 
         /* ---------- Selected state ---------- */
@@ -212,28 +343,29 @@
             position: absolute;
             top: 1.25rem;
             right: 1.25rem;
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: none;
             align-items: center;
             justify-content: center;
             color: #fff;
+            z-index: 2;
         }
 
             .check-badge .material-symbols-outlined {
-                font-size: 20px;
-                font-variation-settings: 'wght' 600;
+                font-size: 18px;
+                font-variation-settings: 'wght' 700;
             }
 
         .selected-blue {
             border-color: var(--blue);
-            box-shadow: 0 0 0 4px var(--blue-soft);
+            box-shadow: 0 0 0 4px var(--blue-ring), var(--shadow-md);
         }
 
         .selected-green {
-            border-color: var(--green);
-            box-shadow: 0 0 0 4px var(--green-soft);
+            border-color: var(--emerald);
+            box-shadow: 0 0 0 4px var(--emerald-ring), var(--shadow-md);
         }
 
         .selected-blue .check-badge {
@@ -243,27 +375,54 @@
 
         .selected-green .check-badge {
             display: inline-flex;
-            background: var(--green);
+            background: var(--emerald);
         }
 
-        @@media (max-width: 720px) {
+        .selected-blue .ghost-num,
+        .selected-green .ghost-num {
+            opacity: 0;
+        }
+
+        /* footer note */
+        .foot-note {
+            text-align: center;
+            margin-top: 2.25rem;
+            font-size: .82rem;
+            font-weight: 500;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+        }
+
+            .foot-note .material-symbols-outlined {
+                font-size: 16px;
+            }
+
+        @@media (max-width: 760px) {
             .card-grid {
                 grid-template-columns: 1fr;
             }
 
             .page-header h1 {
-                font-size: 1.6rem;
+                font-size: 2rem;
+            }
+
+            .wrapper {
+                padding: 2.5rem 1.25rem 3rem;
             }
         }
     </style>
 }
 
-<div class="fz-scope">
+<div class="fz-scope fz-bg">
     <div class="wrapper">
 
         <div class="page-header">
-            <h1>Şarj İstasyonu Fizibiliteleri</h1>
-            <p>EKA Enerji ve Teknoloji olarak şarj istasyonu yatırımlarınızın amortisman sürelerini hesaplayın ve tarife fiyatlandırmalarınızı optimize edin.</p>
+            <div class="eyebrow"><span class="pulse"></span> EKA Enerji Ve Teknoloji · Fizibilite Analizi</div>
+            <h1>Fizibilite Türünü Seçin</h1>
+            <p>Şarj istasyonu yatırımınızı iki farklı perspektiften değerlendirin. İhtiyacınıza uygun analiz modelini seçerek başlayın.</p>
         </div>
 
         <div class="card-grid">
@@ -271,6 +430,7 @@
             <!-- Tarife -->
             <a href="/TarifeFizibilite/Index" class="fiz-card" id="card-tarife" onclick="sel(event,'tarife')">
                 <div class="card-bar bar-blue"></div>
+                <span class="ghost-num">01</span>
                 <div class="card-head">
                     <div class="card-icon icon-blue">
                         <span class="material-symbols-outlined">price_check</span>
@@ -281,11 +441,18 @@
                     </div>
                 </div>
                 <p class="card-desc">
-                    İstasyonunuzun lokasyonunun elektrik maliyetlerini baz alarak, EV kullanıcılarına sunacağınız optimum şarj birim fiyatlarını belirleyin ve kâr marjınızı hesaplayın.
+                    İstasyon lokasyonumuzun elektrik, diğer maliyetlerimizi, istasyon  kullanıcılarına sunacağınız optimum şarj birim fiyatını belirleyin ve hedef kâr marjınızı hesaplayın.
                 </p>
-                <div class="card-cta cta-blue">
-                    <span>Tarife Hesapla</span>
-                    <span class="material-symbols-outlined">arrow_forward</span>
+                <div class="chips">
+                    <span class="chip chip-blue"><span class="material-symbols-outlined">bolt</span> Elektrik maliyeti</span>
+                    <span class="chip chip-blue"><span class="material-symbols-outlined">sell</span> kWh birim fiyat</span>
+                    <span class="chip chip-blue"><span class="material-symbols-outlined">trending_up</span> Kâr marjı</span>
+                </div>
+                <div class="card-foot">
+                    <div class="card-cta cta-blue">
+                        <span>Tarife Hesapla</span>
+                        <span class="material-symbols-outlined">arrow_forward</span>
+                    </div>
                 </div>
                 <div class="check-badge"><span class="material-symbols-outlined">check</span></div>
             </a>
@@ -293,6 +460,7 @@
             <!-- Amortisman -->
             <a href="/FeasibilityAmortization/Index" class="fiz-card" id="card-amort" onclick="sel(event,'amort')">
                 <div class="card-bar bar-green"></div>
+                <span class="ghost-num">02</span>
                 <div class="card-head">
                     <div class="card-icon icon-green">
                         <span class="material-symbols-outlined">ev_station</span>
@@ -303,16 +471,29 @@
                     </div>
                 </div>
                 <p class="card-desc">
-                    AC/DC donanım, altyapı, kurulum ve işletme giderlerinizi; günlük kullanım sıklığıyla karşılaştırarak yatırımınızın ne kadar sürede amorti edeceğini raporlayın.
+                    AC/DC donanım, altyapı, kurulum ve işletme giderlerinizi  karşılaştırarak yatırımınızın ne kadar sürede amorti edeceğini raporlayın.
                 </p>
-                <div class="card-cta cta-green">
-                    <span>Amortisman Hesapla</span>
-                    <span class="material-symbols-outlined">arrow_forward</span>
+                <div class="chips">
+                    <span class="chip chip-green"><span class="material-symbols-outlined">construction</span> Donanım & kurulum</span>
+                    <span class="chip chip-green"><span class="material-symbols-outlined">receipt_long</span> İşletme gideri</span>
+                    <span class="chip chip-green"><span class="material-symbols-outlined">schedule</span> Geri dönüş süresi</span>
+                </div>
+                <div class="card-foot">
+                    <div class="card-cta cta-green">
+                        <span>Amortisman Hesapla</span>
+                        <span class="material-symbols-outlined">arrow_forward</span>
+                    </div>
                 </div>
                 <div class="check-badge"><span class="material-symbols-outlined">check</span></div>
             </a>
 
         </div>
+
+        <p class="foot-note">
+            <span class="material-symbols-outlined">lock</span>
+            Tüm hesaplamalar güncel TCMB kuru ve enflasyon verileriyle yapılır.
+        </p>
+
     </div>
 </div>
 
