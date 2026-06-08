@@ -13,6 +13,11 @@ public class YearProjectionConfiguration : IEntityTypeConfiguration<YearProjecti
         builder.HasKey(y => y.Id);
 
         builder.Property(y => y.DailyChargePerSocket).HasColumnType("decimal(18,4)");
+        builder.Property(y => y.SalePriceH1).HasColumnType("decimal(18,2)");
+        builder.Property(y => y.SalePriceH2).HasColumnType("decimal(18,2)");
+        builder.Property(y => y.PurchasePriceH1).HasColumnType("decimal(18,2)");
+        builder.Property(y => y.PurchasePriceH2).HasColumnType("decimal(18,2)");
+        builder.Property(y => y.UsdRate).HasColumnType("decimal(18,2)");
 
         builder.Property(y => y.CreatedByName).HasMaxLength(150);
         builder.Property(y => y.UpdatedByName).HasMaxLength(150);

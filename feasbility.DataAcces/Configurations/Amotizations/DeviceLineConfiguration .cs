@@ -43,9 +43,6 @@ namespace feasibility.DataAccess.Configurations.Amotizations
                 .WithMany(s => s.DeviceLines)
                 .HasForeignKey(d => d.StudyId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            // Bir study içinde her istasyon türünden yalnızca bir satır olabilir
-            builder.HasIndex(d => new { d.StudyId, d.DeviceType }).IsUnique();
         }
     }
 }

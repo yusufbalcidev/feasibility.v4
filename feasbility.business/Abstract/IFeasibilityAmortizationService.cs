@@ -6,7 +6,7 @@ public interface IFeasibilityAmortizationService
 {
     Task<FeasibilityAmortizationCreateFormDto> GetCreateFormDataAsync(CancellationToken ct = default);
     Task<string> GetRatesJsonAsync(CancellationToken ct = default);
-    Task<decimal?> GetSonTufeAsync(CancellationToken ct = default);
+    Task<(decimal? tl, decimal? usd, decimal? eur)> GetSonEnflasyonlarAsync(CancellationToken ct = default);
     Task<Guid> SaveStudyAsync(FeasibilityAmortizationSaveDto dto, CancellationToken ct = default);
     Task<List<FeasibilityAmortizationListDto>> GetListAsync(CancellationToken ct = default);
     Task<FeasibilityAmortizationDetailDto?> GetDetailAsync(Guid id, CancellationToken ct = default);

@@ -15,6 +15,8 @@ public class FeasibilityAmortizationDetailDto
     public decimal InflationUsd { get; set; }
     public decimal InflationEur { get; set; }
 
+    public int ContractMonths { get; set; }
+
     public decimal StationUnitCostTl { get; set; }
     public decimal ProviderEntryFeeTl { get; set; }
     public decimal InfrastructureCostTl { get; set; }
@@ -34,6 +36,7 @@ public class FeasibilityAmortizationDetailDto
     public decimal AnnualLoanPaymentTl { get; set; }
 
     public List<DeviceLineDetailDto> DeviceLines { get; set; } = new();
+    public List<YearSummaryDto> YearSummaries { get; set; } = new();
 
     public decimal AnnualNetProfitTl { get; set; }
     public decimal AnnualNetProfitUsd { get; set; }
@@ -65,6 +68,25 @@ public class YearProjectionDetailDto
 {
     public int Year { get; set; }
     public decimal DailyChargePerSocket { get; set; }
+    public decimal SalePriceH1 { get; set; }
+    public decimal SalePriceH2 { get; set; }
+    public decimal PurchasePriceH1 { get; set; }
+    public decimal PurchasePriceH2 { get; set; }
+    public decimal UsdRate { get; set; }
     public decimal AnnualRevenueTl { get; set; }
     public decimal AnnualElectricityCostTl { get; set; }
+    public decimal AnnualCommissionTl { get; set; }
+}
+
+public class YearSummaryDto
+{
+    public int Year { get; set; }
+    public decimal TotalRevenueTl { get; set; }
+    public decimal TotalElectricityCostTl { get; set; }
+    public decimal TotalCommissionTl { get; set; }
+    public decimal FixedCostsTl { get; set; }
+    public decimal NetProfitTl { get; set; }
+    public decimal UsdRate { get; set; }
+    public decimal NetProfitUsd { get; set; }
+    public decimal CumulativeBalanceUsd { get; set; }
 }

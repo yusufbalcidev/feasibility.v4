@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using feasibility.DataAccess.Context;
 
@@ -11,9 +12,11 @@ using feasibility.DataAccess.Context;
 namespace feasibility.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260607213001_AddHalfYearPrices")]
+    partial class AddHalfYearPrices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -509,6 +512,9 @@ namespace feasibility.DataAccess.Migrations
 
                     b.HasIndex("StudyId");
 
+                    b.HasIndex("StudyId", "DeviceType")
+                        .IsUnique();
+
                     b.ToTable("DeviceLines", (string)null);
                 });
 
@@ -727,9 +733,6 @@ namespace feasibility.DataAccess.Migrations
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
-
-                    b.Property<decimal>("UsdRate")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Year")
                         .HasColumnType("int");

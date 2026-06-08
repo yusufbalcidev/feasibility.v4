@@ -247,7 +247,7 @@ select.fiz-ctl {
 
 /* ---- Checkbox (kira toggle) ---- */
 .fiz-chk {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 9px;
     cursor: pointer;

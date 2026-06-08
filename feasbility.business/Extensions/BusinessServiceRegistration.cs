@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text;
 using feasibility.Business.Abstract;
 using feasibility.Business.Concrete;
-using feasibility.Entity.Dtos.Evds;
 using Microsoft.Extensions.Caching.Memory;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -19,9 +18,8 @@ public static class BusinessServiceRegistration
     {
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
-        services.Configure<EvdsSettings>(configuration.GetSection("EvdsApi"));
         services.AddHttpClient<ITcmbService, TcmbService>();
-        services.AddHttpClient<IEvdsService, EvdsService>();
+        services.AddHttpClient<IWorldBankService, WorldBankService>();
         services.AddScoped<IFeasibilityAmortizationService, FeasibilityAmortizationManager>();
         services.AddScoped(typeof(IGenericService<>), typeof(GenericManager<>));
         services.AddScoped<IJwtService, JwtService>();

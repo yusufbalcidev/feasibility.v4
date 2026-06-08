@@ -26,28 +26,27 @@ namespace feasibility.App.Controllers
 
         public async Task<IActionResult> Index(CancellationToken ct)
         {
-            var list = await _feasibilityAmortizationService.GetListAsync(ct);
+            var list =await _feasibilityAmortizationService.GetListAsync(ct);
             return View(list);
         }
-
         public async Task<IActionResult> Create(CancellationToken ct)
         {
             var formDataTask = _feasibilityAmortizationService.GetCreateFormDataAsync(ct);
-            var tufeTask     = _feasibilityAmortizationService.GetSonTufeAsync(ct);
+            var infTask      = _feasibilityAmortizationService.GetSonEnflasyonlarAsync(ct);
 
-            await Task.WhenAll(formDataTask, tufeTask);
+            await Task.WhenAll(formDataTask, infTask);
 
             var formData = formDataTask.Result;
             ViewBag.Locations = formData.Locations
                 .Select(l => new SelectListItem { Value = l.Value, Text = l.Text })
                 .ToList();
-            ViewBag.FxJson   = formData.FxJson;
-            ViewBag.TufeJson = tufeTask.Result.HasValue
-                ? tufeTask.Result.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                : "null";
+            ViewBag.FxJson = formData.FxJson;
+            var (tl, usd, eur) = infTask.Result;
+            ViewBag.TlInfJson  = tl  is not null ? tl .Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
+            ViewBag.UsdInfJson = usd is not null ? usd.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
+            ViewBag.EurInfJson = eur is not null ? eur.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
             return View();
         }
-
         [HttpGet]
         public async Task<JsonResult> GetRates()
         {
@@ -59,7 +58,15 @@ namespace feasibility.App.Controllers
         public async Task<IActionResult> Save([FromBody] FeasibilityAmortizationSaveDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new { message = "Geçersiz veri." });
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        x => x.Key,
+                        x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+                return BadRequest(new { message = "Geçersiz veri.", errors });
+            }
 
             try
             {
@@ -79,17 +86,18 @@ namespace feasibility.App.Controllers
             if (preloadJson is null) return NotFound();
 
             var formDataTask = _feasibilityAmortizationService.GetCreateFormDataAsync(ct);
-            var tufeTask     = _feasibilityAmortizationService.GetSonTufeAsync(ct);
-            await Task.WhenAll(formDataTask, tufeTask);
+            var infTask      = _feasibilityAmortizationService.GetSonEnflasyonlarAsync(ct);
+            await Task.WhenAll(formDataTask, infTask);
 
             var formData = formDataTask.Result;
             ViewBag.Locations = formData.Locations
                 .Select(l => new SelectListItem { Value = l.Value, Text = l.Text })
                 .ToList();
-            ViewBag.FxJson        = formData.FxJson;
-            ViewBag.TufeJson      = tufeTask.Result.HasValue
-                ? tufeTask.Result.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                : "null";
+            ViewBag.FxJson = formData.FxJson;
+            var (tl, usd, eur) = infTask.Result;
+            ViewBag.TlInfJson  = tl  is not null ? tl .Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
+            ViewBag.UsdInfJson = usd is not null ? usd.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
+            ViewBag.EurInfJson = eur is not null ? eur.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
             ViewBag.StudyId       = id;
             ViewBag.PreloadJson   = preloadJson;
             return View();
@@ -130,9 +138,11 @@ namespace feasibility.App.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        public IActionResult Result()
+        public async Task<IActionResult> Result(Guid id, CancellationToken ct)
         {
-            return View();
+            var dto = await _feasibilityAmortizationService.GetDetailAsync(id, ct);
+            if (dto is null) return NotFound();
+            return View(dto);
         }
     }
 }

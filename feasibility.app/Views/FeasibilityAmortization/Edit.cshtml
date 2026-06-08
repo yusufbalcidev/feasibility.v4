@@ -163,6 +163,15 @@
                 Lokasyonda reklam geliri elde edilecek mi?
             </label>
             <div class="fiz-kira-block hidden" id="reklamBlock"></div>
+            <div style="margin-top:18px; max-width:240px;">
+                <div class="fiz-field">
+                    <label>Sözleşme Süresi</label>
+                    <div class="fiz-input-wrap">
+                        <input class="fiz-ctl has-suf" id="sozlesmeAy" type="number" min="0" step="1" placeholder="0" style="padding-left:12px;">
+                        <span class="fiz-suf">ay</span>
+                    </div>
+                </div>
+            </div>
             <div class="fiz-fin-grid" id="finGrid" style="margin-top:18px;"></div>
         </div>
     </div>
@@ -272,10 +281,10 @@
                     <thead>
                         <tr>
                             <th>Yıllar</th>
-                            <th class="text-right">Sokey Başına Günlük Şarlanma Sayısı</th>
-                            <th class="text-right">Yıllara Göre USD/TL Kuru</th>
-                            <th class="text-right">TL Enflasyon Tahmini</th>
-                            <th class="text-right">USD Enflasyonu</th>
+                            <th class="text-right">Satış Ocak (TL/kWh)</th>
+                            <th class="text-right">Satış Haziran (TL/kWh)</th>
+                            <th class="text-right">Alış Ocak (TL/kWh)</th>
+                            <th class="text-right">Alış Haziran (TL/kWh)</th>
                         </tr>
                     </thead>
                     <tbody id="projBody"></tbody>
@@ -296,7 +305,9 @@
     <script>
         var STUDY_ID = '@studyId';
         var _fx   = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.FxJson as string) ? "{\"usdBuy\":0,\"usdSell\":0,\"eurBuy\":0,\"eurSell\":0}" : ViewBag.FxJson);
-        var _tufe = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.TufeJson as string) ? "null" : ViewBag.TufeJson);
+        var _tlInf  = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.TlInfJson  as string) ? "null" : ViewBag.TlInfJson);
+        var _usdInf = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.UsdInfJson as string) ? "null" : ViewBag.UsdInfJson);
+        var _eurInf = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.EurInfJson as string) ? "null" : ViewBag.EurInfJson);
         var _preload = @Html.Raw(ViewBag.PreloadJson as string ?? "null");
 
         var FX = [
@@ -304,9 +315,9 @@
             { code: "EUR/TRY", unit: 1, name: "EURO",       buy: _fx.eurBuy, sell: _fx.eurSell }
         ];
         var INF = [
-            { k: "TL",  v: (_tufe !== null ? _tufe : 23) },
-            { k: "EUR", v: 1 },
-            { k: "USD", v: 2.23 }
+            { k: "TL",  v: (_tlInf  !== null ? _tlInf  : 23)  },
+            { k: "EUR", v: (_eurInf !== null ? _eurInf : 2.3) },
+            { k: "USD", v: (_usdInf !== null ? _usdInf : 2.9) }
         ];
         var USD         = function() { return FX[0].sell; };
         var EUR         = function() { return FX[1].sell; };
@@ -469,14 +480,17 @@
         }
 
         var stations = [];
-        var newProj = function() { return DEFAULT_PROJ.map(function(p) { return { year: p[0], daily: p[1] }; }); };
+        var newProj = function(satis, alis, daily) {
+            satis = satis || 0; alis = alis || 0; daily = daily || 8;
+            return DEFAULT_PROJ.map(function(p) { return { year: p[0], daily: daily, sH1: satis, sH2: satis, pH1: alis, pH2: alis, usd: USD() }; });
+        };
         function usedTypes(except) { return stations.filter(function(s, i) { return i !== except; }).map(function(s) { return s.type; }); }
         function nextType() { return ST_TYPES.find(function(t) { return !usedTypes(-1).includes(t); }); }
 
         function addStation() {
             var t = nextType();
             if (!t) { showToast('Tüm istasyon türleri eklendi.', true); return; }
-            stations.push({ type: t, adet: 1, soket: 2, daily: 8, avgkwh: 35, pTL: 14.5, alisKwh: 2.85, ccy: 'TRY', bedel: 15000, contract: 'Kâr', oran: 25, proj: newProj(), touched: false });
+            stations.push({ type: t, adet: 1, soket: 2, daily: 8, avgkwh: 35, pTL: 14.5, alisKwh: 2.85, ccy: 'TRY', bedel: 15000, contract: 'Kâr', oran: 25, proj: newProj(14.5, 2.85, 8), touched: false });
             renderStations();
         }
         function delStation(i) { stations.splice(i, 1); renderStations(); }
@@ -516,8 +530,8 @@
                             '<input class="fiz-cell-in" value="' + fmt(s.alisKwh,2) + '" onchange="setNum(' + i + ',\'alisKwh\',this,0,0)">' +
                             '<div class="fiz-price-sub"><span>$ ' + fmt(p.alisUsd,4) + '</span><span>€ ' + fmt(p.alisEur,4) + '</span></div>' +
                         '</td>' +
-                        '<td><select class="fiz-cell-sel fiz-cell-sel-ccy" onchange="setSt(' + i + ',\'ccy\',this.value)">' + opt(CCY,s.ccy) + '</select></td>' +
                         '<td><input class="fiz-cell-in" value="' + fmt(s.bedel,0) + '" onchange="setNum(' + i + ',\'bedel\',this,0,0)"></td>' +
+                        '<td><select class="fiz-cell-sel fiz-cell-sel-ccy" onchange="setSt(' + i + ',\'ccy\',this.value)">' + opt(CCY,s.ccy) + '</select></td>' +
                         '<td><select class="fiz-cell-sel" onchange="setSt(' + i + ',\'contract\',this.value)">' + opt(CONTRACT,s.contract) + '</select></td>' +
                         '<td><input class="fiz-cell-in" value="' + s.oran + '" onchange="setNum(' + i + ',\'oran\',this,0,100)"></td>' +
                         '<td class="text-center">' +
@@ -529,7 +543,7 @@
                     '<th>İstasyon Türü</th><th class="text-right">İstasyon Adeti</th><th class="text-right">Soket Adeti</th>' +
                     '<th class="text-right">Günlük Soket Başı Şarjlanma</th><th class="text-right">1 kerede yapılacak Ort Şarjlanma (kwh)</th>' +
                     '<th class="text-right">Satış TL/kWh</th><th class="text-right">Alış TL/kWh</th>' +
-                    '<th>Para Birimi</th><th class="text-right">Bedel / Adet</th><th>Sözleşme Türü</th><th class="text-right">Oran %</th><th class="text-center">İşlemler</th>' +
+                    '<th class="text-right">Bedel / Adet</th><th>Para Birimi</th><th>Sözleşme Türü</th><th class="text-right">Oran %</th><th class="text-center">İşlemler</th>' +
                     '</tr></thead><tbody>' + rows + '</tbody></table>';
             }
             document.getElementById('addSt').disabled = stations.length >= ST_TYPES.length;
@@ -541,9 +555,17 @@
             if (n < min) n = min;
             if (max > 0 && n > max) n = max;
             if ((k === 'adet' || k === 'soket') && n < 1) n = 1;
-            stations[i][k] = n; renderStations();
+            stations[i][k] = n;
+            if (k === 'daily') stations[i].proj.forEach(function(p) { p.daily = n; });
+            if (k === 'alisKwh' && !stations[i].touched) stations[i].proj.forEach(function(p) { p.pH1 = n; p.pH2 = n; });
+            renderStations();
         }
-        function setPrice(i, el) { var n = parse(el.value); if (n < 0) n = 0; stations[i].pTL = n; renderStations(); }
+        function setPrice(i, el) {
+            var n = parse(el.value); if (n < 0) n = 0;
+            stations[i].pTL = n;
+            if (!stations[i].touched) stations[i].proj.forEach(function(p) { p.sH1 = n; p.sH2 = n; });
+            renderStations();
+        }
 
         var tlRate  = INF.find(function(x) { return x.k === 'TL'; }).v  / 100;
         var usdRate = INF.find(function(x) { return x.k === 'USD'; }).v / 100;
@@ -556,7 +578,7 @@
         var modalIdx = -1, modalDraft = [];
         function openModal(i) {
             modalIdx   = i;
-            modalDraft = stations[i].proj.map(function(p) { return { year: p.year, daily: p.daily }; });
+            modalDraft = stations[i].proj.map(function(p) { return { year: p.year, daily: p.daily, sH1: p.sH1||0, sH2: p.sH2||0, pH1: p.pH1||0, pH2: p.pH2||0, usd: p.usd||USD() }; });
             document.getElementById('modalSub').textContent = 'İstasyon Türü: ' + stations[i].type;
             renderProj();
             document.getElementById('fiz-overlay').classList.add('show');
@@ -564,26 +586,23 @@
         function closeModal() { document.getElementById('fiz-overlay').classList.remove('show'); modalIdx = -1; }
         function saveModal() {
             if (modalIdx < 0) return;
-            stations[modalIdx].proj    = modalDraft.map(function(p) { return { year: p.year, daily: p.daily }; });
+            stations[modalIdx].proj    = modalDraft.map(function(p) { return { year: p.year, daily: p.daily, sH1: p.sH1||0, sH2: p.sH2||0, pH1: p.pH1||0, pH2: p.pH2||0, usd: p.usd||USD() }; });
             stations[modalIdx].touched = true;
             closeModal(); renderStations(); showToast('Yıllık değerler kaydedildi.');
         }
         function renderProj() {
-            var fxCum = USD(), tlIdx = 100, usdIdx = 100;
             document.getElementById('projBody').innerHTML = modalDraft.map(function(p, i) {
-                if (i > 0) { fxCum = fxCum * (1 + tlRate) / (1 + usdRate); tlIdx *= (1 + tlRate); usdIdx *= (1 + usdRate); }
                 return '<tr>' +
                     '<td class="mono" style="font-weight:600">' + p.year + '</td>' +
-                    '<td><input class="fiz-cell-in" value="' + fmt(p.daily,2) + '" onchange="setProj(' + i + ',this)"></td>' +
-                    '<td class="text-right mono calc">' + fmt(fxCum,3) + '</td>' +
-                    '<td class="text-right mono calc">' + fmt(tlIdx,2) + '</td>' +
-                    '<td class="text-right mono calc">' + fmt(usdIdx,2) + '</td>' +
+                    '<td><input class="fiz-cell-in" value="' + fmt(p.sH1,2) + '" onchange="setProjField(' + i + ',\'sH1\',this)"></td>' +
+                    '<td><input class="fiz-cell-in" value="' + fmt(p.sH2,2) + '" onchange="setProjField(' + i + ',\'sH2\',this)"></td>' +
+                    '<td><input class="fiz-cell-in" value="' + fmt(p.pH1,2) + '" onchange="setProjField(' + i + ',\'pH1\',this)"></td>' +
+                    '<td><input class="fiz-cell-in" value="' + fmt(p.pH2,2) + '" onchange="setProjField(' + i + ',\'pH2\',this)"></td>' +
                     '</tr>';
             }).join('');
-            var avg = modalDraft.reduce(function(a, p) { return a + p.daily; }, 0) / modalDraft.length;
-            document.getElementById('projFoot').innerHTML = '<tr class="fiz-foot-row"><td>Ort. Şarjlanma</td><td class="text-right">' + fmt(avg,2) + '</td><td colspan="3" style="font-weight:500">10 yıllık bileşik projeksiyon</td></tr>';
+            document.getElementById('projFoot').innerHTML = '';
         }
-        function setProj(i, el) { var n = parse(el.value); if (n < 0) n = 0; modalDraft[i].daily = n; renderProj(); }
+        function setProjField(i, k, el) { var n = parse(el.value); if (n < 0) n = 0; modalDraft[i][k] = n; renderProj(); }
 
         document.getElementById('fiz-overlay').addEventListener('click', function(e) {
             if (e.target.id === 'fiz-overlay') closeModal();
@@ -623,6 +642,9 @@
             document.getElementById('finGrid').innerHTML = FIN.map(finFieldHtml).join('');
             bindFinFields(FIN);
 
+            var sozlesmeEl = document.getElementById('sozlesmeAy');
+            if (sozlesmeEl && p.contractMonths) sozlesmeEl.value = p.contractMonths;
+
             // Reklam
             if (p.advertisingRevenue > 0) {
                 document.getElementById('reklamVar').checked = true;
@@ -660,7 +682,7 @@
                     daily: s.daily, avgkwh: s.avgkwh, pTL: s.pTL,
                     alisKwh: s.alisKwh, ccy: s.ccy, bedel: s.bedel,
                     contract: s.contract, oran: s.oran,
-                    proj: (s.proj || []).map(function(pr) { return { year: pr.year, daily: pr.daily }; }),
+                    proj: (s.proj || []).map(function(pr) { return { year: pr.year, daily: pr.daily, sH1: pr.sH1||0, sH2: pr.sH2||0, pH1: pr.pH1||0, pH2: pr.pH2||0, usd: pr.usd||USD() }; }),
                     touched: true
                 };
             });
@@ -691,6 +713,7 @@
                 hasRent:                         hasRent,
                 monthlyRent:                     hasRent ? finVal('kira') : 0,
                 rentCurrency:                    hasRent ? finCcy('kira') : 0,
+                contractMonths:                  parseInt(document.getElementById('sozlesmeAy').value) || 0,
                 postWarrantyMaintenanceCost:     finVal('bakim'),
                 postWarrantyMaintenanceCurrency: finCcy('bakim'),
                 advertisingRevenue:              document.getElementById('reklamVar').checked ? finVal('reklam') : 0,
@@ -721,7 +744,7 @@
                         agreementGenre:          contractMap[s.contract] !== undefined ? contractMap[s.contract] : 0,
                         agreementRate:           s.oran / 100,
                         yearProjections: s.proj.map(function(pr) {
-                            return { year: pr.year, dailyChargePerSocket: +pr.daily };
+                            return { year: pr.year, dailyChargePerSocket: +pr.daily, salePriceH1: +pr.sH1||0, salePriceH2: +pr.sH2||0, purchasePriceH1: +pr.pH1||0, purchasePriceH2: +pr.pH2||0, usdRate: +pr.usd||USD() };
                         })
                     };
                 })

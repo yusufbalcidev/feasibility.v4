@@ -92,8 +92,8 @@
                                 <td>@row.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
                                 <td>
                                     <div class="row-actions" style="justify-content:flex-end;">
-                                        <a asp-action="Details" asp-route-id="@row.Id" class="row-action-btn">
-                                            <span class="material-symbols-outlined">visibility</span> Görüntüle
+                                        <a asp-action="Result" asp-route-id="@row.Id" class="row-action-btn">
+                                            <span class="material-symbols-outlined">bar_chart</span> Sonuç
                                         </a>
                                         @if (row.IsDeleted)
                                         {

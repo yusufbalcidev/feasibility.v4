@@ -16,7 +16,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
     private readonly IGenericService<Study>      _studyService;
     private readonly IGenericService<DeviceLine> _deviceLineService;
     private readonly ITcmbService                _tcmb;
-    private readonly IEvdsService                _evds;
+    private readonly IWorldBankService           _worldBank;
     private readonly IMapper                     _mapper;
 
     public FeasibilityAmortizationManager(
@@ -24,14 +24,14 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         IGenericService<Study>      studyService,
         IGenericService<DeviceLine> deviceLineService,
         ITcmbService tcmb,
-        IEvdsService evds,
+        IWorldBankService worldBank,
         IMapper mapper)
     {
         _locationService   = locationService;
         _studyService      = studyService;
         _deviceLineService = deviceLineService;
-        _tcmb              = tcmb;
-        _evds              = evds;
+        _tcmb      = tcmb;
+        _worldBank = worldBank;
         _mapper            = mapper;
     }
 
@@ -75,103 +75,30 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         }
     }
 
-    public async Task<decimal?> GetSonTufeAsync(CancellationToken ct = default)
+    public async Task<(decimal? tl, decimal? usd, decimal? eur)> GetSonEnflasyonlarAsync(CancellationToken ct = default)
     {
-        try
-        {
-            var baslangic = DateTime.Now.AddMonths(-2).ToString("01-MM-yyyy");
-            var veri = await _evds.GetInflationAsync(
-                seriKodu:  "TP.FG.J0",
-                baslangic: baslangic,
-                frekans:   5,
-                formul:    "4",
-                ct:        ct);
-
-            return veri.Where(d => d.Deger.HasValue)
-                       .OrderByDescending(d => d.Tarih)
-                       .FirstOrDefault()?.Deger;
-        }
-        catch
-        {
-            return null;
-        }
+        var tlTask  = _worldBank.GetLatestInflationAsync("TR",  ct);
+        var usdTask = _worldBank.GetLatestInflationAsync("US",  ct);
+        var eurTask = _worldBank.GetLatestInflationAsync("EMU", ct);
+        await Task.WhenAll(tlTask, usdTask, eurTask);
+        return (tlTask.Result, usdTask.Result, eurTask.Result);
     }
 
     public async Task<Guid> SaveStudyAsync(FeasibilityAmortizationSaveDto dto, CancellationToken ct = default)
     {
-        var study = new Study
-        {
-            LocationId                      = dto.LocationId,
-            FeasibilityName                 = dto.FeasibilityName,
-            Kind                            = dto.Kind,
-            UsdRate                         = dto.UsdRate,
-            EurRate                         = dto.EurRate,
-            InflationTl                     = dto.InflationTl,
-            InflationUsd                    = dto.InflationUsd,
-            InflationEur                    = dto.InflationEur,
-            HasRent                         = dto.HasRent,
-            MonthlyRent                     = dto.MonthlyRent,
-            RentCurrency                    = dto.RentCurrency,
-            MonthlyRentTl                   = ToTl(dto.MonthlyRent,                dto.RentCurrency,                    dto.UsdRate, dto.EurRate),
-            PostWarrantyMaintenanceCost     = dto.PostWarrantyMaintenanceCost,
-            PostWarrantyMaintenanceCurrency = dto.PostWarrantyMaintenanceCurrency,
-            PostWarrantyMaintenanceCostTl   = ToTl(dto.PostWarrantyMaintenanceCost, dto.PostWarrantyMaintenanceCurrency, dto.UsdRate, dto.EurRate),
-            AdvertisingRevenue              = dto.AdvertisingRevenue,
-            AdvertisingRevenueCurrency      = dto.AdvertisingRevenueCurrency,
-            AdvertisingRevenueTl            = ToTl(dto.AdvertisingRevenue,          dto.AdvertisingRevenueCurrency,      dto.UsdRate, dto.EurRate),
-            StationUnitCost                 = dto.StationUnitCost,
-            StationUnitCostCurrency         = dto.StationUnitCostCurrency,
-            StationUnitCostTl               = ToTl(dto.StationUnitCost,             dto.StationUnitCostCurrency,         dto.UsdRate, dto.EurRate),
-            ProviderEntryFee                = dto.ProviderEntryFee,
-            ProviderEntryFeeCurrency        = dto.ProviderEntryFeeCurrency,
-            ProviderEntryFeeTl              = ToTl(dto.ProviderEntryFee,            dto.ProviderEntryFeeCurrency,        dto.UsdRate, dto.EurRate),
-            InfrastructureCost              = dto.InfrastructureCost,
-            InfrastructureCostCurrency      = dto.InfrastructureCostCurrency,
-            InfrastructureCostTl            = ToTl(dto.InfrastructureCost,          dto.InfrastructureCostCurrency,      dto.UsdRate, dto.EurRate),
-            DeviceUnitCost                  = dto.DeviceUnitCost,
-            DeviceUnitCostCurrency          = dto.DeviceUnitCostCurrency,
-            DeviceUnitCostTl                = ToTl(dto.DeviceUnitCost,              dto.DeviceUnitCostCurrency,          dto.UsdRate, dto.EurRate),
-            HasLoan                         = dto.HasLoan,
-            LoanAmount                      = dto.LoanAmount,
-            LoanAnnualInterestRate          = dto.LoanAnnualInterestRate,
-            LoanTermMonths                  = dto.LoanTermMonths,
-        };
+        var study = _mapper.Map<Study>(dto);
+        ApplyTlShadows(study, dto);
 
         foreach (var lineDto in dto.DeviceLines)
         {
-            var line = new DeviceLine
-            {
-                DeviceType               = lineDto.DeviceType,
-                DeviceCount              = lineDto.DeviceCount,
-                SocketCount              = lineDto.SocketCount,
-                DailyChargesPerSocket    = lineDto.DailyChargesPerSocket,
-                AvgKwh                   = lineDto.AvgKwh,
-                SalePriceTl              = lineDto.SalePriceTl,
-                PurchasePriceTl          = lineDto.PurchasePriceTl,
-                UnitLocationCost         = lineDto.UnitLocationCost,
-                UnitLocationCostCurrency = lineDto.UnitLocationCostCurrency,
-                UnitLocationCostTl       = ToTl(lineDto.UnitLocationCost, lineDto.UnitLocationCostCurrency, dto.UsdRate, dto.EurRate),
-                AgreementGenre           = lineDto.AgreementGenre,
-                AgreementRate            = lineDto.AgreementRate,
-            };
-
+            var line = _mapper.Map<DeviceLine>(lineDto);
+            line.UnitLocationCostTl = ToTl(lineDto.UnitLocationCost, lineDto.UnitLocationCostCurrency, dto.UsdRate, dto.EurRate);
             foreach (var projDto in lineDto.YearProjections)
-            {
-                line.YearProjections.Add(new YearProjection
-                {
-                    Year                 = projDto.Year,
-                    DailyChargePerSocket = projDto.DailyChargePerSocket,
-                });
-            }
-
+                line.YearProjections.Add(_mapper.Map<YearProjection>(projDto));
             study.DeviceLines.Add(line);
         }
 
-        // Study + DeviceLines + YearProjections tek bir nesne ağacı olarak,
-        // tek SaveChanges ile insert edilir. EF, FK'leri (StudyId/DeviceLineId)
-        // otomatik doldurur; ikinci bir Update gerekmez.
         await _studyService.AddAsync(study, ct);
-
         return study.Id;
     }
 
@@ -244,9 +171,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         {
             var r = s.LoanAnnualInterestRate / 100m / 12m;
             if (r == 0)
-            {
                 annualLoanPayment = s.LoanAmount / s.LoanTermMonths * 12m;
-            }
             else
             {
                 var f = (decimal)Math.Pow((double)(1 + r), s.LoanTermMonths);
@@ -255,23 +180,36 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             }
         }
 
-        var linesDtos = new List<DeviceLineDetailDto>();
-        decimal totalRevTl  = 0;
-        decimal totalElecTl = 0;
-        decimal totalCommTl = 0;
+        // H1 = Ocak-Mayıs (151 gün), H2 = Haziran-Aralık (214 gün)
+        const decimal h1Days = 151m;
+        const decimal h2Days = 214m;
 
-        foreach (var d in s.DeviceLines.OrderBy(x => x.DeviceType))
+        var activeLines = s.DeviceLines.Where(d => !d.IsDeleted).OrderBy(d => d.DeviceType).ToList();
+        var linesDtos   = new List<DeviceLineDetailDto>();
+        decimal totalRevTl = 0, totalElecTl = 0, totalCommTl = 0;
+
+        foreach (var d in activeLines)
         {
             var lineInvestment = d.UnitLocationCostTl + s.DeviceUnitCostTl * d.DeviceCount;
+            var y1 = d.YearProjections.Where(y => !y.IsDeleted).OrderBy(y => y.Year).FirstOrDefault();
 
-            var year1Daily    = d.YearProjections.OrderBy(y => y.Year).FirstOrDefault()?.DailyChargePerSocket ?? d.DailyChargesPerSocket;
-            var annualCharges = d.SocketCount * year1Daily * 365m;
-            var annualEnergy  = annualCharges * d.AvgKwh;
-            var annualRev     = annualEnergy * d.SalePriceTl;
-            var annualElec    = annualEnergy * d.PurchasePriceTl;
-            var grossMargin   = annualRev - annualElec;
+            decimal annualRev, annualElec;
+            if (y1 != null && (y1.SalePriceH1 > 0 || y1.SalePriceH2 > 0))
+            {
+                var eH1 = d.SocketCount * y1.DailyChargePerSocket * h1Days * d.AvgKwh;
+                var eH2 = d.SocketCount * y1.DailyChargePerSocket * h2Days * d.AvgKwh;
+                annualRev  = eH1 * y1.SalePriceH1  + eH2 * y1.SalePriceH2;
+                annualElec = eH1 * y1.PurchasePriceH1 + eH2 * y1.PurchasePriceH2;
+            }
+            else
+            {
+                var annual = d.SocketCount * d.DailyChargesPerSocket * 365m * d.AvgKwh;
+                annualRev  = annual * d.SalePriceTl;
+                annualElec = annual * d.PurchasePriceTl;
+            }
 
-            var commission = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
+            var grossMargin = annualRev - annualElec;
+            var commission  = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
                 ? d.AgreementRate * annualRev
                 : d.AgreementRate * grossMargin;
 
@@ -279,18 +217,33 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             totalElecTl += annualElec;
             totalCommTl += commission;
 
-            var yearProjs = d.YearProjections.OrderBy(y => y.Year).Select(y =>
-            {
-                var yCharges = d.SocketCount * y.DailyChargePerSocket * 365m;
-                var yEnergy  = yCharges * d.AvgKwh;
-                return new YearProjectionDetailDto
+            var yearProjs = d.YearProjections
+                .Where(y => !y.IsDeleted)
+                .OrderBy(y => y.Year)
+                .Select(y =>
                 {
-                    Year                    = y.Year,
-                    DailyChargePerSocket    = y.DailyChargePerSocket,
-                    AnnualRevenueTl         = yEnergy * d.SalePriceTl,
-                    AnnualElectricityCostTl = yEnergy * d.PurchasePriceTl,
-                };
-            }).ToList();
+                    var eH1y = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh;
+                    var eH2y = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh;
+                    var revTl  = eH1y * y.SalePriceH1  + eH2y * y.SalePriceH2;
+                    var elecTl = eH1y * y.PurchasePriceH1 + eH2y * y.PurchasePriceH2;
+                    var gm     = revTl - elecTl;
+                    var comm   = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
+                        ? d.AgreementRate * revTl
+                        : d.AgreementRate * gm;
+                    return new YearProjectionDetailDto
+                    {
+                        Year                    = y.Year,
+                        DailyChargePerSocket    = y.DailyChargePerSocket,
+                        SalePriceH1             = y.SalePriceH1,
+                        SalePriceH2             = y.SalePriceH2,
+                        PurchasePriceH1         = y.PurchasePriceH1,
+                        PurchasePriceH2         = y.PurchasePriceH2,
+                        UsdRate                 = y.UsdRate,
+                        AnnualRevenueTl         = revTl,
+                        AnnualElectricityCostTl = elecTl,
+                        AnnualCommissionTl      = comm,
+                    };
+                }).ToList();
 
             linesDtos.Add(new DeviceLineDetailDto
             {
@@ -313,44 +266,105 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             });
         }
 
-        var annualNetTl  = totalRevTl - totalElecTl - totalCommTl - annualRent - annualMaintenance + annualAdvertising - annualLoanPayment;
-        var annualNetUsd = s.UsdRate > 0 ? annualNetTl / s.UsdRate : 0m;
-        var payback      = annualNetUsd > 0 ? Math.Round(totalUsd / annualNetUsd, 1) : 0m;
-        var roi          = totalUsd > 0 ? Math.Round(annualNetUsd / totalUsd * 100, 1) : 0m;
+        var annualFixedCosts = annualRent + annualMaintenance - annualAdvertising + annualLoanPayment;
+        var annualNetTl      = totalRevTl - totalElecTl - totalCommTl - annualFixedCosts;
+        var annualNetUsd     = s.UsdRate > 0 ? annualNetTl / s.UsdRate : 0m;
+        var payback          = annualNetUsd > 0 ? Math.Round(totalUsd / annualNetUsd, 1) : 0m;
+        var roi              = totalUsd > 0 ? Math.Round(annualNetUsd / totalUsd * 100, 1) : 0m;
+
+        // Yıllık özet tablosu
+        var allYears = activeLines
+            .SelectMany(d => d.YearProjections.Where(y => !y.IsDeleted).Select(y => y.Year))
+            .Distinct().OrderBy(y => y).ToList();
+
+        int firstYear    = allYears.Count > 0 ? allYears[0] : 0;
+        int loanEndYear  = s.HasLoan && s.LoanTermMonths > 0
+            ? firstYear + (int)Math.Ceiling(s.LoanTermMonths / 12.0) - 1
+            : 0;
+
+        var yearSummaries  = new List<YearSummaryDto>();
+        decimal cumUsd     = -Math.Round(totalUsd, 0);
+
+        foreach (var year in allYears)
+        {
+            decimal yRevTl = 0, yElecTl = 0, yCommTl = 0;
+            decimal yUsdRate = s.UsdRate;
+
+            foreach (var d in activeLines)
+            {
+                var y = d.YearProjections.FirstOrDefault(p => p.Year == year && !p.IsDeleted);
+                if (y == null) continue;
+                if (y.UsdRate > 0) yUsdRate = y.UsdRate;
+
+                var eH1 = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh;
+                var eH2 = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh;
+                var rev  = eH1 * y.SalePriceH1  + eH2 * y.SalePriceH2;
+                var elec = eH1 * y.PurchasePriceH1 + eH2 * y.PurchasePriceH2;
+                var gm   = rev - elec;
+                var comm = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
+                    ? d.AgreementRate * rev
+                    : d.AgreementRate * gm;
+
+                yRevTl  += rev;
+                yElecTl += elec;
+                yCommTl += comm;
+            }
+
+            var yLoanPmt   = s.HasLoan && annualLoanPayment > 0 && year <= loanEndYear ? annualLoanPayment : 0m;
+            var yFixed     = annualRent + annualMaintenance - annualAdvertising + yLoanPmt;
+            var yNetTl     = yRevTl - yElecTl - yCommTl - yFixed;
+            var yNetUsd    = yUsdRate > 0 ? Math.Round(yNetTl / yUsdRate, 0) : 0m;
+            cumUsd        += yNetUsd;
+
+            yearSummaries.Add(new YearSummaryDto
+            {
+                Year                    = year,
+                TotalRevenueTl          = Math.Round(yRevTl,  0),
+                TotalElectricityCostTl  = Math.Round(yElecTl, 0),
+                TotalCommissionTl       = Math.Round(yCommTl, 0),
+                FixedCostsTl            = Math.Round(yFixed,  0),
+                NetProfitTl             = Math.Round(yNetTl,  0),
+                UsdRate                 = yUsdRate,
+                NetProfitUsd            = yNetUsd,
+                CumulativeBalanceUsd    = cumUsd,
+            });
+        }
 
         return new FeasibilityAmortizationDetailDto
         {
-            Id                       = s.Id,
-            FeasibilityName          = s.FeasibilityName,
-            LocationName             = s.Location != null ? $"{s.Location.Name} — {s.Location.City} / {s.Location.District}" : string.Empty,
-            CreatedAt                = s.CreatedAt,
-            CreatedByName            = s.CreatedByName,
-            IsDeleted                = s.IsDeleted,
-            UsdRate                  = s.UsdRate,
-            EurRate                  = s.EurRate,
-            InflationTl              = s.InflationTl,
-            InflationUsd             = s.InflationUsd,
-            InflationEur             = s.InflationEur,
-            StationUnitCostTl        = s.StationUnitCostTl,
-            ProviderEntryFeeTl       = s.ProviderEntryFeeTl,
-            InfrastructureCostTl     = s.InfrastructureCostTl,
-            DeviceTotalTl            = deviceTl,
-            TotalInvestmentTl        = totalTl,
-            TotalInvestmentUsd       = Math.Round(totalUsd, 0),
-            HasRent                  = s.HasRent,
-            AnnualRentTl             = annualRent,
-            AnnualMaintenanceTl      = annualMaintenance,
+            Id                         = s.Id,
+            FeasibilityName            = s.FeasibilityName,
+            LocationName               = s.Location != null ? $"{s.Location.Name} — {s.Location.City} / {s.Location.District}" : string.Empty,
+            CreatedAt                  = s.CreatedAt,
+            CreatedByName              = s.CreatedByName,
+            IsDeleted                  = s.IsDeleted,
+            UsdRate                    = s.UsdRate,
+            EurRate                    = s.EurRate,
+            InflationTl                = s.InflationTl,
+            InflationUsd               = s.InflationUsd,
+            InflationEur               = s.InflationEur,
+            ContractMonths             = s.ContractMonths,
+            StationUnitCostTl          = s.StationUnitCostTl,
+            ProviderEntryFeeTl         = s.ProviderEntryFeeTl,
+            InfrastructureCostTl       = s.InfrastructureCostTl,
+            DeviceTotalTl              = deviceTl,
+            TotalInvestmentTl          = totalTl,
+            TotalInvestmentUsd         = Math.Round(totalUsd, 0),
+            HasRent                    = s.HasRent,
+            AnnualRentTl               = annualRent,
+            AnnualMaintenanceTl        = annualMaintenance,
             AnnualAdvertisingRevenueTl = annualAdvertising,
-            HasLoan                  = s.HasLoan,
-            LoanAmount               = s.LoanAmount,
-            LoanAnnualInterestRate   = s.LoanAnnualInterestRate,
-            LoanTermMonths           = s.LoanTermMonths,
-            AnnualLoanPaymentTl      = annualLoanPayment,
-            DeviceLines              = linesDtos,
-            AnnualNetProfitTl        = annualNetTl,
-            AnnualNetProfitUsd       = Math.Round(annualNetUsd, 0),
-            PaybackYears             = payback,
-            RoiPercent               = roi,
+            HasLoan                    = s.HasLoan,
+            LoanAmount                 = s.LoanAmount,
+            LoanAnnualInterestRate     = s.LoanAnnualInterestRate,
+            LoanTermMonths             = s.LoanTermMonths,
+            AnnualLoanPaymentTl        = annualLoanPayment,
+            DeviceLines                = linesDtos,
+            YearSummaries              = yearSummaries,
+            AnnualNetProfitTl          = Math.Round(annualNetTl,  0),
+            AnnualNetProfitUsd         = Math.Round(annualNetUsd, 0),
+            PaybackYears               = payback,
+            RoiPercent                 = roi,
         };
     }
 
@@ -391,7 +405,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 proj     = d.YearProjections
                             .Where(y => !y.IsDeleted)
                             .OrderBy(y => y.Year)
-                            .Select(y => new { year = y.Year, daily = y.DailyChargePerSocket })
+                            .Select(y => new { year = y.Year, daily = y.DailyChargePerSocket, sH1 = y.SalePriceH1, sH2 = y.SalePriceH2, pH1 = y.PurchasePriceH1, pH2 = y.PurchasePriceH2, usd = y.UsdRate })
                             .ToList(),
                 touched  = true,
             }).ToList();
@@ -408,6 +422,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             hasRent                  = s.HasRent,
             monthlyRent              = s.MonthlyRent,
             rentCurrency             = (int)s.RentCurrency,
+            contractMonths           = s.ContractMonths,
             postWarrantyCost         = s.PostWarrantyMaintenanceCost,
             postWarrantyCurrency     = (int)s.PostWarrantyMaintenanceCurrency,
             advertisingRevenue       = s.AdvertisingRevenue,
@@ -447,64 +462,30 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             line.IsDeleted = true;
         }
 
-        study.LocationId                      = dto.LocationId;
-        study.FeasibilityName                 = dto.FeasibilityName;
-        study.UsdRate                         = dto.UsdRate;
-        study.EurRate                         = dto.EurRate;
-        study.InflationTl                     = dto.InflationTl;
-        study.InflationUsd                    = dto.InflationUsd;
-        study.InflationEur                    = dto.InflationEur;
-        study.HasRent                         = dto.HasRent;
-        study.MonthlyRent                     = dto.MonthlyRent;
-        study.RentCurrency                    = dto.RentCurrency;
-        study.MonthlyRentTl                   = ToTl(dto.MonthlyRent,                dto.RentCurrency,                    dto.UsdRate, dto.EurRate);
-        study.PostWarrantyMaintenanceCost     = dto.PostWarrantyMaintenanceCost;
-        study.PostWarrantyMaintenanceCurrency = dto.PostWarrantyMaintenanceCurrency;
-        study.PostWarrantyMaintenanceCostTl   = ToTl(dto.PostWarrantyMaintenanceCost, dto.PostWarrantyMaintenanceCurrency, dto.UsdRate, dto.EurRate);
-        study.AdvertisingRevenue              = dto.AdvertisingRevenue;
-        study.AdvertisingRevenueCurrency      = dto.AdvertisingRevenueCurrency;
-        study.AdvertisingRevenueTl            = ToTl(dto.AdvertisingRevenue,          dto.AdvertisingRevenueCurrency,      dto.UsdRate, dto.EurRate);
-        study.StationUnitCost                 = dto.StationUnitCost;
-        study.StationUnitCostCurrency         = dto.StationUnitCostCurrency;
-        study.StationUnitCostTl               = ToTl(dto.StationUnitCost,             dto.StationUnitCostCurrency,         dto.UsdRate, dto.EurRate);
-        study.ProviderEntryFee                = dto.ProviderEntryFee;
-        study.ProviderEntryFeeCurrency        = dto.ProviderEntryFeeCurrency;
-        study.ProviderEntryFeeTl              = ToTl(dto.ProviderEntryFee,            dto.ProviderEntryFeeCurrency,        dto.UsdRate, dto.EurRate);
-        study.InfrastructureCost              = dto.InfrastructureCost;
-        study.InfrastructureCostCurrency      = dto.InfrastructureCostCurrency;
-        study.InfrastructureCostTl            = ToTl(dto.InfrastructureCost,          dto.InfrastructureCostCurrency,      dto.UsdRate, dto.EurRate);
-        study.DeviceUnitCost                  = dto.DeviceUnitCost;
-        study.DeviceUnitCostCurrency          = dto.DeviceUnitCostCurrency;
-        study.DeviceUnitCostTl                = ToTl(dto.DeviceUnitCost,              dto.DeviceUnitCostCurrency,          dto.UsdRate, dto.EurRate);
-        study.HasLoan                         = dto.HasLoan;
-        study.LoanAmount                      = dto.LoanAmount;
-        study.LoanAnnualInterestRate          = dto.LoanAnnualInterestRate;
-        study.LoanTermMonths                  = dto.LoanTermMonths;
+        _mapper.Map(dto, study);
+        ApplyTlShadows(study, dto);
 
         foreach (var lineDto in dto.DeviceLines)
         {
-            var line = new DeviceLine
-            {
-                DeviceType               = lineDto.DeviceType,
-                DeviceCount              = lineDto.DeviceCount,
-                SocketCount              = lineDto.SocketCount,
-                DailyChargesPerSocket    = lineDto.DailyChargesPerSocket,
-                AvgKwh                   = lineDto.AvgKwh,
-                SalePriceTl              = lineDto.SalePriceTl,
-                PurchasePriceTl          = lineDto.PurchasePriceTl,
-                UnitLocationCost         = lineDto.UnitLocationCost,
-                UnitLocationCostCurrency = lineDto.UnitLocationCostCurrency,
-                UnitLocationCostTl       = ToTl(lineDto.UnitLocationCost, lineDto.UnitLocationCostCurrency, dto.UsdRate, dto.EurRate),
-                AgreementGenre           = lineDto.AgreementGenre,
-                AgreementRate            = lineDto.AgreementRate,
-            };
+            var line = _mapper.Map<DeviceLine>(lineDto);
+            line.UnitLocationCostTl = ToTl(lineDto.UnitLocationCost, lineDto.UnitLocationCostCurrency, dto.UsdRate, dto.EurRate);
             foreach (var projDto in lineDto.YearProjections)
-                line.YearProjections.Add(new YearProjection { Year = projDto.Year, DailyChargePerSocket = projDto.DailyChargePerSocket });
-
+                line.YearProjections.Add(_mapper.Map<YearProjection>(projDto));
             study.DeviceLines.Add(line);
         }
 
         await _studyService.SaveChangesAsync(ct);
+    }
+
+    private static void ApplyTlShadows(Study study, FeasibilityAmortizationSaveDto dto)
+    {
+        study.MonthlyRentTl                   = ToTl(dto.MonthlyRent,                dto.RentCurrency,                    dto.UsdRate, dto.EurRate);
+        study.PostWarrantyMaintenanceCostTl   = ToTl(dto.PostWarrantyMaintenanceCost, dto.PostWarrantyMaintenanceCurrency, dto.UsdRate, dto.EurRate);
+        study.AdvertisingRevenueTl            = ToTl(dto.AdvertisingRevenue,          dto.AdvertisingRevenueCurrency,      dto.UsdRate, dto.EurRate);
+        study.StationUnitCostTl               = ToTl(dto.StationUnitCost,             dto.StationUnitCostCurrency,         dto.UsdRate, dto.EurRate);
+        study.ProviderEntryFeeTl              = ToTl(dto.ProviderEntryFee,            dto.ProviderEntryFeeCurrency,        dto.UsdRate, dto.EurRate);
+        study.InfrastructureCostTl            = ToTl(dto.InfrastructureCost,          dto.InfrastructureCostCurrency,      dto.UsdRate, dto.EurRate);
+        study.DeviceUnitCostTl                = ToTl(dto.DeviceUnitCost,              dto.DeviceUnitCostCurrency,          dto.UsdRate, dto.EurRate);
     }
 
     private static decimal ToTl(decimal amount, Entity.Entities.Enums.CurrencyType currency, decimal usdRate, decimal eurRate)

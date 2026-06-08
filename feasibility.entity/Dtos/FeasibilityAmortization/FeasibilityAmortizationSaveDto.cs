@@ -19,6 +19,8 @@ public class FeasibilityAmortizationSaveDto
     public decimal MonthlyRent { get; set; }
     public CurrencyType RentCurrency { get; set; } = CurrencyType.TL;
 
+    public int ContractMonths { get; set; }
+
     public decimal PostWarrantyMaintenanceCost { get; set; }
     public CurrencyType PostWarrantyMaintenanceCurrency { get; set; } = CurrencyType.TL;
 
@@ -65,4 +67,9 @@ public class YearProjectionSaveDto
 {
     public int Year { get; set; }
     public decimal DailyChargePerSocket { get; set; }
+    public decimal SalePriceH1 { get; set; }
+    public decimal SalePriceH2 { get; set; }
+    public decimal PurchasePriceH1 { get; set; }
+    public decimal PurchasePriceH2 { get; set; }
+    public decimal UsdRate { get; set; }
 }

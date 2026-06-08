@@ -1,353 +1,366 @@
-﻿@{
-    ViewData["Title"] = "Yatırım Geri Dönüş Raporu";
+@using System.Globalization
+@model feasibility.Entity.Dtos.FeasibilityAmortization.FeasibilityAmortizationDetailDto
+@{
+    ViewData["Title"] = Model.FeasibilityName + " — Sonuç";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var tr  = CultureInfo.GetCultureInfo("tr-TR");
+    Func<decimal, string> N0  = v => v.ToString("#,##0", tr);
+    Func<decimal, string> N2  = v => v.ToString("#,##0.##", tr);
+    Func<decimal, string> USD = v => "$ " + v.ToString("#,##0", tr);
+    Func<decimal, string> PCT = v => "%" + v.ToString("0.0", tr);
+    bool pos(decimal v) => v >= 0;
+    string sign(decimal v) => v >= 0 ? "+" : "";
 }
 
 @section Styles {
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
-        :root {
-            --slate-900: #111827;
-            --slate-700: #334155;
-            --slate-500: #64748b;
-            --line: #e6eaf2;
-            --surface: #ffffff;
-            --canvas: #f4f6fb;
-            --accent: #2563eb;
-            --success: #059669;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --radius: 14px;
-            --radius-sm: 10px;
-            --shadow-sm: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
-            --shadow-md: 0 12px 30px rgba(16,24,40,.07);
-        }
+        /* KPI kartları */
+        .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+        @@media(max-width:900px){ .kpi-row{grid-template-columns:repeat(2,1fr);} }
+        @@media(max-width:500px){ .kpi-row{grid-template-columns:1fr;} }
 
-        .fz-scope {
-            font-family: "Plus Jakarta Sans", -apple-system, "Segoe UI", sans-serif;
-            color: var(--slate-900);
-        }
-
-        /* ---------- Header ---------- */
-        .fz-header {
-            background: linear-gradient(120deg, #0b1f33 0%, #14304a 60%, #1c3d5a 100%);
-            border-radius: var(--radius);
-            color: #fff;
-            padding: 1.75rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1.25rem;
-            flex-wrap: wrap;
-            box-shadow: var(--shadow-md);
-        }
-
-            .fz-header h2 {
-                font-weight: 800;
-                font-size: 1.45rem;
-                letter-spacing: -.4px;
-                margin: 0 0 .35rem;
-            }
-
-            .fz-header p {
-                margin: 0;
-                color: rgba(255,255,255,.8);
-                font-size: .95rem;
-                font-weight: 500;
-            }
-
-        /* ---------- Buttons ---------- */
-        .btn-fz {
-            border-radius: var(--radius-sm);
-            font-weight: 700;
-            font-size: .9rem;
-            padding: .65rem 1.4rem;
-            border: 1px solid transparent;
-            transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: .55rem;
-        }
-
-        .btn-fz-primary {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 6px 16px rgba(37,99,235,.28);
-        }
-
-            .btn-fz-primary:hover {
-                background: #1d4ed8;
-                color: #fff;
-                transform: translateY(-1px);
-            }
-
-        .btn-fz-ghost {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-            .btn-fz-ghost:hover {
-                background: rgba(255,255,255,0.2);
-                color: #fff;
-            }
-
-        /* ---------- Cards & KPIs ---------- */
-        .fz-card {
+        .kpi-card {
             background: var(--surface);
-            border: 1px solid var(--line);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            padding: 18px 20px;
             display: flex;
             align-items: center;
-            gap: 1.25rem;
-            height: 100%;
+            gap: 14px;
+        }
+        .kpi-ico {
+            width: 44px; height: 44px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .kpi-ico .material-symbols-outlined { font-size: 1.3rem; }
+        .kpi-lbl { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: .5px; margin-bottom: 3px; }
+        .kpi-v   { font-size: 1.3rem; font-weight: 800; color: var(--text); margin: 0; }
+        .kpi-v.pos { color: var(--success); }
+        .kpi-v.neg { color: var(--danger); }
+
+        /* Bölüm kartları */
+        .res-section { margin-bottom: 20px; }
+
+        .res-card-header {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .res-card-header .fiz-ix { background: var(--primary); }
+        .res-card-header .material-symbols-outlined { font-size: 18px; color: var(--primary); }
+
+        /* İki sütunlu özet */
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+        @@media(max-width:700px){ .summary-grid{grid-template-columns:1fr;} }
+
+        /* Info satırları (card içinde) */
+        .res-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .45rem 0; border-bottom: 1px solid var(--border);
+            font-size: .875rem;
+        }
+        .res-row:last-child { border-bottom: none; }
+        .res-row .rl { color: var(--text-muted); font-weight: 500; }
+        .res-row .rv { font-weight: 700; color: var(--text); font-family: 'Courier New', monospace; font-size: .875rem; }
+        .res-row .rv.pos { color: var(--success); }
+        .res-row .rv.neg { color: var(--danger); }
+        .res-row.total { background: var(--surface-2); border-radius: 8px; padding: .55rem .65rem; margin-top: 4px; }
+        .res-row.total .rl { font-weight: 700; color: var(--text); }
+        .res-row.total .rv { font-size: 1rem; }
+
+        /* Tablo renk yardımcıları */
+        .c-pos { color: var(--success) !important; font-weight: 700; }
+        .c-neg { color: var(--danger)  !important; font-weight: 700; }
+        .c-neu { color: var(--text-muted); }
+
+        .tfoot-row td { background: var(--surface-2) !important; font-weight: 800; border-top: 2px solid var(--border); }
+
+        /* Hat badge */
+        .hat-badge {
+            background: var(--primary-50); color: var(--primary);
+            font-size: .75rem; font-weight: 800;
+            padding: .2rem .65rem; border-radius: 999px;
         }
 
-        .kpi-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            flex-shrink: 0;
-        }
-
-        .kpi-title {
-            font-size: 0.75rem;
-            color: var(--slate-500);
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.25rem;
-        }
-
-        .kpi-value {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--slate-900);
-            margin: 0;
-        }
-
-        /* ---------- Tables ---------- */
-        .table-wrapper {
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-        }
-
-        .table-header {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--line);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: .5rem;
-        }
-
-            .table-header h5 {
-                margin: 0;
-                font-weight: 700;
-                font-size: 1.1rem;
-            }
-
-        .table-scroll {
-            overflow-x: auto;
-        }
-
-        .fz-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-            .fz-table th {
-                background: var(--canvas);
-                color: var(--slate-500);
-                font-weight: 600;
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                padding: 1rem 1.25rem;
-                text-align: right;
-                border-bottom: 1px solid var(--line);
-                white-space: nowrap;
-            }
-
-                .fz-table th:first-child {
-                    text-align: left;
-                }
-
-            .fz-table td {
-                padding: 1rem 1.25rem;
-                text-align: right;
-                border-bottom: 1px solid var(--line);
-                font-weight: 600;
-                color: var(--slate-900);
-                font-size: 0.9rem;
-                white-space: nowrap;
-            }
-
-                .fz-table td:first-child {
-                    text-align: left;
-                    color: var(--slate-700);
-                }
-
-            .fz-table tr:last-child td {
-                border-bottom: none;
-            }
-
-        .text-success-fz {
-            color: var(--success) !important;
-        }
-
-        .text-danger-fz {
-            color: var(--danger) !important;
-        }
-
-        @@media (max-width: 768px) {
-            .fz-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+        /* Pasif banner */
+        .passive-banner {
+            background: var(--danger-50); border: 1px solid rgba(217,38,38,.25);
+            color: var(--danger); border-radius: var(--radius);
+            padding: .75rem 1rem; margin-bottom: 16px;
+            display: flex; align-items: center; gap: .5rem;
+            font-size: .875rem; font-weight: 600;
         }
     </style>
 }
 
-<div class="container-fluid mt-4 mb-5 fz-scope">
+<!-- Sayfa başlığı -->
+<div class="page-header">
+    <div>
+        <div class="crumb">Fizibiliteler &middot; Amortisman &middot; <strong>@Model.FeasibilityName</strong></div>
+        <h1>Fizibilite Sonuç Raporu</h1>
+        <p>@Model.LocationName &nbsp;&middot;&nbsp; @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</p>
+    </div>
+    <div class="header-actions">
+        <a href="/FeasibilityAmortization/Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        <a href="/FeasibilityAmortization/Details/@Model.Id" class="btn btn-secondary">
+            <span class="material-symbols-outlined">info</span> Detaylar
+        </a>
+        @if (!Model.IsDeleted)
+        {
+            <a href="/FeasibilityAmortization/Edit/@Model.Id" class="btn btn-primary">
+                <span class="material-symbols-outlined">edit</span> Düzenle
+            </a>
+        }
+    </div>
+</div>
 
-    <!-- KPI Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="fz-card">
-                <div class="kpi-icon" style="background: #eef4ff; color: #2563eb;">
-                    <i class="fas fa-wallet"></i>
-                </div>
-                <div>
-                    <div class="kpi-title">Cihaz Başına Yatırım</div>
-                    <div class="kpi-value">$121,302</div>
-                </div>
-            </div>
+@if (Model.IsDeleted)
+{
+    <div class="passive-banner">
+        <span class="material-symbols-outlined">warning</span>
+        Bu fizibilite pasif durumda.
+    </div>
+}
+
+<!-- KPI Kartları -->
+<div class="kpi-row">
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--primary-50);color:var(--primary);">
+            <span class="material-symbols-outlined">account_balance_wallet</span>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="fz-card">
-                <div class="kpi-icon" style="background: #e8f7f0; color: #059669;">
-                    <i class="fas fa-undo"></i>
-                </div>
-                <div>
-                    <div class="kpi-title">Amortisman Süresi</div>
-                    <div class="kpi-value">16.9 Yıl</div>
-                </div>
-            </div>
+        <div>
+            <div class="kpi-lbl">Toplam Yatırım</div>
+            <div class="kpi-v">@USD(Model.TotalInvestmentUsd)</div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="fz-card">
-                <div class="kpi-icon" style="background: #fdf3e3; color: #d97706;">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div>
-                    <div class="kpi-title">Yıllık Net Kâr (Brüt)</div>
-                    <div class="kpi-value text-success-fz">+$7,181</div>
-                </div>
-            </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--success-50);color:var(--success);">
+            <span class="material-symbols-outlined">restart_alt</span>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="fz-card">
-                <div class="kpi-icon" style="background: #e5f6fb; color: #0891b2;">
-                    <i class="fas fa-percent"></i>
-                </div>
-                <div>
-                    <div class="kpi-title">Yıllık Getiri (ROI)</div>
-                    <div class="kpi-value">%5.9</div>
-                </div>
+        <div>
+            <div class="kpi-lbl">Amortisman Süresi</div>
+            <div class="kpi-v @(Model.PaybackYears > 0 ? "" : "neg")">
+                @(Model.PaybackYears > 0 ? Model.PaybackYears.ToString("0.0", tr) + " Yıl" : "—")
             </div>
         </div>
     </div>
-
-    <!-- Table -->
-    <div class="table-wrapper">
-        <div class="table-header">
-            <h5><i class="fas fa-calendar-alt text-primary me-2"></i>Aylık Nakit Akışı Projeksiyonu (2026)</h5>
-            <span class="badge bg-light text-dark border px-3 py-2">Değerler USD ($) Bazındadır</span>
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--warning-50);color:var(--warning);">
+            <span class="material-symbols-outlined">trending_up</span>
         </div>
-        <div class="table-scroll">
-            <table class="fz-table">
+        <div>
+            <div class="kpi-lbl">Yıl 1 Net Kâr</div>
+            <div class="kpi-v @(pos(Model.AnnualNetProfitUsd) ? "pos" : "neg")">
+                @sign(Model.AnnualNetProfitUsd)@USD(Model.AnnualNetProfitUsd)
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--primary-50);color:var(--primary);">
+            <span class="material-symbols-outlined">percent</span>
+        </div>
+        <div>
+            <div class="kpi-lbl">Yıllık ROI</div>
+            <div class="kpi-v @(pos(Model.RoiPercent) ? "pos" : "neg")">
+                @sign(Model.RoiPercent)@PCT(Model.RoiPercent)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yatırım + Sabit Giderler özeti -->
+<div class="summary-grid">
+    <div class="card res-section">
+        <div class="card-header">
+            <div class="res-card-header">
+                <div class="fiz-ix">01</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Dağılımı</h2>
+                    <div class="fiz-sub">Toplam sermaye harcaması</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="res-row"><span class="rl">Araç Şarj İstasyonu</span><span class="rv">@N0(Model.StationUnitCostTl) ₺</span></div>
+            <div class="res-row"><span class="rl">Yer Sağlayıcı Giriş Bedeli</span><span class="rv">@N0(Model.ProviderEntryFeeTl) ₺</span></div>
+            <div class="res-row"><span class="rl">Altyapı Yatırımı</span><span class="rv">@N0(Model.InfrastructureCostTl) ₺</span></div>
+            <div class="res-row"><span class="rl">Cihaz + Lokasyon</span><span class="rv">@N0(Model.DeviceTotalTl) ₺</span></div>
+            <div class="res-row total"><span class="rl">Toplam Yatırım (TL)</span><span class="rv">@N0(Model.TotalInvestmentTl) ₺</span></div>
+            <div class="res-row total"><span class="rl">Toplam Yatırım (USD)</span><span class="rv">@USD(Model.TotalInvestmentUsd)</span></div>
+            @if (Model.ContractMonths > 0)
+            {
+                <div class="res-row"><span class="rl">Sözleşme Süresi</span><span class="rv">@Model.ContractMonths ay</span></div>
+            }
+        </div>
+    </div>
+
+    <div class="card res-section">
+        <div class="card-header">
+            <div class="res-card-header">
+                <div class="fiz-ix">02</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yıllık Sabit Giderler &amp; Parametreler</h2>
+                    <div class="fiz-sub">Kur, enflasyon ve gider kalemleri</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="res-row"><span class="rl">USD/TL Kuru</span><span class="rv">@N2(Model.UsdRate)</span></div>
+            <div class="res-row"><span class="rl">EUR/TL Kuru</span><span class="rv">@N2(Model.EurRate)</span></div>
+            <div class="res-row"><span class="rl">TL Enflasyonu</span><span class="rv">%@N2(Model.InflationTl)</span></div>
+            <div class="res-row"><span class="rl">USD Enflasyonu</span><span class="rv">%@N2(Model.InflationUsd)</span></div>
+            @if (Model.HasRent)
+            {
+                <div class="res-row"><span class="rl">Yıllık Kira</span><span class="rv neg">-@N0(Model.AnnualRentTl) ₺</span></div>
+            }
+            @if (Model.AnnualMaintenanceTl > 0)
+            {
+                <div class="res-row"><span class="rl">Yıllık Bakım</span><span class="rv neg">-@N0(Model.AnnualMaintenanceTl) ₺</span></div>
+            }
+            @if (Model.AnnualAdvertisingRevenueTl > 0)
+            {
+                <div class="res-row"><span class="rl">Yıllık Reklam Geliri</span><span class="rv pos">+@N0(Model.AnnualAdvertisingRevenueTl) ₺</span></div>
+            }
+            @if (Model.HasLoan && Model.AnnualLoanPaymentTl > 0)
+            {
+                <div class="res-row"><span class="rl">Yıllık Kredi Ödemesi (@Model.LoanTermMonths ay)</span><span class="rv neg">-@N0(Model.AnnualLoanPaymentTl) ₺</span></div>
+            }
+            <div class="res-row total"><span class="rl">Yıl 1 Net Kâr (TL)</span>
+                <span class="rv @(pos(Model.AnnualNetProfitTl) ? "pos" : "neg")">@sign(Model.AnnualNetProfitTl)@N0(Model.AnnualNetProfitTl) ₺</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 10 Yıllık Projeksiyon Tablosu -->
+@if (Model.YearSummaries.Any())
+{
+    <div class="card res-section">
+        <div class="card-header">
+            <div class="res-card-header">
+                <div class="fiz-ix">03</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yıllık Nakit Akışı Projeksiyonu</h2>
+                    <div class="fiz-sub">H1 = Ocak–Mayıs (151 gün) · H2 = Haziran–Aralık (214 gün)</div>
+                </div>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="table">
                 <thead>
                     <tr>
-                        <th>Aylar</th>
-                        <th>Satış (MWh)</th>
-                        <th>Brüt Satış Ciro</th>
-                        <th>YS Komisyonu (15%)</th>
-                        <th>Aylık Kira</th>
-                        <th>Elektrik Maliyeti</th>
-                        <th>Aylık Net Kâr</th>
-                        <th>Kümülatif Bakiye</th>
+                        <th>Yıl</th>
+                        <th class="text-right">Brüt Ciro (TL)</th>
+                        <th class="text-right">Elektrik (TL)</th>
+                        <th class="text-right">Komisyon (TL)</th>
+                        <th class="text-right">Sabit Gider (TL)</th>
+                        <th class="text-right">Net Kâr (TL)</th>
+                        <th class="text-right">USD/TL</th>
+                        <th class="text-right">Net Kâr (USD)</th>
+                        <th class="text-right">Kümülatif (USD)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Modelden gelecek veriler (Örnek: Model.MonthlyCashFlows) -->
-                    <tr>
-                        <td>Ocak</td>
-                        <td>13.25</td>
-                        <td>$3,212.37</td>
-                        <td class="text-danger-fz">-$481.86</td>
-                        <td class="text-danger-fz">-$74.92</td>
-                        <td class="text-danger-fz">-$2,044.24</td>
-                        <td class="text-success-fz">+$611.36</td>
-                        <td class="text-danger-fz">-$120,690.98</td>
-                    </tr>
-                    <tr>
-                        <td>Şubat</td>
-                        <td>11.97</td>
-                        <td>$2,901.50</td>
-                        <td class="text-danger-fz">-$435.22</td>
-                        <td class="text-danger-fz">-$74.92</td>
-                        <td class="text-danger-fz">-$1,846.41</td>
-                        <td class="text-success-fz">+$544.94</td>
-                        <td class="text-danger-fz">-$120,146.04</td>
-                    </tr>
-                    <tr>
-                        <td>Mart</td>
-                        <td>13.25</td>
-                        <td>$3,212.37</td>
-                        <td class="text-danger-fz">-$481.86</td>
-                        <td class="text-danger-fz">-$74.92</td>
-                        <td class="text-danger-fz">-$2,044.24</td>
-                        <td class="text-success-fz">+$611.36</td>
-                        <td class="text-danger-fz">-$119,534.68</td>
-                    </tr>
-                    <tr>
-                        <td>Nisan</td>
-                        <td>12.82</td>
-                        <td>$3,108.75</td>
-                        <td class="text-danger-fz">-$466.31</td>
-                        <td class="text-danger-fz">-$74.92</td>
-                        <td class="text-danger-fz">-$1,978.29</td>
-                        <td class="text-success-fz">+$589.22</td>
-                        <td class="text-danger-fz">-$118,945.46</td>
-                    </tr>
-                    <tr style="background: #fdfdfd;">
-                        <td class="fw-bold text-dark">Yıl Sonu Toplam</td>
-                        <td class="fw-bold">156.04</td>
-                        <td class="fw-bold">$37,823.10</td>
-                        <td class="fw-bold text-danger-fz">-$5,673.47</td>
-                        <td class="fw-bold text-danger-fz">-$899.07</td>
-                        <td class="fw-bold text-danger-fz">-$24,069.25</td>
-                        <td class="fw-bold text-success-fz">+$7,181.32</td>
-                        <td class="fw-bold text-danger-fz">-$114,121.02</td>
-                    </tr>
+                    @foreach (var r in Model.YearSummaries)
+                    {
+                        <tr>
+                            <td><strong>@r.Year</strong></td>
+                            <td class="text-right c-pos">@N0(r.TotalRevenueTl) ₺</td>
+                            <td class="text-right c-neg">-@N0(r.TotalElectricityCostTl) ₺</td>
+                            <td class="text-right c-neg">-@N0(r.TotalCommissionTl) ₺</td>
+                            <td class="text-right c-neg">-@N0(r.FixedCostsTl) ₺</td>
+                            <td class="text-right @(pos(r.NetProfitTl) ? "c-pos" : "c-neg")">@sign(r.NetProfitTl)@N0(r.NetProfitTl) ₺</td>
+                            <td class="text-right c-neu">@N2(r.UsdRate)</td>
+                            <td class="text-right @(pos(r.NetProfitUsd) ? "c-pos" : "c-neg")">@sign(r.NetProfitUsd)@USD(r.NetProfitUsd)</td>
+                            <td class="text-right @(pos(r.CumulativeBalanceUsd) ? "c-pos" : "c-neg")">@sign(r.CumulativeBalanceUsd)@USD(r.CumulativeBalanceUsd)</td>
+                        </tr>
+                    }
                 </tbody>
+                <tfoot>
+                    @{
+                        var tRev  = Model.YearSummaries.Sum(r => r.TotalRevenueTl);
+                        var tElec = Model.YearSummaries.Sum(r => r.TotalElectricityCostTl);
+                        var tComm = Model.YearSummaries.Sum(r => r.TotalCommissionTl);
+                        var tFix  = Model.YearSummaries.Sum(r => r.FixedCostsTl);
+                        var tNet  = Model.YearSummaries.Sum(r => r.NetProfitTl);
+                        var tNetU = Model.YearSummaries.Sum(r => r.NetProfitUsd);
+                        var tCum  = Model.YearSummaries.Last().CumulativeBalanceUsd;
+                    }
+                    <tr class="tfoot-row">
+                        <td>Toplam</td>
+                        <td class="text-right c-pos">@N0(tRev) ₺</td>
+                        <td class="text-right c-neg">-@N0(tElec) ₺</td>
+                        <td class="text-right c-neg">-@N0(tComm) ₺</td>
+                        <td class="text-right c-neg">-@N0(tFix) ₺</td>
+                        <td class="text-right @(pos(tNet) ? "c-pos" : "c-neg")">@sign(tNet)@N0(tNet) ₺</td>
+                        <td class="text-right">—</td>
+                        <td class="text-right @(pos(tNetU) ? "c-pos" : "c-neg")">@sign(tNetU)@USD(tNetU)</td>
+                        <td class="text-right @(pos(tCum) ? "c-pos" : "c-neg")">@sign(tCum)@USD(tCum)</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
+}
 
-    <p class="text-muted mt-3 mb-0" style="font-size:.8rem;">
-        * Değerler Excel "Yatırım Geri Dönüş" sayfasıyla uyumludur. Amortisman süresi, yatırımın 1. yıl brüt kârına (sabit) bölünmesiyle hesaplanmıştır (121.302 / 7.181 ≈ 16,89 yıl). Excel yalnızca 2026 yılını modellediği için 5 yıllık kümülatif sonuç bu sayfadan üretilmemiştir.
-    </p>
-
-</div>
+<!-- İstasyon Hattı Detayları -->
+@{ int lineNo = 4; }
+@foreach (var line in Model.DeviceLines)
+{
+    <div class="card res-section">
+        <div class="card-header">
+            <div class="res-card-header">
+                <div class="fiz-ix">@lineNo.ToString("00")</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;">
+                        <span class="hat-badge">@line.DeviceType</span>
+                        İstasyon Hattı — @line.DeviceCount Cihaz · @line.SocketCount Soket · @line.AgreementGenre (@((line.AgreementRate * 100).ToString("0.#", tr))%)
+                    </h2>
+                    <div class="fiz-sub">Hat yatırımı: @N0(line.LineInvestmentTl) ₺ · Yıl 1 net marj: <span class="@(pos(line.AnnualNetMarginTl) ? "c-pos" : "c-neg")">@sign(line.AnnualNetMarginTl)@N0(line.AnnualNetMarginTl) ₺</span></div>
+                </div>
+            </div>
+        </div>
+        @if (line.YearProjections.Any())
+        {
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Yıl</th>
+                            <th class="text-right">Şarj/Soket</th>
+                            <th class="text-right">Satış Ocak (₺/kWh)</th>
+                            <th class="text-right">Satış Haziran (₺/kWh)</th>
+                            <th class="text-right">Alış Ocak (₺/kWh)</th>
+                            <th class="text-right">Alış Haziran (₺/kWh)</th>
+                            <th class="text-right">Yıllık Ciro (TL)</th>
+                            <th class="text-right">Elektrik (TL)</th>
+                            <th class="text-right">Komisyon (TL)</th>
+                            <th class="text-right">Brüt Marj (TL)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in line.YearProjections)
+                        {
+                            var margin = p.AnnualRevenueTl - p.AnnualElectricityCostTl - p.AnnualCommissionTl;
+                            <tr>
+                                <td><strong>@p.Year</strong></td>
+                                <td class="text-right">@N2(p.DailyChargePerSocket)</td>
+                                <td class="text-right">@N2(p.SalePriceH1) ₺</td>
+                                <td class="text-right">@N2(p.SalePriceH2) ₺</td>
+                                <td class="text-right">@N2(p.PurchasePriceH1) ₺</td>
+                                <td class="text-right">@N2(p.PurchasePriceH2) ₺</td>
+                                <td class="text-right c-pos">@N0(p.AnnualRevenueTl) ₺</td>
+                                <td class="text-right c-neg">-@N0(p.AnnualElectricityCostTl) ₺</td>
+                                <td class="text-right c-neg">-@N0(p.AnnualCommissionTl) ₺</td>
+                                <td class="text-right @(pos(margin) ? "c-pos" : "c-neg")">@sign(margin)@N0(margin) ₺</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+    lineNo++;
+}
