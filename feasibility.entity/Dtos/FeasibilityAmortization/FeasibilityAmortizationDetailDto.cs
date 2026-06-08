@@ -16,6 +16,7 @@ public class FeasibilityAmortizationDetailDto
     public decimal InflationEur { get; set; }
 
     public int ContractMonths { get; set; }
+    public decimal MonthlyLostDaysPercent { get; set; }
 
     public decimal StationUnitCostTl { get; set; }
     public decimal ProviderEntryFeeTl { get; set; }
@@ -42,6 +43,25 @@ public class FeasibilityAmortizationDetailDto
     public decimal AnnualNetProfitUsd { get; set; }
     public decimal PaybackYears { get; set; }
     public decimal RoiPercent { get; set; }
+
+    /// <summary>
+    /// Şarj istasyonu donanımı taşınabilir/tekrar kullanılabilir olduğundan amortismana dahil edilmez.
+    /// Aşağıdaki alanlar yalnızca geri kazanılamayan (lokasyona gömülü) yatırımın amorti süresini özetler.
+    /// </summary>
+    public decimal RecoverableInvestmentUsd { get; set; }   // Şarj istasyonu bedeli (USD) — taşınabilir
+    public decimal SunkInvestmentUsd { get; set; }          // Geri kazanılamayan yatırım (USD) = Toplam − İstasyon
+    public decimal SunkPaybackYears { get; set; }           // Gömülü yatırımın amorti süresi (yıl)
+    public List<SunkAmortizationRowDto> SunkAmortization { get; set; } = new();
+}
+
+/// <summary>İstasyon bedeli hariç (gömülü) yatırımın yıl yıl amorti ilerlemesi.</summary>
+public class SunkAmortizationRowDto
+{
+    public int Year { get; set; }
+    public decimal NetProfitUsd { get; set; }          // O yıl üretilen net kâr (USD)
+    public decimal RecoveredCumulativeUsd { get; set; } // O yıla kadar toplam geri kazanılan (USD)
+    public decimal RemainingUsd { get; set; }          // Kalan gömülü maliyet (USD), 0'ın altına inmez
+    public bool IsPaybackYear { get; set; }            // Bakiyenin 0'ı geçtiği (amorti olduğu) yıl mı
 }
 
 public class DeviceLineDetailDto
@@ -62,6 +82,41 @@ public class DeviceLineDetailDto
     public decimal AnnualCommissionTl { get; set; }
     public decimal AnnualNetMarginTl { get; set; }
     public List<YearProjectionDetailDto> YearProjections { get; set; } = new();
+
+    /// <summary>Cihaz başına, yıl + ay bazında gelir/gider dökümü (Excel benzeri).</summary>
+    public List<MonthlyBreakdownYearDto> MonthlyBreakdownYears { get; set; } = new();
+}
+
+/// <summary>Bir istasyon hattının belirli bir yıl için 12 aylık (cihaz başına) gelir/gider dökümü.</summary>
+public class MonthlyBreakdownYearDto
+{
+    public int Year { get; set; }
+    public decimal UsdRate { get; set; }
+    public List<MonthlyBreakdownRowDto> Months { get; set; } = new();
+}
+
+/// <summary>Cihaz başına tek bir ayın gelir/gider satırı.</summary>
+public class MonthlyBreakdownRowDto
+{
+    public int Month { get; set; }                  // 1-12
+    public int DaysInMonth { get; set; }
+    public decimal LostDays { get; set; }
+    public decimal NetOperatingDays { get; set; }
+    public decimal SaleKwhPerDevice { get; set; }   // cihaz başına aylık satış kWh
+
+    public decimal SalePriceTlPerKwh { get; set; }
+    public decimal PurchasePriceTlPerKwh { get; set; }
+
+    public decimal RevenueTl { get; set; }
+    public decimal RevenueUsd { get; set; }
+    public decimal CommissionTl { get; set; }
+    public decimal CommissionUsd { get; set; }
+    public decimal RentTl { get; set; }
+    public decimal RentUsd { get; set; }
+    public decimal ElectricityCostTl { get; set; }
+    public decimal ElectricityCostUsd { get; set; }
+    public decimal GrossProfitTl { get; set; }
+    public decimal GrossProfitUsd { get; set; }
 }
 
 public class YearProjectionDetailDto

@@ -17,13 +17,6 @@ namespace feasibility.App.Controllers
             _feasibilityAmortizationService = feasibilityAmortizationService;
         }
 
-        public async Task<IActionResult> Details(Guid id, CancellationToken ct)
-        {
-            var dto = await _feasibilityAmortizationService.GetDetailAsync(id, ct);
-            if (dto is null) return NotFound();
-            return View(dto);
-        }
-
         public async Task<IActionResult> Index(CancellationToken ct)
         {
             var list =await _feasibilityAmortizationService.GetListAsync(ct);
@@ -52,6 +45,44 @@ namespace feasibility.App.Controllers
         {
             var json = await _feasibilityAmortizationService.GetRatesJsonAsync();
             return Json(System.Text.Json.JsonDocument.Parse(json).RootElement);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Calculate([FromBody] FeasibilityAmortizationSaveDto dto, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { message = "Geçersiz veri." });
+
+            try
+            {
+                var result = await _feasibilityAmortizationService.CalculatePreviewAsync(dto, ct);
+                return PartialView("_ResultContent", result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GEÇİCİ TEST UCU — hesap doğrulaması için. Doğrulama sonrası kaldırılacak.
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        [HttpPost("FeasibilityAmortization/CalcTest")]
+        public async Task<IActionResult> CalcTest([FromBody] FeasibilityAmortizationSaveDto dto, CancellationToken ct)
+        {
+            var result = await _feasibilityAmortizationService.CalculatePreviewAsync(dto, ct);
+            return Json(new
+            {
+                result.TotalInvestmentTl,
+                result.TotalInvestmentUsd,
+                result.AnnualNetProfitTl,
+                result.AnnualNetProfitUsd,
+                result.PaybackYears,
+                result.RoiPercent,
+                result.SunkInvestmentUsd,
+                result.RecoverableInvestmentUsd,
+                result.SunkPaybackYears,
+                YearSummaries = result.YearSummaries,
+            });
         }
 
         [HttpPost]

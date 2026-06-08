@@ -104,9 +104,6 @@
         <a href="/FeasibilityAmortization/Index" class="btn btn-secondary">
             <span class="material-symbols-outlined">arrow_back</span> Geri
         </a>
-        <a href="/FeasibilityAmortization/Details/@Model.Id" class="btn btn-secondary">
-            <span class="material-symbols-outlined">info</span> Detaylar
-        </a>
         @if (!Model.IsDeleted)
         {
             <a href="/FeasibilityAmortization/Edit/@Model.Id" class="btn btn-primary">
@@ -124,7 +121,9 @@
     </div>
 }
 
-<!-- KPI Kartları -->
+<partial name="_ResultContent" model="Model" />
+
+@* eski-inline-icerik-partial-a-tasindi
 <div class="kpi-row">
     <div class="kpi-card">
         <div class="kpi-ico" style="background:var(--primary-50);color:var(--primary);">
@@ -192,6 +191,10 @@
             @if (Model.ContractMonths > 0)
             {
                 <div class="res-row"><span class="rl">Sözleşme Süresi</span><span class="rv">@Model.ContractMonths ay</span></div>
+            }
+            @if (Model.MonthlyLostDaysPercent > 0)
+            {
+                <div class="res-row"><span class="rl">Aylık Kayıp Gün</span><span class="rv">% @Model.MonthlyLostDaysPercent.ToString("0.#")</span></div>
             }
         </div>
     </div>
@@ -364,3 +367,4 @@
     </div>
     lineNo++;
 }
+*@

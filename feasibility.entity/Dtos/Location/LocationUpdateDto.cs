@@ -11,12 +11,12 @@ public class LocationUpdateDto
     public string Name { get; set; } = string.Empty;
 
     [StringLength(500)]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
-    [Required]
+    [Required(ErrorMessage = "İl seçimi zorunludur.")]
     public string City { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "İlçe seçimi zorunludur.")]
     public string District { get; set; } = string.Empty;
 
     [StringLength(300)]

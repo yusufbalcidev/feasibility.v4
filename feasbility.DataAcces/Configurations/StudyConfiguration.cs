@@ -11,6 +11,7 @@ public class StudyConfiguration : IEntityTypeConfiguration<Study>
         builder.ToTable("Studies");
 
         builder.HasKey(s => s.Id);
+        builder.Property(s => s.Id).ValueGeneratedNever();
 
         builder.Property(s => s.FeasibilityName)
             .IsRequired()
@@ -52,6 +53,8 @@ public class StudyConfiguration : IEntityTypeConfiguration<Study>
         builder.Property(s => s.DeviceUnitCost).HasColumnType("decimal(18,4)");
         builder.Property(s => s.DeviceUnitCostCurrency).IsRequired();
         builder.Property(s => s.DeviceUnitCostTl).HasColumnType("decimal(18,4)");
+
+        builder.Property(s => s.MonthlyLostDaysPercent).HasColumnType("decimal(8,4)");
 
         builder.Property(s => s.LoanAmount).HasColumnType("decimal(18,4)");
         builder.Property(s => s.LoanAnnualInterestRate).HasColumnType("decimal(8,4)");

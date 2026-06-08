@@ -163,13 +163,21 @@
                 Lokasyonda reklam geliri elde edilecek mi?
             </label>
             <div class="fiz-kira-block hidden" id="reklamBlock"></div>
-            <div style="margin-top:18px; max-width:240px;">
+            <div style="margin-top:18px; display:grid; grid-template-columns:240px 240px; gap:16px; max-width:496px;">
                 <div class="fiz-field">
                     <label>Sözleşme Süresi</label>
                     <div class="fiz-input-wrap">
                         <input class="fiz-ctl has-suf" id="sozlesmeAy" type="number" min="0" step="1" placeholder="0" style="padding-left:12px;">
                         <span class="fiz-suf">ay</span>
                     </div>
+                </div>
+                <div class="fiz-field">
+                    <label>Aylık Kayıp Gün</label>
+                    <div class="fiz-input-wrap">
+                        <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" min="0" max="100" step="0.1" placeholder="0" style="padding-left:12px;">
+                        <span class="fiz-suf">%</span>
+                    </div>
+                    <span class="fiz-hint" style="margin-top:4px;">İstasyonun çalışmadığı gün payı — geliri zarar olarak düşürür.</span>
                 </div>
             </div>
             <div class="fiz-fin-grid" id="finGrid" style="margin-top:18px;"></div>
@@ -237,7 +245,7 @@
     </div>
 
     <div class="fiz-form-actions">
-        <a href="/FeasibilityAmortization/Details/@studyId" class="btn btn-secondary">
+        <a href="/FeasibilityAmortization/Result/@studyId" class="btn btn-secondary">
             <span class="material-symbols-outlined">arrow_back</span> İptal
         </a>
         <button class="btn btn-primary" onclick="submitForm()">
@@ -275,6 +283,15 @@
             <div class="fiz-proj-note">
                 <span class="material-symbols-outlined">info</span>
                 Döviz kuru ve enflasyon sütunları bileşik artışla otomatik hesaplanır.
+            </div>
+            <div class="fiz-escalate-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <span style="font-size:13px;color:var(--text-muted);font-weight:600;">Otomatik zam (%):</span>
+                <input type="number" id="escalatePct" class="fiz-cell-in" min="0" step="0.1" placeholder="örn. 15"
+                       style="width:90px;" onkeydown="if(event.key==='Enter'){event.preventDefault();applyEscalation();}">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="applyEscalation()">
+                    <span class="material-symbols-outlined">trending_up</span> Zam uygula
+                </button>
+                <span class="fiz-hint" style="margin:0;">1. yıl Ocak değeri baz alınır; her 6 ayda bir önceki döneme göre katlanarak artar.</span>
             </div>
             <div class="table-wrapper">
                 <table class="table">
@@ -328,7 +345,6 @@
         ];
         var FIN = [
             { id: "bakim",    label: "Garanti Sonrası Bakım (Yıllık)",   ccy: "TRY", val: 0   },
-            { id: "sarj",     label: "Araç Şarj İstasyonu Bedeli",       ccy: "TRY", val: 0   },
             { id: "giris",    label: "Yer Sağlayıcı Proje Giriş Bedeli", ccy: "TRY", val: 0   },
             { id: "altyapi",  label: "Altyapı Yatırım Bedeli",           ccy: "TRY", val: 0   },
             { id: "cihaz",    label: "Cihaz Başına Yatırım",             ccy: "TRY", val: 0   }
@@ -604,6 +620,39 @@
         }
         function setProjField(i, k, el) { var n = parse(el.value); if (n < 0) n = 0; modalDraft[i][k] = n; renderProj(); }
 
+        // Her dönem (6 ay) bir önceki döneme göre %pct katlanan zam uygular.
+        // Baz: 1. yılın Ocak (H1) satış ve alış değeri. Dönem sırası: Y1-H1, Y1-H2, Y2-H1, Y2-H2, ...
+        function applyEscalation() {
+            if (!modalDraft.length) return;
+            var pctEl = document.getElementById('escalatePct');
+            var pct = parse(pctEl ? pctEl.value : '');
+            if (!(pct > 0)) {
+                showToast('Geçerli bir zam yüzdesi girin.', true);
+                if (pctEl) pctEl.focus();
+                return;
+            }
+            var r = 1 + pct / 100;
+            var baseSale = modalDraft[0].sH1 || 0;
+            var basePurchase = modalDraft[0].pH1 || 0;
+            if (baseSale <= 0 && basePurchase <= 0) {
+                showToast('Önce 1. yıl Ocak satış/alış değerini girin.');
+                return;
+            }
+            var round2 = function (x) { return Math.round(x * 100) / 100; };
+            // period 0 = Y1-H1 (baz, zamsız). Sonraki her dönem bir öncekinin r katı.
+            var period = 0;
+            modalDraft.forEach(function (p) {
+                // H1 = baz * r^period ; H2 = baz * r^(period+1)
+                p.sH1 = round2(baseSale * Math.pow(r, period));
+                p.sH2 = round2(baseSale * Math.pow(r, period + 1));
+                p.pH1 = round2(basePurchase * Math.pow(r, period));
+                p.pH2 = round2(basePurchase * Math.pow(r, period + 1));
+                period += 2; // her yıl 2 dönem
+            });
+            renderProj();
+            showToast('Her dönem %' + pct + ' zam uygulandı.');
+        }
+
         document.getElementById('fiz-overlay').addEventListener('click', function(e) {
             if (e.target.id === 'fiz-overlay') closeModal();
         });
@@ -630,7 +679,6 @@
             // Finansal alanlar
             var finMap = {
                 bakim:   { val: p.postWarrantyCost,  ccy: ccyFromNum(p.postWarrantyCurrency) },
-                sarj:    { val: p.stationCost,       ccy: ccyFromNum(p.stationCostCurrency) },
                 giris:   { val: p.providerFee,       ccy: ccyFromNum(p.providerFeeCurrency) },
                 altyapi: { val: p.infraCost,         ccy: ccyFromNum(p.infraCostCurrency) },
                 cihaz:   { val: p.deviceCost,        ccy: ccyFromNum(p.deviceCostCurrency) }
@@ -644,6 +692,8 @@
 
             var sozlesmeEl = document.getElementById('sozlesmeAy');
             if (sozlesmeEl && p.contractMonths) sozlesmeEl.value = p.contractMonths;
+            var kayipEl = document.getElementById('kayipGunYuzde');
+            if (kayipEl && p.monthlyLostDaysPercent) kayipEl.value = p.monthlyLostDaysPercent;
 
             // Reklam
             if (p.advertisingRevenue > 0) {
@@ -714,12 +764,13 @@
                 monthlyRent:                     hasRent ? finVal('kira') : 0,
                 rentCurrency:                    hasRent ? finCcy('kira') : 0,
                 contractMonths:                  parseInt(document.getElementById('sozlesmeAy').value) || 0,
+                monthlyLostDaysPercent:          parseFloat(document.getElementById('kayipGunYuzde').value) || 0,
                 postWarrantyMaintenanceCost:     finVal('bakim'),
                 postWarrantyMaintenanceCurrency: finCcy('bakim'),
                 advertisingRevenue:              document.getElementById('reklamVar').checked ? finVal('reklam') : 0,
                 advertisingRevenueCurrency:      document.getElementById('reklamVar').checked ? finCcy('reklam') : 0,
-                stationUnitCost:                 finVal('sarj'),
-                stationUnitCostCurrency:         finCcy('sarj'),
+                stationUnitCost:                 0,
+                stationUnitCostCurrency:         0,
                 providerEntryFee:                finVal('giris'),
                 providerEntryFeeCurrency:        finCcy('giris'),
                 infrastructureCost:              finVal('altyapi'),
@@ -779,7 +830,7 @@
             .then(function(data) {
                 showToast('Fizibilite başarıyla güncellendi.');
                 setTimeout(function() {
-                    window.location.href = '/FeasibilityAmortization/Details/' + STUDY_ID;
+                    window.location.href = '/FeasibilityAmortization/Result/' + STUDY_ID;
                 }, 1200);
             })
             .catch(function(err) {

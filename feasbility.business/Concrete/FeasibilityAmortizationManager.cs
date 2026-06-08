@@ -157,6 +157,41 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
         if (s == null) return null;
 
+        return BuildDetail(s);
+    }
+
+    /// <summary>
+    /// Kaydetmeden, gönderilen form verisiyle aynı hesaplama mantığını çalıştırıp
+    /// sonuç (önizleme) DTO'su üretir. Para birimi seçimleri kura göre TL'ye çevrilir.
+    /// </summary>
+    public async Task<FeasibilityAmortizationDetailDto> CalculatePreviewAsync(FeasibilityAmortizationSaveDto dto, CancellationToken ct = default)
+    {
+        var study = _mapper.Map<Study>(dto);
+        ApplyTlShadows(study, dto);
+
+        foreach (var lineDto in dto.DeviceLines)
+        {
+            var line = _mapper.Map<DeviceLine>(lineDto);
+            line.UnitLocationCostTl = ToTl(lineDto.UnitLocationCost, lineDto.UnitLocationCostCurrency, dto.UsdRate, dto.EurRate);
+            foreach (var projDto in lineDto.YearProjections)
+                line.YearProjections.Add(_mapper.Map<YearProjection>(projDto));
+            study.DeviceLines.Add(line);
+        }
+
+        // Lokasyon adı (varsa) — sadece başlıkta gösterim için
+        if (dto.LocationId != Guid.Empty)
+            study.Location = await _locationService.GetByIdAsync(dto.LocationId, ignoreFilters: true, ct: ct);
+
+        study.CreatedAt = DateTime.UtcNow;
+        return BuildDetail(study);
+    }
+
+    /// <summary>
+    /// DB'den okunmuş ya da bellekte oluşturulmuş bir Study üzerinden tüm fizibilite
+    /// sonuçlarını (yatırım, yıllık projeksiyon, amortisman, ROI) hesaplar.
+    /// </summary>
+    private FeasibilityAmortizationDetailDto BuildDetail(Study s)
+    {
         var oneTimeTl = s.StationUnitCostTl + s.ProviderEntryFeeTl + s.InfrastructureCostTl;
         var deviceTl  = s.DeviceLines.Sum(d => d.UnitLocationCostTl + s.DeviceUnitCostTl * d.DeviceCount);
         var totalTl   = oneTimeTl + deviceTl;
@@ -184,9 +219,19 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         const decimal h1Days = 151m;
         const decimal h2Days = 214m;
 
+        // Aylık kayıp gün oranı: istasyonun çalışmadığı (şarj olmayan) gün payı.
+        // Hem geliri hem de elektrik alış maliyetini oranla düşürür → net marj kayıp% kadar azalır.
+        var uptimeFactor = 1m - Math.Clamp(s.MonthlyLostDaysPercent, 0m, 100m) / 100m;
+
         var activeLines = s.DeviceLines.Where(d => !d.IsDeleted).OrderBy(d => d.DeviceType).ToList();
         var linesDtos   = new List<DeviceLineDetailDto>();
         decimal totalRevTl = 0, totalElecTl = 0, totalCommTl = 0;
+
+        // Aylık döküm için kira cihaz başına paylaştırılır (Excel'de hat başına sabit aylık kira gösterimi).
+        var totalDeviceCount = activeLines.Sum(d => d.DeviceCount);
+        var monthlyRentPerDevice = s.HasRent && totalDeviceCount > 0 ? s.MonthlyRentTl / totalDeviceCount : 0m;
+        // Ocak=1 ... Aralık=12 için takvim gün sayıları (artık yıl hariç).
+        int[] daysPerMonth = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
         foreach (var d in activeLines)
         {
@@ -196,14 +241,14 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             decimal annualRev, annualElec;
             if (y1 != null && (y1.SalePriceH1 > 0 || y1.SalePriceH2 > 0))
             {
-                var eH1 = d.SocketCount * y1.DailyChargePerSocket * h1Days * d.AvgKwh;
-                var eH2 = d.SocketCount * y1.DailyChargePerSocket * h2Days * d.AvgKwh;
+                var eH1 = d.SocketCount * y1.DailyChargePerSocket * h1Days * d.AvgKwh * uptimeFactor;
+                var eH2 = d.SocketCount * y1.DailyChargePerSocket * h2Days * d.AvgKwh * uptimeFactor;
                 annualRev  = eH1 * y1.SalePriceH1  + eH2 * y1.SalePriceH2;
                 annualElec = eH1 * y1.PurchasePriceH1 + eH2 * y1.PurchasePriceH2;
             }
             else
             {
-                var annual = d.SocketCount * d.DailyChargesPerSocket * 365m * d.AvgKwh;
+                var annual = d.SocketCount * d.DailyChargesPerSocket * 365m * d.AvgKwh * uptimeFactor;
                 annualRev  = annual * d.SalePriceTl;
                 annualElec = annual * d.PurchasePriceTl;
             }
@@ -222,8 +267,8 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 .OrderBy(y => y.Year)
                 .Select(y =>
                 {
-                    var eH1y = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh;
-                    var eH2y = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh;
+                    var eH1y = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh * uptimeFactor;
+                    var eH2y = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh * uptimeFactor;
                     var revTl  = eH1y * y.SalePriceH1  + eH2y * y.SalePriceH2;
                     var elecTl = eH1y * y.PurchasePriceH1 + eH2y * y.PurchasePriceH2;
                     var gm     = revTl - elecTl;
@@ -245,6 +290,66 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                     };
                 }).ToList();
 
+            // Cihaz başına, yıl + ay bazında gelir/gider dökümü.
+            // Ocak-Mayıs (1-5) → H1 fiyatı, Haziran-Aralık (6-12) → H2 fiyatı.
+            var monthlyYears = d.YearProjections
+                .Where(y => !y.IsDeleted)
+                .OrderBy(y => y.Year)
+                .Select(y =>
+                {
+                    var yUsd = y.UsdRate > 0 ? y.UsdRate : s.UsdRate;
+                    var rows = new List<MonthlyBreakdownRowDto>();
+                    for (int m = 1; m <= 12; m++)
+                    {
+                        var days       = daysPerMonth[m - 1];
+                        var lostDays   = days * Math.Clamp(s.MonthlyLostDaysPercent, 0m, 100m) / 100m;
+                        var netOpDays  = days - lostDays;
+                        var isH1       = m <= 5;
+                        var salePrice  = isH1 ? y.SalePriceH1 : y.SalePriceH2;
+                        var buyPrice   = isH1 ? y.PurchasePriceH1 : y.PurchasePriceH2;
+
+                        // Cihaz başına aylık satış kWh (tek cihazın soketleri).
+                        var saleKwh    = d.SocketCount * y.DailyChargePerSocket * d.AvgKwh * netOpDays;
+                        var revTl      = saleKwh * salePrice;
+                        var elecTl     = saleKwh * buyPrice;
+                        var gmTl       = revTl - elecTl;
+                        var commTl     = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
+                            ? d.AgreementRate * revTl
+                            : d.AgreementRate * gmTl;
+                        var rentTl     = monthlyRentPerDevice;
+                        var grossTl    = revTl - commTl - rentTl - elecTl;
+
+                        decimal toUsd(decimal tl) => yUsd > 0 ? tl / yUsd : 0m;
+
+                        rows.Add(new MonthlyBreakdownRowDto
+                        {
+                            Month                 = m,
+                            DaysInMonth           = days,
+                            LostDays              = lostDays,
+                            NetOperatingDays      = netOpDays,
+                            SaleKwhPerDevice      = saleKwh,
+                            SalePriceTlPerKwh     = salePrice,
+                            PurchasePriceTlPerKwh = buyPrice,
+                            RevenueTl             = revTl,
+                            RevenueUsd            = toUsd(revTl),
+                            CommissionTl          = commTl,
+                            CommissionUsd         = toUsd(commTl),
+                            RentTl                = rentTl,
+                            RentUsd               = toUsd(rentTl),
+                            ElectricityCostTl     = elecTl,
+                            ElectricityCostUsd    = toUsd(elecTl),
+                            GrossProfitTl         = grossTl,
+                            GrossProfitUsd        = toUsd(grossTl),
+                        });
+                    }
+                    return new MonthlyBreakdownYearDto
+                    {
+                        Year    = y.Year,
+                        UsdRate = yUsd,
+                        Months  = rows,
+                    };
+                }).ToList();
+
             linesDtos.Add(new DeviceLineDetailDto
             {
                 DeviceType              = d.DeviceType.ToString(),
@@ -263,6 +368,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 AnnualCommissionTl      = commission,
                 AnnualNetMarginTl       = grossMargin - commission,
                 YearProjections         = yearProjs,
+                MonthlyBreakdownYears   = monthlyYears,
             });
         }
 
@@ -296,8 +402,8 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 if (y == null) continue;
                 if (y.UsdRate > 0) yUsdRate = y.UsdRate;
 
-                var eH1 = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh;
-                var eH2 = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh;
+                var eH1 = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh * uptimeFactor;
+                var eH2 = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh * uptimeFactor;
                 var rev  = eH1 * y.SalePriceH1  + eH2 * y.SalePriceH2;
                 var elec = eH1 * y.PurchasePriceH1 + eH2 * y.PurchasePriceH2;
                 var gm   = rev - elec;
@@ -330,6 +436,46 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             });
         }
 
+        // ── İstasyon bedeli hariç (gömülü) yatırımın amorti tablosu ─────────────
+        // Şarj istasyonu donanımı taşınabilir olduğundan amortismana dahil edilmez;
+        // yalnızca geri kazanılamayan masrafların (giriş bedeli, altyapı, cihaz+lokasyon)
+        // net kâr ile kaç yılda karşılandığını gösterir.
+        var stationUsd      = s.UsdRate > 0 ? Math.Round(s.StationUnitCostTl / s.UsdRate, 0) : 0m;
+        var sunkUsd         = Math.Round(totalUsd, 0) - stationUsd;
+        if (sunkUsd < 0) sunkUsd = 0m;
+
+        var sunkRows        = new List<SunkAmortizationRowDto>();
+        decimal sunkRecovered = 0m;
+        bool sunkPaid         = false;
+        decimal sunkPayback   = 0m;
+
+        foreach (var ys in yearSummaries)
+        {
+            var prevRecovered = sunkRecovered;
+            sunkRecovered += ys.NetProfitUsd;
+            var remaining = sunkUsd - sunkRecovered;
+            if (remaining < 0) remaining = 0m;
+
+            bool isPaybackYear = !sunkPaid && sunkRecovered >= sunkUsd && sunkUsd > 0;
+            if (isPaybackYear)
+            {
+                sunkPaid = true;
+                // Yıl içinde lineer geri kazanım varsayımıyla kesirli amorti yılı.
+                var need = sunkUsd - prevRecovered;
+                var frac = ys.NetProfitUsd > 0 ? need / ys.NetProfitUsd : 0m;
+                sunkPayback = Math.Round((sunkRows.Count) + frac, 1);
+            }
+
+            sunkRows.Add(new SunkAmortizationRowDto
+            {
+                Year                   = ys.Year,
+                NetProfitUsd           = ys.NetProfitUsd,
+                RecoveredCumulativeUsd = Math.Round(sunkRecovered, 0),
+                RemainingUsd           = Math.Round(remaining, 0),
+                IsPaybackYear          = isPaybackYear,
+            });
+        }
+
         return new FeasibilityAmortizationDetailDto
         {
             Id                         = s.Id,
@@ -344,6 +490,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             InflationUsd               = s.InflationUsd,
             InflationEur               = s.InflationEur,
             ContractMonths             = s.ContractMonths,
+            MonthlyLostDaysPercent     = s.MonthlyLostDaysPercent,
             StationUnitCostTl          = s.StationUnitCostTl,
             ProviderEntryFeeTl         = s.ProviderEntryFeeTl,
             InfrastructureCostTl       = s.InfrastructureCostTl,
@@ -365,6 +512,10 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             AnnualNetProfitUsd         = Math.Round(annualNetUsd, 0),
             PaybackYears               = payback,
             RoiPercent                 = roi,
+            RecoverableInvestmentUsd   = stationUsd,
+            SunkInvestmentUsd          = sunkUsd,
+            SunkPaybackYears           = sunkPayback,
+            SunkAmortization           = sunkRows,
         };
     }
 
@@ -397,6 +548,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 daily    = d.DailyChargesPerSocket,
                 avgkwh   = d.AvgKwh,
                 pTL      = d.SalePriceTl,
+
                 alisKwh  = d.PurchasePriceTl,
                 ccy      = ccyLabel[(int)d.UnitLocationCostCurrency],
                 bedel    = d.UnitLocationCost,
@@ -423,6 +575,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             monthlyRent              = s.MonthlyRent,
             rentCurrency             = (int)s.RentCurrency,
             contractMonths           = s.ContractMonths,
+            monthlyLostDaysPercent   = s.MonthlyLostDaysPercent,
             postWarrantyCost         = s.PostWarrantyMaintenanceCost,
             postWarrantyCurrency     = (int)s.PostWarrantyMaintenanceCurrency,
             advertisingRevenue       = s.AdvertisingRevenue,

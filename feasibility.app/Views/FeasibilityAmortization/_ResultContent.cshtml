@@ -1,0 +1,593 @@
+@using System.Globalization
+@model feasibility.Entity.Dtos.FeasibilityAmortization.FeasibilityAmortizationDetailDto
+@{
+    var tr  = CultureInfo.GetCultureInfo("tr-TR");
+    var inv = CultureInfo.InvariantCulture;
+    Func<decimal, string> N0  = v => v.ToString("#,##0", tr);
+    Func<decimal, string> N2  = v => v.ToString("#,##0.##", tr);
+    Func<decimal, string> USD = v => "$ " + v.ToString("#,##0", tr);
+    Func<decimal, string> PCT = v => "%" + v.ToString("0.0", tr);
+    bool pos(decimal v) => v >= 0;
+    string sign(decimal v) => v >= 0 ? "+" : "";
+
+    // Para birimi dönüşümü: tüm tutarlar TL tabanında saklanır; data-tl ham TL değerini taşır,
+    // JS sayfadaki para birimi seçimine göre (TRY/USD/EUR) güncel TCMB kuruyla yeniden biçimler.
+    // raw: ham TL değeri (InvariantCulture, JS parse edebilsin). dec: ondalık basamak.
+    Func<decimal, string> RAW = v => v.ToString("0.########", inv);
+}
+
+<!-- KPI Kartları -->
+<div class="kpi-row">
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--primary-50);color:var(--primary);">
+            <span class="material-symbols-outlined">account_balance_wallet</span>
+        </div>
+        <div>
+            <div class="kpi-lbl">Toplam Yatırım</div>
+            <div class="kpi-v"><span class="js-money" data-tl="@RAW(Model.TotalInvestmentTl)" data-dec="0">@N0(Model.TotalInvestmentTl) ₺</span></div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--success-50);color:var(--success);">
+            <span class="material-symbols-outlined">restart_alt</span>
+        </div>
+        <div>
+            <div class="kpi-lbl">Amortisman Süresi</div>
+            <div class="kpi-v @(Model.PaybackYears > 0 ? "" : "neg")">
+                @(Model.PaybackYears > 0 ? Model.PaybackYears.ToString("0.0", tr) + " Yıl" : "—")
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--warning-50);color:var(--warning);">
+            <span class="material-symbols-outlined">trending_up</span>
+        </div>
+        <div>
+            <div class="kpi-lbl">Yıl 1 Net Kâr</div>
+            <div class="kpi-v @(pos(Model.AnnualNetProfitTl) ? "pos" : "neg")">
+                <span class="js-money" data-tl="@RAW(Model.AnnualNetProfitTl)" data-dec="0">@sign(Model.AnnualNetProfitTl)@N0(Model.AnnualNetProfitTl) ₺</span>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-ico" style="background:var(--primary-50);color:var(--primary);">
+            <span class="material-symbols-outlined">percent</span>
+        </div>
+        <div>
+            <div class="kpi-lbl">Yıllık ROI</div>
+            <div class="kpi-v @(pos(Model.RoiPercent) ? "pos" : "neg")">
+                @sign(Model.RoiPercent)@PCT(Model.RoiPercent)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yatırım + Sabit Giderler özeti -->
+<div class="summary-grid">
+    <div class="card res-section collapsible">
+        <div class="card-header" onclick="toggleCard(this)">
+            <div class="res-card-header">
+                <div class="fiz-ix">01</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Dağılımı</h2>
+                    <div class="fiz-sub">Toplam sermaye harcaması</div>
+                </div>
+            </div>
+            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
+        </div>
+        <div class="card-body collapse-body">
+            @if (Model.StationUnitCostTl > 0)
+            {
+                <div class="res-row"><span class="rl">Araç Şarj İstasyonu</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.StationUnitCostTl)" data-dec="0">@N0(Model.StationUnitCostTl) ₺</span></span></div>
+            }
+            <div class="res-row"><span class="rl">Yer Sağlayıcı Giriş Bedeli</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.ProviderEntryFeeTl)" data-dec="0">@N0(Model.ProviderEntryFeeTl) ₺</span></span></div>
+            <div class="res-row"><span class="rl">Altyapı Yatırımı</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.InfrastructureCostTl)" data-dec="0">@N0(Model.InfrastructureCostTl) ₺</span></span></div>
+            <div class="res-row"><span class="rl">Cihaz + Lokasyon</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.DeviceTotalTl)" data-dec="0">@N0(Model.DeviceTotalTl) ₺</span></span></div>
+            <div class="res-row total"><span class="rl">Toplam Yatırım</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.TotalInvestmentTl)" data-dec="0">@N0(Model.TotalInvestmentTl) ₺</span></span></div>
+            @if (Model.ContractMonths > 0)
+            {
+                <div class="res-row"><span class="rl">Sözleşme Süresi</span><span class="rv">@Model.ContractMonths ay</span></div>
+            }
+            @if (Model.MonthlyLostDaysPercent > 0)
+            {
+                <div class="res-row"><span class="rl">Aylık Kayıp Gün</span><span class="rv">% @Model.MonthlyLostDaysPercent.ToString("0.#")</span></div>
+            }
+        </div>
+    </div>
+
+    <div class="card res-section collapsible">
+        <div class="card-header" onclick="toggleCard(this)">
+            <div class="res-card-header">
+                <div class="fiz-ix">02</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yıllık Sabit Giderler &amp; Parametreler</h2>
+                    <div class="fiz-sub">Kur, enflasyon ve gider kalemleri</div>
+                </div>
+            </div>
+            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
+        </div>
+        <div class="card-body collapse-body">
+            <div class="res-row"><span class="rl">USD/TL Kuru</span><span class="rv">@N2(Model.UsdRate)</span></div>
+            <div class="res-row"><span class="rl">TL Enflasyonu</span><span class="rv">%@N2(Model.InflationTl)</span></div>
+            <div class="res-row"><span class="rl">USD Enflasyonu</span><span class="rv">%@N2(Model.InflationUsd)</span></div>
+            @if (Model.HasRent)
+            {
+                <div class="res-row"><span class="rl">Yıllık Kira</span><span class="rv neg"><span class="js-money" data-tl="@RAW(-Model.AnnualRentTl)" data-dec="0">-@N0(Model.AnnualRentTl) ₺</span></span></div>
+            }
+            @if (Model.AnnualMaintenanceTl > 0)
+            {
+                <div class="res-row"><span class="rl">Yıllık Bakım</span><span class="rv neg"><span class="js-money" data-tl="@RAW(-Model.AnnualMaintenanceTl)" data-dec="0">-@N0(Model.AnnualMaintenanceTl) ₺</span></span></div>
+            }
+            @if (Model.AnnualAdvertisingRevenueTl > 0)
+            {
+                <div class="res-row"><span class="rl">Yıllık Reklam Geliri</span><span class="rv pos"><span class="js-money" data-tl="@RAW(Model.AnnualAdvertisingRevenueTl)" data-dec="0">+@N0(Model.AnnualAdvertisingRevenueTl) ₺</span></span></div>
+            }
+            @if (Model.HasLoan && Model.AnnualLoanPaymentTl > 0)
+            {
+                <div class="res-row"><span class="rl">Yıllık Kredi Ödemesi (@Model.LoanTermMonths ay)</span><span class="rv neg"><span class="js-money" data-tl="@RAW(-Model.AnnualLoanPaymentTl)" data-dec="0">-@N0(Model.AnnualLoanPaymentTl) ₺</span></span></div>
+            }
+            <div class="res-row total"><span class="rl">Yıl 1 Net Kâr</span>
+                <span class="rv @(pos(Model.AnnualNetProfitTl) ? "pos" : "neg")"><span class="js-money" data-tl="@RAW(Model.AnnualNetProfitTl)" data-dec="0">@sign(Model.AnnualNetProfitTl)@N0(Model.AnnualNetProfitTl) ₺</span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 10 Yıllık Projeksiyon Tablosu -->
+@if (Model.YearSummaries.Any())
+{
+    <div class="card res-section collapsible">
+        <div class="card-header" onclick="toggleCard(this)">
+            <div class="res-card-header">
+                <div class="fiz-ix">03</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yıllık Nakit Akışı Projeksiyonu</h2>
+                </div>s
+                <div class="fiz-cur-wrap" onclick="event.stopPropagation();">
+                    <label>Para Birimi</label>
+                    <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
+                        <option value="TRY">₺ TRY</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                    </select>
+                </div>
+            </div>
+            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
+        </div>
+        <div class="table-wrapper collapse-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Yıl</th>
+                        <th class="text-right">Brüt Ciro</th>
+                        <th class="text-right">Elektrik</th>
+                        <th class="text-right">Komisyon</th>
+                        <th class="text-right">Sabit Gider</th>
+                        <th class="text-right">Net Kâr</th>
+                        <th class="text-right">USD/TL</th>
+                        <th class="text-right">Kümülatif Net Kâr</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.YearSummaries)
+                    {
+                        <tr>
+                            <td><strong>@r.Year</strong></td>
+                            <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(r.TotalRevenueTl)" data-dec="0">@N0(r.TotalRevenueTl) ₺</span></td>
+                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.TotalElectricityCostTl)" data-dec="0">-@N0(r.TotalElectricityCostTl) ₺</span></td>
+                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.TotalCommissionTl)" data-dec="0">-@N0(r.TotalCommissionTl) ₺</span></td>
+                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.FixedCostsTl)" data-dec="0">-@N0(r.FixedCostsTl) ₺</span></td>
+                            <td class="text-right @(pos(r.NetProfitTl) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(r.NetProfitTl)" data-dec="0">@sign(r.NetProfitTl)@N0(r.NetProfitTl) ₺</span></td>
+                            <td class="text-right c-neu">@N2(r.UsdRate)</td>
+                            <td class="text-right @(pos(r.CumulativeBalanceUsd) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(r.CumulativeBalanceUsd)" data-dec="0">@sign(r.CumulativeBalanceUsd)@USD(r.CumulativeBalanceUsd)</span></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    @{
+                        var tRev  = Model.YearSummaries.Sum(r => r.TotalRevenueTl);
+                        var tElec = Model.YearSummaries.Sum(r => r.TotalElectricityCostTl);
+                        var tComm = Model.YearSummaries.Sum(r => r.TotalCommissionTl);
+                        var tFix  = Model.YearSummaries.Sum(r => r.FixedCostsTl);
+                        var tNet  = Model.YearSummaries.Sum(r => r.NetProfitTl);
+                        var tCumU = Model.YearSummaries.Last().CumulativeBalanceUsd;
+                    }
+                    <tr class="tfoot-row">
+                        <td>Toplam</td>
+                        <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(tRev)" data-dec="0">@N0(tRev) ₺</span></td>
+                        <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-tElec)" data-dec="0">-@N0(tElec) ₺</span></td>
+                        <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-tComm)" data-dec="0">-@N0(tComm) ₺</span></td>
+                        <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-tFix)" data-dec="0">-@N0(tFix) ₺</span></td>
+                        <td class="text-right @(pos(tNet) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(tNet)" data-dec="0">@sign(tNet)@N0(tNet) ₺</span></td>
+                        <td class="text-right">—</td>
+                        <td class="text-right @(pos(tCumU) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(tCumU)" data-dec="0">@sign(tCumU)@USD(tCumU)</span></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- İstasyon Bedeli Hariç (Gömülü) Yatırımın Amorti Tablosu -->
+@if (Model.SunkAmortization.Any())
+{
+    <div class="card res-section collapsible">
+        <div class="card-header" onclick="toggleCard(this)">
+            <div class="res-card-header">
+                <div class="fiz-ix" style="background:var(--success);">
+                    <span class="material-symbols-outlined" style="font-size:18px;color:#fff;">savings</span>
+                </div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Geri Kazanım (Amorti) Süresi</h2>
+                    <div class="fiz-sub">Şarj istasyonu donanımı taşınabilir olduğundan amortismana dahil edilmez; yalnızca geri kazanılamayan masraflar dikkate alınır.</div>
+                </div>
+                <div class="fiz-cur-wrap" onclick="event.stopPropagation();">
+                    <label>Para Birimi</label>
+                    <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
+                        <option value="TRY">₺ TRY</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                    </select>
+                </div>
+            </div>
+            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
+        </div>
+        <div class="card-body collapse-body">
+            <div class="res-row">
+                <span class="rl">Taşınabilir Yatırım (Şarj İstasyonu) — amortismana dahil değil</span>
+                <span class="rv"><span class="js-money" data-usd="@RAW(Model.RecoverableInvestmentUsd)" data-dec="0">@USD(Model.RecoverableInvestmentUsd)</span></span>
+            </div>
+            <div class="res-row">
+                <span class="rl">Geri Kazanılacak (Gömülü) Yatırım</span>
+                <span class="rv neg"><span class="js-money" data-usd="@RAW(Model.SunkInvestmentUsd)" data-dec="0">@USD(Model.SunkInvestmentUsd)</span></span>
+            </div>
+            <div class="res-row total">
+                <span class="rl">Amorti Süresi</span>
+                <span class="rv @(Model.SunkPaybackYears > 0 ? "pos" : "neg")">
+                    @(Model.SunkPaybackYears > 0 ? Model.SunkPaybackYears.ToString("0.0", tr) + " Yıl" : "Sözleşme süresinde amorti edilemiyor")
+                </span>
+            </div>
+        </div>
+        <div class="table-wrapper collapse-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Yıl</th>
+                        <th class="text-right">Yıllık Net Kâr (USD)</th>
+                        <th class="text-right">Kümülatif Geri Kazanım (USD)</th>
+                        <th class="text-right">Kalan Gömülü Maliyet (USD)</th>
+                        <th class="text-center">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.SunkAmortization)
+                    {
+                        <tr class="@(r.IsPaybackYear ? "tfoot-row" : "")">
+                            <td><strong>@r.Year</strong></td>
+                            <td class="text-right @(pos(r.NetProfitUsd) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(r.NetProfitUsd)" data-dec="0">@sign(r.NetProfitUsd)@USD(r.NetProfitUsd)</span></td>
+                            <td class="text-right c-neu"><span class="js-money" data-usd="@RAW(r.RecoveredCumulativeUsd)" data-dec="0">@USD(r.RecoveredCumulativeUsd)</span></td>
+                            <td class="text-right @(r.RemainingUsd > 0 ? "c-neg" : "c-pos")"><span class="js-money" data-usd="@RAW(r.RemainingUsd)" data-dec="0">@USD(r.RemainingUsd)</span></td>
+                            <td class="text-center">
+                                @if (r.IsPaybackYear)
+                                {
+                                    <span class="hat-badge" style="background:var(--success-50);color:var(--success);">✓ Amorti edildi</span>
+                                }
+                                else if (r.RemainingUsd <= 0)
+                                {
+                                    <span class="c-pos">Geçti</span>
+                                }
+                                else
+                                {
+                                    <span class="c-neu">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- İstasyon Hattı Detayları -->
+@{ int lineNo = 4; }
+@foreach (var line in Model.DeviceLines)
+{
+    <div class="card res-section collapsible">
+        <div class="card-header" onclick="toggleCard(this)">
+            <div class="res-card-header">
+                <div class="fiz-ix">@lineNo.ToString("00")</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;">
+                        <span class="hat-badge">@line.DeviceType</span>
+                        İstasyon Hattı — @line.DeviceCount Cihaz · @line.SocketCount Soket · @line.AgreementGenre (@((line.AgreementRate * 100).ToString("0.#", tr))%)
+                    </h2>
+                    <div class="fiz-sub">Hat yatırımı: <span class="js-money" data-tl="@RAW(line.LineInvestmentTl)" data-dec="0">@N0(line.LineInvestmentTl) ₺</span> · Yıl 1 net marj: <span class="@(pos(line.AnnualNetMarginTl) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(line.AnnualNetMarginTl)" data-dec="0">@sign(line.AnnualNetMarginTl)@N0(line.AnnualNetMarginTl) ₺</span></span></div>
+                </div>
+                <div class="fiz-cur-wrap" onclick="event.stopPropagation();">
+                    <label>Para Birimi</label>
+                    <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
+                        <option value="TRY">₺ TRY</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                    </select>
+                </div>
+            </div>
+            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
+        </div>
+        @if (line.YearProjections.Any())
+        {
+            <div class="table-wrapper collapse-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Yıl</th>
+                            <th class="text-right">Şarj/Soket</th>
+                            <th class="text-right">Yıllık Ciro</th>
+                            <th class="text-right">Elektrik</th>
+                            <th class="text-right">Komisyon</th>
+                            <th class="text-right">Brüt Marj</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in line.YearProjections)
+                        {
+                            var margin = p.AnnualRevenueTl - p.AnnualElectricityCostTl - p.AnnualCommissionTl;
+                            <tr>
+                                <td><strong>@p.Year</strong></td>
+                                <td class="text-right">@N2(p.DailyChargePerSocket)</td>
+                                <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(p.AnnualRevenueTl)" data-dec="0">@N0(p.AnnualRevenueTl) ₺</span></td>
+                                <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-p.AnnualElectricityCostTl)" data-dec="0">-@N0(p.AnnualElectricityCostTl) ₺</span></td>
+                                <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-p.AnnualCommissionTl)" data-dec="0">-@N0(p.AnnualCommissionTl) ₺</span></td>
+                                <td class="text-right @(pos(margin) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(margin)" data-dec="0">@sign(margin)@N0(margin) ₺</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (line.MonthlyBreakdownYears.Any())
+        {
+            var mbId = "mb-" + lineNo;
+            var monthNames = new[] { "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık" };
+            <details class="mb-block collapse-body" style="border-top:1px solid var(--border);padding:14px 16px;">
+                <summary style="display:flex;align-items:center;gap:12px;margin-bottom:0;flex-wrap:wrap;cursor:pointer;list-style:none;">
+                    <span class="material-symbols-outlined mb-chevron" style="font-size:20px;color:var(--text-muted);transition:transform .15s;">chevron_right</span>
+                    <h3 style="font-size:13px;font-weight:600;margin:0;">Aylık Gelir / Gider Dökümü <span style="font-weight:400;color:var(--text-muted);">(cihaz başına)</span></h3>
+                    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">
+                        <label style="font-size:12px;color:var(--text-muted);">Yıl</label>
+                        <select class="fiz-ctl mb-year-select" data-target="@mbId" style="width:auto;min-width:90px;padding:4px 8px;height:auto;"
+                                onclick="event.stopPropagation();" onchange="mbSelectYear(this)">
+                            @foreach (var yb in line.MonthlyBreakdownYears)
+                            {
+                                <option value="@yb.Year">@yb.Year</option>
+                            }
+                        </select>
+                    </div>
+                </summary>
+
+                <div style="margin-top:12px;"></div>
+
+                @foreach (var yb in line.MonthlyBreakdownYears)
+                {
+                    <div class="mb-year" id="@(mbId)-@yb.Year" style="@(yb.Year == line.MonthlyBreakdownYears.First().Year ? "" : "display:none;")">
+                        <div class="table-wrapper">
+                            <table class="table mb-table" style="font-size:12px;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;min-width:180px;">Aylar</th>
+                                        @foreach (var mn in monthNames)
+                                        {
+                                            <th class="text-right">@mn</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Gün Sayıları</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right">@r.DaysInMonth</td> }
+                                    </tr>
+                                    <tr>
+                                        <td>Kayıp Gün Sayısı</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right">@N2(r.LostDays)</td> }
+                                    </tr>
+                                    <tr>
+                                        <td>Net Operasyonel Gün</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right">@N2(r.NetOperatingDays)</td> }
+                                    </tr>
+                                    <tr>
+                                        <td>Aylık Cihaz Başına Satış kWh</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right">@N0(r.SaleKwhPerDevice)</td> }
+                                    </tr>
+                                    <tr class="mb-sep">
+                                        <td>Satış Fiyatı (/kWh)</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right"><span class="js-money" data-tl="@RAW(r.SalePriceTlPerKwh)" data-dec="2">@N2(r.SalePriceTlPerKwh) ₺</span></td> }
+                                    </tr>
+                                    <tr>
+                                        <td>Aylık İstasyon Satış Geliri</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(r.RevenueTl)" data-dec="0">@N0(r.RevenueTl) ₺</span></td> }
+                                    </tr>
+                                    <tr class="mb-sep">
+                                        <td>Yer Sağlayıcı Komisyonu</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.CommissionTl)" data-dec="0">-@N0(r.CommissionTl) ₺</span></td> }
+                                    </tr>
+                                    @if (yb.Months.Any(r => r.RentTl > 0))
+                                    {
+                                        <tr>
+                                            <td>Aylık Kira Bedeli</td>
+                                            @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.RentTl)" data-dec="0">-@N0(r.RentTl) ₺</span></td> }
+                                        </tr>
+                                    }
+                                    <tr class="mb-sep">
+                                        <td>Aylık İstasyon Elektrik Maliyeti</td>
+                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.ElectricityCostTl)" data-dec="0">-@N0(r.ElectricityCostTl) ₺</span></td> }
+                                    </tr>
+                                    <tr class="tfoot-row mb-sep">
+                                        <td><strong>Cihaz Başına Aylık Brüt Kâr</strong></td>
+                                        @foreach (var r in yb.Months) { <td class="text-right @(r.GrossProfitTl >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(r.GrossProfitTl)" data-dec="0">@N0(r.GrossProfitTl) ₺</span></td> }
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    @{
+                                        var yRev   = yb.Months.Sum(r => r.RevenueTl);
+                                        var yComm  = yb.Months.Sum(r => r.CommissionTl);
+                                        var yRent  = yb.Months.Sum(r => r.RentTl);
+                                        var yElec  = yb.Months.Sum(r => r.ElectricityCostTl);
+                                        var yGross = yb.Months.Sum(r => r.GrossProfitTl);
+                                    }
+                                    <tr class="tfoot-row">
+                                        <td>Yıl Toplamı (cihaz başına)</td>
+                                        <td class="text-right" colspan="12">
+                                            Ciro: <strong class="c-pos"><span class="js-money" data-tl="@RAW(yRev)" data-dec="0">@N0(yRev) ₺</span></strong> ·
+                                            Komisyon: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yComm)" data-dec="0">-@N0(yComm) ₺</span></strong> ·
+                                            @if (yRent > 0) { <text>Kira: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yRent)" data-dec="0">-@N0(yRent) ₺</span></strong> · </text> }
+                                            Elektrik: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yElec)" data-dec="0">-@N0(yElec) ₺</span></strong> ·
+                                            Brüt Kâr: <strong class="@(yGross >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(yGross)" data-dec="0">@N0(yGross) ₺</span></strong>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </details>
+        }
+    </div>
+    lineNo++;
+}
+
+<style>
+    /* Özet grid: her iki kart da açıkken eşit yükseklikte dursun.
+       Ama bir kart kapanınca o kart içeriğine göre küçülsün (boşluk bırakmasın). */
+    .summary-grid { align-items: stretch; }
+    .summary-grid:has(.card.collapsed) { align-items: start; }
+    /* Açık kalan kart kapanan komşusu yüzünden küçülmesin, tam yüksekliğini korusun */
+    .summary-grid:has(.card.collapsed) .card.collapsible:not(.collapsed) { align-self: stretch; }
+
+    /* Açılır / kapanır kart başlıkları */
+    .card.collapsible > .card-header {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        user-select: none;
+    }
+    .card.collapsible > .card-header:hover { background: var(--surface-2); }
+    .collapse-chevron {
+        font-size: 22px;
+        color: var(--text-muted);
+        transition: transform .2s ease;
+        flex-shrink: 0;
+    }
+    .card.collapsed > .card-header .collapse-chevron { transform: rotate(-90deg); }
+    .card.collapsed > .collapse-body { display: none !important; }
+
+    /* Para birimi seçici (tablo başlığı sağ üst) */
+    .fiz-cur-wrap {
+        display: flex; align-items: center; gap: 6px;
+        margin-left: auto;
+    }
+    .fiz-cur-wrap label {
+        font-size: 11px; color: var(--text-muted); font-weight: 600;
+        text-transform: uppercase; letter-spacing: .4px;
+    }
+    .fiz-cur-select {
+        padding: 4px 8px; height: auto; width: auto; min-width: 76px;
+        font-size: 12px; font-weight: 600;
+        border: 1px solid var(--border); border-radius: 8px;
+        background: var(--surface); color: var(--text); cursor: pointer;
+    }
+    /* Başlıkta seçici varken chevron'dan önce gelsin, tıklama kart toggle'ını tetiklemesin */
+    .res-card-header { display: flex; align-items: center; gap: 10px; }
+</style>
+
+<script>
+    function toggleCard(header) {
+        header.closest('.card.collapsible').classList.toggle('collapsed');
+    }
+
+    function mbSelectYear(sel) {
+        var base = sel.getAttribute('data-target');
+        var block = sel.closest('.mb-block');
+        block.querySelectorAll('.mb-year').forEach(function (el) { el.style.display = 'none'; });
+        var show = document.getElementById(base + '-' + sel.value);
+        if (show) show.style.display = '';
+    }
+
+    /* ===== Para birimi dönüşümü (canlı TCMB kuru) =====================
+       Tüm tutarlar .js-money span'lerinde TL tabanında (data-tl) saklanır.
+       Seçilen para birimine göre güncel kura bölünüp yeniden biçimlenir.   */
+    (function () {
+        var FXR = { TRY: 1, USD: 0, EUR: 0 };   // 1 birim para = kaç TL (TRY hariç canlıdan gelir)
+        var SYM = { TRY: '₺', USD: '$', EUR: '€' };
+        var CUR = 'TRY';
+
+        function fmt(n, dec) {
+            // tr-TR biçimi: binlik nokta, ondalık virgül
+            return new Intl.NumberFormat('tr-TR', {
+                minimumFractionDigits: dec, maximumFractionDigits: dec
+            }).format(n);
+        }
+
+        function renderMoney() {
+            var rate = FXR[CUR] || 0;          // TL -> seçili birim için bölünecek kur
+            var sym  = SYM[CUR];
+            // Seçili para birimi TRY değil ama kuru henüz gelmediyse dönüştürme (yanlış 0 gösterme)
+            if (CUR !== 'TRY' && rate <= 0) return;
+            document.querySelectorAll('.js-money').forEach(function (el) {
+                // Taban değer TL'dir. data-tl varsa doğrudan; data-usd varsa güncel USD kuruyla TL'ye çevrilir.
+                var tl;
+                var aTl = el.getAttribute('data-tl');
+                if (aTl !== null) {
+                    tl = parseFloat(aTl);
+                } else {
+                    var usd = parseFloat(el.getAttribute('data-usd'));
+                    // Kur henüz gelmediyse USD tabanlı hücreyi sunucu metniyle bırak (0 göstermesin)
+                    if (isNaN(usd) || (FXR.USD || 0) <= 0) return;
+                    tl = usd * FXR.USD;
+                }
+                if (isNaN(tl)) return;
+                var dec = parseInt(el.getAttribute('data-dec') || '0', 10);
+                var val = CUR === 'TRY' ? tl : (rate > 0 ? tl / rate : 0);
+                var neg = val < 0;
+                var abs = Math.abs(val);
+                // Sembol konumu: ₺ sonda, $/€ başta (mevcut görünümle uyumlu)
+                var body = (CUR === 'TRY') ? (fmt(abs, dec) + ' ' + sym) : (sym + ' ' + fmt(abs, dec));
+                el.textContent = (neg ? '-' : '') + body;
+            });
+        }
+
+        function applyRates(d) {
+            // Create ekranındaki ile aynı kaynak: TCMB satış kuru
+            if (d && d.usdSell > 0) FXR.USD = d.usdSell;
+            if (d && d.eurSell > 0) FXR.EUR = d.eurSell;
+        }
+
+        window.fizSelectCurrency = function (sel) {
+            CUR = sel.value;
+            // Tüm para birimi seçicilerini eşitle
+            document.querySelectorAll('.fiz-cur-select').forEach(function (s) { s.value = CUR; });
+            renderMoney();
+        };
+
+        // Sayfa açılışında canlı kuru çek, sonra mevcut seçime göre biçimle.
+        document.addEventListener('DOMContentLoaded', function () {
+            renderMoney(); // TL varsayılanıyla ilk boyama
+            fetch('/FeasibilityAmortization/GetRates')
+                .then(function (r) { return r.json(); })
+                .then(function (d) { applyRates(d); renderMoney(); })
+                .catch(function () { /* kur çekilemezse TL gösterimi kalır */ });
+        });
+
+        // Partial preview (Calculate) DOMContentLoaded sonrası enjekte edilirse:
+        if (document.readyState !== 'loading') {
+            renderMoney();
+            fetch('/FeasibilityAmortization/GetRates')
+                .then(function (r) { return r.json(); })
+                .then(function (d) { applyRates(d); renderMoney(); })
+                .catch(function () {});
+        }
+    })();
+</script>

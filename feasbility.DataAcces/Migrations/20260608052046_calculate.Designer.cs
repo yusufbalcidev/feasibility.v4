@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using feasibility.DataAccess.Context;
 
@@ -11,9 +12,11 @@ using feasibility.DataAccess.Context;
 namespace feasibility.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260608052046_calculate")]
+    partial class calculate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -428,6 +431,7 @@ namespace feasibility.DataAccess.Migrations
             modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.DeviceLine", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("AgreementGenre")
@@ -514,6 +518,7 @@ namespace feasibility.DataAccess.Migrations
             modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.Study", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("AdvertisingRevenue")
@@ -609,9 +614,6 @@ namespace feasibility.DataAccess.Migrations
                     b.Property<Guid>("LocationId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("MonthlyLostDaysPercent")
-                        .HasColumnType("decimal(8,4)");
-
                     b.Property<decimal>("MonthlyRent")
                         .HasColumnType("decimal(18,4)");
 
@@ -663,6 +665,8 @@ namespace feasibility.DataAccess.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("LocationId");
 
                     b.ToTable("Studies", (string)null);
@@ -671,6 +675,7 @@ namespace feasibility.DataAccess.Migrations
             modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.YearProjection", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -735,6 +740,9 @@ namespace feasibility.DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceLineId");
+
+                    b.HasIndex("DeviceLineId", "Year")
+                        .IsUnique();
 
                     b.ToTable("YearProjections", (string)null);
                 });

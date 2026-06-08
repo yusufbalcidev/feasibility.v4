@@ -21,6 +21,8 @@ public class FeasibilityAmortizationSaveDto
 
     public int ContractMonths { get; set; }
 
+    public decimal MonthlyLostDaysPercent { get; set; }
+
     public decimal PostWarrantyMaintenanceCost { get; set; }
     public CurrencyType PostWarrantyMaintenanceCurrency { get; set; } = CurrencyType.TL;
 

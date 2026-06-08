@@ -306,6 +306,21 @@ select.fiz-ctl {
 }
 .fiz-cell-in:hover { border-color: var(--border); }
 .fiz-cell-in:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 2px var(--primary-50); }
+.fiz-cell-in.bad { border-color: var(--danger); background: var(--danger-50); }
+.fiz-cell-in.bad:focus { box-shadow: 0 0 0 2px var(--danger-50); }
+
+/* invalid station-table row highlight */
+.fiz-row-bad td { background: var(--danger-50); }
+
+/* empty station list in error state (no station added but tried to save) */
+.fiz-empty.bad {
+    border: 1.5px dashed var(--danger);
+    border-radius: 10px;
+    background: var(--danger-50);
+    color: var(--danger);
+}
+.fiz-empty.bad .material-symbols-outlined { opacity: .7; }
+.fiz-empty.bad p { font-weight: 600; }
 
 .fiz-cell-sel {
     font-family: inherit;
@@ -614,3 +629,86 @@ select.fiz-ctl {
     color: var(--warning);
     background: var(--warning-50);
 }
+
+/* ============================================================
+   Results pane — hesaplama sonuç raporu (Result.cshtml ile aynı)
+   ============================================================ */
+.fiz-results-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.fiz-results-hint { font-size: 12px; color: var(--text-muted); }
+
+/* Buton yüklenme spinner'ı */
+.fiz-spin { animation: fiz-rotate 0.8s linear infinite; }
+@keyframes fiz-rotate { to { transform: rotate(360deg); } }
+.btn.is-loading { opacity: .8; cursor: progress; pointer-events: none; }
+
+/* KPI kartları */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+@media(max-width:900px){ .kpi-row{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:500px){ .kpi-row{grid-template-columns:1fr;} }
+.kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+    display: flex; align-items: center; gap: 14px;
+}
+.kpi-ico { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.kpi-ico .material-symbols-outlined { font-size: 1.3rem; }
+.kpi-lbl { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: .5px; margin-bottom: 3px; }
+.kpi-v   { font-size: 1.3rem; font-weight: 800; color: var(--text); margin: 0; }
+.kpi-v.pos { color: var(--success); }
+.kpi-v.neg { color: var(--danger); }
+
+/* Bölüm kartları */
+.res-section { margin-bottom: 20px; }
+.res-card-header { display: flex; align-items: center; gap: 10px; }
+.res-card-header .fiz-ix { background: var(--primary); }
+.res-card-header .material-symbols-outlined { font-size: 18px; color: var(--primary); }
+
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+@media(max-width:700px){ .summary-grid{grid-template-columns:1fr;} }
+
+.res-row { display: flex; justify-content: space-between; align-items: center; padding: .45rem 0; border-bottom: 1px solid var(--border); font-size: .875rem; }
+.res-row:last-child { border-bottom: none; }
+.res-row .rl { color: var(--text-muted); font-weight: 500; }
+.res-row .rv { font-weight: 700; color: var(--text); font-family: 'Courier New', monospace; font-size: .875rem; }
+.res-row .rv.pos { color: var(--success); }
+.res-row .rv.neg { color: var(--danger); }
+.res-row.total { background: var(--surface-2); border-radius: 8px; padding: .55rem .65rem; margin-top: 4px; }
+.res-row.total .rl { font-weight: 700; color: var(--text); }
+.res-row.total .rv { font-size: 1rem; }
+
+.c-pos { color: var(--success) !important; font-weight: 700; }
+.c-neg { color: var(--danger)  !important; font-weight: 700; }
+.c-neu { color: var(--text-muted); }
+.tfoot-row td { background: var(--surface-2) !important; font-weight: 800; border-top: 2px solid var(--border); }
+
+.hat-badge { background: var(--primary-50); color: var(--primary); font-size: .75rem; font-weight: 800; padding: .2rem .65rem; border-radius: 999px; }
+
+/* Aylık gelir/gider dökümü tablosu */
+.mb-table td:first-child,
+.mb-table th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface, #fff);
+    text-align: left;
+    font-weight: 600;
+}
+.mb-table thead th:first-child { z-index: 2; }
+.mb-table .tfoot-row td:first-child { background: var(--surface-2) !important; }
+.mb-table tr.mb-sep td { border-top: 1px solid var(--border); }
+.mb-table td, .mb-table th { white-space: nowrap; }
+.mb-year-select { cursor: pointer; }
+
+/* Katlanabilir aylık döküm bloğu */
+details.mb-block > summary { list-style: none; }
+details.mb-block > summary::-webkit-details-marker { display: none; }
+details.mb-block[open] > summary .mb-chevron { transform: rotate(90deg); }

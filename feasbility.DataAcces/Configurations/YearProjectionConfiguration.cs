@@ -11,6 +11,7 @@ public class YearProjectionConfiguration : IEntityTypeConfiguration<YearProjecti
         builder.ToTable("YearProjections");
 
         builder.HasKey(y => y.Id);
+        builder.Property(y => y.Id).ValueGeneratedNever();
 
         builder.Property(y => y.DailyChargePerSocket).HasColumnType("decimal(18,4)");
         builder.Property(y => y.SalePriceH1).HasColumnType("decimal(18,2)");

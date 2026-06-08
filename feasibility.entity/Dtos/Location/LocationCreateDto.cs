@@ -9,7 +9,7 @@ public class LocationCreateDto
     public string Name { get; set; } = string.Empty;
 
     [StringLength(500)]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     [Required(ErrorMessage = "İl seçimi zorunludur.")]
     public string City { get; set; } = string.Empty;
