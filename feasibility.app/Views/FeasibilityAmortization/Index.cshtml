@@ -25,19 +25,11 @@
 </div>
 
 <div class="card">
-    <div class="card-header card-header-tabs">
-        <div class="tab-bar">
-            <button type="button" class="tab-btn active" data-tab="list" onclick="switchTab('list')">
-                <span class="material-symbols-outlined">list</span> Liste
-            </button>
-            <button type="button" class="tab-btn" data-tab="summary" onclick="switchTab('summary')">
-                <span class="material-symbols-outlined">bar_chart</span> Özet
-            </button>
-        </div>
-        <span class="badge badge-info" id="recordBadge">@Model.Count kayıt</span>
+    <div class="card-header">
+        <span class="badge badge-info">@Model.Count kayıt</span>
     </div>
 
-    <div id="tab-list" class="tab-pane active">
+    <div>
         <div class="table-wrapper">
             <table class="table">
                 <thead>
@@ -92,9 +84,6 @@
                                 <td>@row.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
                                 <td>
                                     <div class="row-actions" style="justify-content:flex-end;">
-                                        <a asp-action="Result" asp-route-id="@row.Id" class="row-action-btn">
-                                            <span class="material-symbols-outlined">bar_chart</span> Sonuç
-                                        </a>
                                         @if (row.IsDeleted)
                                         {
                                             <form asp-action="Restore" method="post" style="display:inline;"
@@ -108,6 +97,9 @@
                                         }
                                         else
                                         {
+                                            <a asp-action="Result" asp-route-id="@row.Id" class="row-action-btn">
+                                                <span class="material-symbols-outlined">bar_chart</span> Sonuçlar
+                                            </a>
                                             <a asp-action="Edit" asp-route-id="@row.Id" class="row-action-btn">
                                                 <span class="material-symbols-outlined">edit</span> Düzenle
                                             </a>
@@ -130,23 +122,4 @@
         </div>
     </div>
 
-    <div id="tab-summary" class="tab-pane">
-        <div class="summary-empty">
-            <span class="material-symbols-outlined">bar_chart</span>
-            <p>Özet görünümü için önce fizibilite ekleyiniz.</p>
-        </div>
-    </div>
 </div>
-
-@section Scripts {
-    <script>
-        function switchTab(t) {
-            document.querySelectorAll('.tab-btn').forEach(function(b) {
-                b.classList.toggle('active', b.dataset.tab === t);
-            });
-            document.getElementById('tab-list').classList.toggle('active', t === 'list');
-            document.getElementById('tab-summary').classList.toggle('active', t === 'summary');
-        }
-
-    </script>
-}

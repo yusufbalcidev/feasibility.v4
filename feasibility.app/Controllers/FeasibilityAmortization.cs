@@ -151,6 +151,14 @@ namespace feasibility.App.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Result(Guid id, CancellationToken ct)
+        {
+            var detail = await _feasibilityAmortizationService.GetDetailAsync(id, ct);
+            if (detail is null) return NotFound();
+            return View(detail);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
@@ -169,11 +177,5 @@ namespace feasibility.App.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        public async Task<IActionResult> Result(Guid id, CancellationToken ct)
-        {
-            var dto = await _feasibilityAmortizationService.GetDetailAsync(id, ct);
-            if (dto is null) return NotFound();
-            return View(dto);
-        }
     }
 }

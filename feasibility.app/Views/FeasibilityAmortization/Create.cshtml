@@ -884,11 +884,7 @@
                 return r.json();
             })
             .then(function(data) {
-                showToast('Fizibilite başarıyla kaydedildi.');
-                // Başarılı: yönlendirmeye kadar buton yüklenme durumunda kalsın
-                setTimeout(function() {
-                    window.location.href = '/FeasibilityAmortization/Index';
-                }, 1200);
+                window.location.href = '/FeasibilityAmortization/Result/' + data.id;
             })
             .catch(function(err) {
                 setSaveLoading(false);

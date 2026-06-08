@@ -16,15 +16,6 @@
     </div>
 </div>
 
-<div class="fiz-tabbar">
-    <button class="fiz-tab active" data-tab="form" onclick="switchTab('form')">
-        <span class="material-symbols-outlined">edit_note</span> Veri Girişleri
-    </button>
-    <button class="fiz-tab" data-tab="results" onclick="switchTab('results')">
-        <span class="material-symbols-outlined">bar_chart</span> Fizibilite Sonuçları
-    </button>
-</div>
-
 <div class="fiz-pane active" id="pane-form">
 
     <div class="card fiz-card" id="card-01">
@@ -255,15 +246,6 @@
 
 </div>
 
-<div class="fiz-pane" id="pane-results">
-    <div class="fiz-results-empty">
-        <div class="fiz-glyph">
-            <span class="material-symbols-outlined">bar_chart</span>
-        </div>
-        <h3>Fizibilite Sonuçları</h3>
-        <p>Değişiklikleri kaydettikten sonra sonuç raporunu görüntüleyebilirsiniz.</p>
-    </div>
-</div>
 
 <div class="fiz-overlay" id="fiz-overlay">
     <div class="fiz-modal">
@@ -365,12 +347,7 @@
         var showToast = function(msg, isErr) { alertify[isErr ? 'error' : 'success'](msg); };
         var ccyFromNum = function(n) { return n === 1 ? 'USD' : n === 2 ? 'EUR' : 'TRY'; };
 
-        function switchTab(t) {
-            document.querySelectorAll('.fiz-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === t); });
-            document.getElementById('pane-form').classList.toggle('active', t === 'form');
-            document.getElementById('pane-results').classList.toggle('active', t === 'results');
-        }
-        function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
+function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
 
         function renderFx() {
             document.getElementById('fxBody').innerHTML = FX.map(function(f) {

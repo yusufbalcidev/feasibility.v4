@@ -402,10 +402,17 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 if (y == null) continue;
                 if (y.UsdRate > 0) yUsdRate = y.UsdRate;
 
-                var eH1 = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh * uptimeFactor;
-                var eH2 = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh * uptimeFactor;
-                var rev  = eH1 * y.SalePriceH1  + eH2 * y.SalePriceH2;
-                var elec = eH1 * y.PurchasePriceH1 + eH2 * y.PurchasePriceH2;
+                // Projeksiyon fiyatı 0 ise cihaz satırındaki baz fiyatı kullan (annualNetTl ile tutarlı)
+                var daily = y.DailyChargePerSocket > 0 ? y.DailyChargePerSocket : d.DailyChargesPerSocket;
+                var sH1   = y.SalePriceH1     > 0 ? y.SalePriceH1     : d.SalePriceTl;
+                var sH2   = y.SalePriceH2     > 0 ? y.SalePriceH2     : d.SalePriceTl;
+                var pH1   = y.PurchasePriceH1 > 0 ? y.PurchasePriceH1 : d.PurchasePriceTl;
+                var pH2   = y.PurchasePriceH2 > 0 ? y.PurchasePriceH2 : d.PurchasePriceTl;
+
+                var eH1 = d.SocketCount * daily * h1Days * d.AvgKwh * uptimeFactor;
+                var eH2 = d.SocketCount * daily * h2Days * d.AvgKwh * uptimeFactor;
+                var rev  = eH1 * sH1 + eH2 * sH2;
+                var elec = eH1 * pH1 + eH2 * pH2;
                 var gm   = rev - elec;
                 var comm = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
                     ? d.AgreementRate * rev
@@ -460,10 +467,10 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             if (isPaybackYear)
             {
                 sunkPaid = true;
-                // Yıl içinde lineer geri kazanım varsayımıyla kesirli amorti yılı.
                 var need = sunkUsd - prevRecovered;
                 var frac = ys.NetProfitUsd > 0 ? need / ys.NetProfitUsd : 0m;
-                sunkPayback = Math.Round((sunkRows.Count) + frac, 1);
+                // 0.05'in altındaki kesirler yuvarlamayla 0.0 olur; en az 0.1 yıl göster.
+                sunkPayback = Math.Max(0.1m, Math.Round(sunkRows.Count + frac, 1));
             }
 
             sunkRows.Add(new SunkAmortizationRowDto
