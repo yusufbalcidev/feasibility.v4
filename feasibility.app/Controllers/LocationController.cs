@@ -73,8 +73,8 @@ public class LocationController : Controller
             City = dto.City,
             District = dto.District,
             Address = dto.Address,
-            Latitude = dto.Latitude,
-            Longitude = dto.Longitude,
+            Latitude = dto.Latitude!.Value,
+            Longitude = dto.Longitude!.Value,
             LocationTypeMaintenanceId = dto.LocationTypeMaintenanceId
         };
 
@@ -153,8 +153,8 @@ public class LocationController : Controller
         entity.City = dto.City;
         entity.District = dto.District;
         entity.Address = dto.Address;
-        entity.Latitude = dto.Latitude;
-        entity.Longitude = dto.Longitude;
+        entity.Latitude = dto.Latitude!.Value;
+        entity.Longitude = dto.Longitude!.Value;
         entity.LocationTypeMaintenanceId = dto.LocationTypeMaintenanceId;
 
         await _locationService.UpdateAsync(entity, ct);

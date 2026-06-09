@@ -25,10 +25,16 @@ public class LocationCreateDtoValidator : AbstractValidator<LocationCreateDto>
         RuleFor(x => x.Address).MaximumLength(300);
 
         RuleFor(x => x.Latitude)
-            .InclusiveBetween(-90m, 90m).WithMessage("Enlem -90 ile 90 arasında olmalıdır.");
+            .NotNull().WithMessage("Enlem zorunludur.");
+        RuleFor(x => x.Latitude)
+            .InclusiveBetween(-90m, 90m).WithMessage("Enlem -90 ile 90 arasında olmalıdır.")
+            .When(x => x.Latitude.HasValue);
 
         RuleFor(x => x.Longitude)
-            .InclusiveBetween(-180m, 180m).WithMessage("Boylam -180 ile 180 arasında olmalıdır.");
+            .NotNull().WithMessage("Boylam zorunludur.");
+        RuleFor(x => x.Longitude)
+            .InclusiveBetween(-180m, 180m).WithMessage("Boylam -180 ile 180 arasında olmalıdır.")
+            .When(x => x.Longitude.HasValue);
     }
 }
 
@@ -42,7 +48,15 @@ public class LocationUpdateDtoValidator : AbstractValidator<LocationUpdateDto>
         RuleFor(x => x.City).NotEmpty().MaximumLength(100);
         RuleFor(x => x.District).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Address).MaximumLength(300);
-        RuleFor(x => x.Latitude).InclusiveBetween(-90m, 90m);
-        RuleFor(x => x.Longitude).InclusiveBetween(-180m, 180m);
+        RuleFor(x => x.Latitude)
+            .NotNull().WithMessage("Enlem zorunludur.");
+        RuleFor(x => x.Latitude)
+            .InclusiveBetween(-90m, 90m).WithMessage("Enlem -90 ile 90 arasında olmalıdır.")
+            .When(x => x.Latitude.HasValue);
+        RuleFor(x => x.Longitude)
+            .NotNull().WithMessage("Boylam zorunludur.");
+        RuleFor(x => x.Longitude)
+            .InclusiveBetween(-180m, 180m).WithMessage("Boylam -180 ile 180 arasında olmalıdır.")
+            .When(x => x.Longitude.HasValue);
     }
 }

@@ -1,0 +1,97 @@
+/* ── Başarı banner ──────────────────────────────────────── */
+.result-success-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px; margin-bottom: 20px;
+    background: var(--success-50); color: var(--success);
+    border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    transition: opacity .4s ease, max-height .4s ease, margin .4s ease, padding .4s ease;
+    overflow: hidden; max-height: 60px;
+}
+.result-success-banner.hide { opacity:0; max-height:0; margin-bottom:0; padding-top:0; padding-bottom:0; }
+.result-success-banner .material-symbols-outlined { font-size: 18px; font-variation-settings: 'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24; }
+
+/* ── KPI kartları ───────────────────────────────────────── */
+.res-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+@media(max-width:900px){ .res-kpi-row { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:500px){ .res-kpi-row { grid-template-columns: 1fr; } }
+
+.res-kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.res-kpi-header { display: flex; align-items: center; justify-content: space-between; }
+.res-kpi-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.res-kpi-icon .material-symbols-outlined {
+    font-size: 20px;
+    font-variation-settings: 'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24;
+}
+.res-kpi-badge {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; padding: 3px 8px; border-radius: 20px;
+}
+.res-kpi-value { font-size: 1.5rem; font-weight: 800; color: var(--text); line-height: 1.1; }
+.res-kpi-value.pos { color: var(--success); }
+.res-kpi-value.neg { color: var(--danger); }
+.res-kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+/* ── Bölüm kartları ──────────────────────────────────────── */
+.res-section { margin-bottom: 16px; }
+
+.res-sec-header {
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; user-select: none;
+    padding: 16px 20px;
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+.res-sec-header:hover { background: var(--surface-2); }
+.res-sec-icon {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.res-sec-icon .material-symbols-outlined {
+    font-size: 18px;
+    font-variation-settings: 'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24;
+}
+.res-sec-title { font-size: 14px; font-weight: 700; color: var(--text); margin: 0; }
+.res-sec-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.res-sec-chevron {
+    margin-left: auto; font-size: 20px; color: var(--text-muted);
+    transition: transform .2s ease; flex-shrink: 0;
+}
+.card.collapsed .res-sec-chevron { transform: rotate(-90deg); }
+.card.collapsed > .collapse-body { display: none !important; }
+
+/* Para birimi seçici */
+.res-cur-wrap { display:flex; align-items:center; gap:6px; margin-left:auto; margin-right:12px; }
+.res-cur-wrap label { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.res-cur-select {
+    padding:4px 8px; height:auto; width:auto; min-width:76px;
+    font-size:12px; font-weight:600;
+    border:1px solid var(--border); border-radius:8px;
+    background:var(--surface); color:var(--text); cursor:pointer;
+}
+
+/* Tablo içinde ikon */
+.tbl-icon { display:inline-flex; align-items:center; gap:6px; }
+.tbl-icon .material-symbols-outlined { font-size:15px; font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24; }
+
+/* Özet grid */
+.res-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media(max-width:700px){ .res-summary-grid { grid-template-columns: 1fr; } }
+
+/* Mono numbers */
+.mono { font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; }
+.text-right { text-align: right !important; }
+.text-center { text-align: center !important; }
+.c-pos { color: var(--success) !important; }
+.c-neg { color: var(--danger) !important; }
+.c-neu { color: var(--text-muted) !important; }

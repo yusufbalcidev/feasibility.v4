@@ -21,10 +21,10 @@ public class LocationCreateDto
     public string? Address { get; set; }
 
     [Required(ErrorMessage = "Enlem zorunludur.")]
-    public decimal Latitude { get; set; }
+    public decimal? Latitude { get; set; }
 
     [Required(ErrorMessage = "Boylam zorunludur.")]
-    public decimal Longitude { get; set; }
+    public decimal? Longitude { get; set; }
 
     public Guid? LocationTypeMaintenanceId { get; set; }
 }

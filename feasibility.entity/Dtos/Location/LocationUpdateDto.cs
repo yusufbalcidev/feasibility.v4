@@ -22,11 +22,11 @@ public class LocationUpdateDto
     [StringLength(300)]
     public string? Address { get; set; }
 
-    [Required]
-    public decimal Latitude { get; set; }
+    [Required(ErrorMessage = "Enlem zorunludur.")]
+    public decimal? Latitude { get; set; }
 
-    [Required]
-    public decimal Longitude { get; set; }
+    [Required(ErrorMessage = "Boylam zorunludur.")]
+    public decimal? Longitude { get; set; }
 
     public Guid? LocationTypeMaintenanceId { get; set; }
 }
