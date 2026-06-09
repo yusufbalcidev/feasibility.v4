@@ -11,6 +11,7 @@ public class FeasibilityAmortizationProfile : Profile
         // SaveDto → Study (TL shadow fields and navigation ignored; set after map)
         CreateMap<FeasibilityAmortizationSaveDto, Study>()
             .ForMember(d => d.Id,                            o => o.Ignore())
+            .ForMember(d => d.Version,                       o => o.Ignore())
             .ForMember(d => d.MonthlyRentTl,                 o => o.Ignore())
             .ForMember(d => d.PostWarrantyMaintenanceCostTl, o => o.Ignore())
             .ForMember(d => d.AdvertisingRevenueTl,          o => o.Ignore())

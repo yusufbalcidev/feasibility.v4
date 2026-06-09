@@ -1,0 +1,516 @@
+@model feasibility.Entity.Dtos.FeasibilityAmortization.FeasibilityAmortizationDetailDto
+@{
+    ViewData["Title"] = Model.FeasibilityName + " — Fizibilite Görüntüle";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var hasData = Model.DeviceLines != null && Model.DeviceLines.Any();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/feasibility/create/style.css" />
+    <link rel="stylesheet" href="~/css/feasibility/amortization/result/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <div class="crumb">Fizibiliteler &middot; Amortisman &middot; <strong>Görüntüle</strong></div>
+        <h1>@Model.FeasibilityName</h1>
+        <p>Fizibilite veri girişlerini ve hesaplanan sonuçları görüntüleyin.</p>
+    </div>
+    <div class="header-actions">
+        <a href="/FeasibilityAmortization/Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Listeye Dön
+        </a>
+    </div>
+</div>
+
+<div class="fiz-tabbar">
+    <button class="fiz-tab active" data-tab="form" onclick="switchTab('form')">
+        <span class="material-symbols-outlined">edit_note</span> Veri Girişleri
+    </button>
+    <button class="fiz-tab" data-tab="results" onclick="switchTab('results')">
+        <span class="material-symbols-outlined">bar_chart</span> Fizibilite Sonuçları
+    </button>
+</div>
+
+<!-- ════════════ VERİ GİRİŞLERİ (salt-okunur) ════════════ -->
+<div class="fiz-pane active" id="pane-form">
+
+    <div class="card fiz-card" id="card-01">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">01</div>
+                <div><h2 style="font-size:14px;font-weight:600;margin:0;">Temel Bilgiler</h2></div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleFizCard('card-01')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="fiz-two">
+                <div class="fiz-field" id="f-loc">
+                    <label>Lokasyon</label>
+                    <select class="fiz-ctl" id="loc" asp-items="ViewBag.Locations">
+                        <option value="">-- Lokasyon seçiniz --</option>
+                    </select>
+                </div>
+                <div class="fiz-field" id="f-name">
+                    <label>Fizibilite Adı</label>
+                    <input class="fiz-ctl" id="fname" maxlength="50" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-02">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">02</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Kur &amp; Enflasyon Bilgileri</h2>
+                    <div class="fiz-sub">TCMB referans değerleri</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleFizCard('card-02')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="fiz-fx-split">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Döviz Kodu</th>
+                                <th class="text-center">Birim</th>
+                                <th>Döviz Cinsi</th>
+                                <th class="text-right">Alış</th>
+                                <th class="text-right">Satış</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fxBody"></tbody>
+                    </table>
+                </div>
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Para Birimi</th>
+                                <th class="text-right">Yıllık Enflasyon %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="infBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-03">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">03</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">İstasyon Bilgileri</h2>
+                    <div class="fiz-sub">Her tür için tek satır</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <span class="fiz-hint"><span class="fiz-dot"></span><span id="stCount">0</span>/2 tür</span>
+                    <button class="fiz-collapse-btn" onclick="toggleFizCard('card-03')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div id="stWrap" class="table-wrapper"></div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-04">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">04</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Lokasyon Mali Bilgileri</h2>
+                    <div class="fiz-sub">Tutarlar seçili para biriminden girilir; diğer karşılıkları otomatik gösterilir</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleFizCard('card-04')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="fiz-card-body">
+            <label class="fiz-chk">
+                <input type="checkbox" id="kiraVar" disabled />
+                <span class="fiz-chk-box"><span class="material-symbols-outlined">check</span></span>
+                Lokasyona kira ödenecek mi?
+            </label>
+            <div class="fiz-kira-block hidden" id="kiraBlock"></div>
+            <label class="fiz-chk" style="margin-top:10px;">
+                <input type="checkbox" id="reklamVar" disabled />
+                <span class="fiz-chk-box"><span class="material-symbols-outlined">check</span></span>
+                Lokasyonda reklam geliri elde edilecek mi?
+            </label>
+            <div class="fiz-kira-block hidden" id="reklamBlock"></div>
+            <div style="margin-top:18px; display:grid; grid-template-columns:240px 240px; gap:16px; max-width:496px;">
+                <div class="fiz-field">
+                    <label>Sözleşme Süresi</label>
+                    <div class="fiz-input-wrap">
+                        <input class="fiz-ctl has-suf" id="sozlesmeAy" type="number" style="padding-left:12px;">
+                        <span class="fiz-suf">ay</span>
+                    </div>
+                </div>
+                <div class="fiz-field">
+                    <label>Aylık Kayıp Gün</label>
+                    <div class="fiz-input-wrap">
+                        <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" style="padding-left:12px;">
+                        <span class="fiz-suf">%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="fiz-fin-grid" id="finGrid" style="margin-top:18px;"></div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-05">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">05</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Finans Maliyeti</h2>
+                    <div class="fiz-sub">Kredi faizi ve geri ödeme projeksiyonu</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleFizCard('card-05')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <label class="fiz-chk">
+                <input type="checkbox" id="krediVar" disabled />
+                <span class="fiz-chk-box"><span class="material-symbols-outlined">check</span></span>
+                Bu istasyon yatırımı yapılırken kredi faizi gideri oluşacak mı?
+            </label>
+
+            <div class="fiz-finance-panel" id="financePanel">
+                <div class="fiz-fin-grid">
+                    <div class="fiz-field">
+                        <label>Kredi Tutarı</label>
+                        <div class="fiz-input-wrap">
+                            <span class="fiz-pre">TL</span>
+                            <input class="fiz-ctl" style="padding-left:34px;" type="number" id="krediTutar">
+                        </div>
+                    </div>
+                    <div class="fiz-field">
+                        <label>Yıllık Faiz Oranı</label>
+                        <div class="fiz-input-wrap">
+                            <input class="fiz-ctl has-suf" style="padding-left:12px;" type="number" id="faizOran">
+                            <span class="fiz-suf">%</span>
+                        </div>
+                    </div>
+                    <div class="fiz-field">
+                        <label>Vade</label>
+                        <div class="fiz-input-wrap">
+                            <input class="fiz-ctl has-suf" style="padding-left:12px;" type="number" id="vadeAy">
+                            <span class="fiz-suf">ay</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="fiz-result-panel">
+                    <div class="fiz-result-panel-main">
+                        <span class="lbl">Ödenecek Toplam Faiz</span>
+                        <span class="val" id="toplamFaiz">TL 0</span>
+                    </div>
+                    <div class="fiz-result-sub-row">
+                        <div class="item">Aylık Taksit <b id="aylikTaksit">TL 0</b></div>
+                        <div class="item">Toplam Geri Ödeme <b id="toplamOdeme">TL 0</b></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ════════════ FİZİBİLİTE SONUÇLARI ════════════ -->
+<div class="fiz-pane" id="pane-results">
+    @if (hasData)
+    {
+        <partial name="_ResultContent" model="Model" />
+    }
+    else
+    {
+        <div class="fiz-results-empty">
+            <div class="fiz-glyph">
+                <span class="material-symbols-outlined">bar_chart</span>
+            </div>
+            <h3>Fizibiliteniz hazırlamalısınız</h3>
+            <p>Bu fizibilite için henüz veri girişi yapılmamış. Sonuçları görüntüleyebilmek için önce fizibilitenizi hazırlamalısınız.</p>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        var _preload = @Html.Raw(ViewBag.PreloadJson as string ?? "null");
+
+        var FX = [
+            { code: "USD/TRY", unit: 1, name: "ABD DOLARI", buy: 0, sell: 0 },
+            { code: "EUR/TRY", unit: 1, name: "EURO",       buy: 0, sell: 0 }
+        ];
+        var INF = [
+            { k: "TL",  v: 0 },
+            { k: "EUR", v: 0 },
+            { k: "USD", v: 0 }
+        ];
+        var USD         = function() { return FX[0].sell; };
+        var EUR         = function() { return FX[1].sell; };
+        var USD_PER_EUR = function() { return FX[1].sell / FX[0].sell; };
+        var KIRA = [
+            { id: "kira",  label: "Aylık Kira Bedeli",         ccy: "TRY", val: 0 },
+            { id: "kiraY", label: "Yıllık Toplam Kira Bedeli", ccy: "TRY", val: 0, disabled: true }
+        ];
+        var FIN = [
+            { id: "bakim",    label: "Garanti Sonrası Bakım (Yıllık)",   ccy: "TRY", val: 0 },
+            { id: "giris",    label: "Yer Sağlayıcı Proje Giriş Bedeli", ccy: "TRY", val: 0 },
+            { id: "altyapi",  label: "Altyapı Yatırım Bedeli",           ccy: "TRY", val: 0 },
+            { id: "cihaz",    label: "Cihaz Başına Yatırım",             ccy: "TRY", val: 0 }
+        ];
+        var REKLAM = [
+            { id: "reklam",   label: "Reklam Geliri",                    ccy: "TRY", val: 0 }
+        ];
+        var CONTRACT = ["Kâr", "Ciro"];
+        var CCY      = ["TRY", "USD", "EUR"];
+
+        var fmt   = function(n, d) { d = d === undefined ? 2 : d; return isFinite(n) ? n.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '-'; };
+        var ccyFromNum = function(n) { return n === 1 ? 'USD' : n === 2 ? 'EUR' : 'TRY'; };
+
+        function switchTab(t) {
+            document.querySelectorAll('.fiz-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === t); });
+            document.getElementById('pane-form').classList.toggle('active', t === 'form');
+            document.getElementById('pane-results').classList.toggle('active', t === 'results');
+        }
+        function toggleFizCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+        var CCY_LABELS = { USD: '$', TRY: 'TL', EUR: '€' };
+
+        function renderFx() {
+            document.getElementById('fxBody').innerHTML = FX.map(function(f) {
+                return '<tr>' +
+                    '<td class="mono" style="font-weight:600">' + f.code + '</td>' +
+                    '<td class="text-center mono">' + f.unit + '</td>' +
+                    '<td>' + f.name + '</td>' +
+                    '<td class="text-right mono">' + fmt(f.buy, 3) + '</td>' +
+                    '<td class="text-right mono">' + fmt(f.sell, 3) + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+        function renderInf() {
+            document.getElementById('infBody').innerHTML = INF.map(function(item) {
+                return '<tr>' +
+                    '<td style="font-weight:600;text-transform:uppercase">' + item.k + '</td>' +
+                    '<td class="text-right"><input class="fiz-cell-in" value="' + fmt(item.v, 2) + '" disabled></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function finFieldHtml(f) {
+            var pre = CCY_LABELS[f.ccy] || 'TL';
+            var unitSuf = f.unit ? '<span class="fiz-suf">' + f.unit + '</span>' : '';
+            var inputCls = 'fiz-ctl' + (f.unit ? ' has-suf' : '');
+            var convLine = '<div class="fiz-conv" id="' + f.id + '_conv"></div>';
+            return '<div class="fiz-field">' +
+                '<label>' + f.label + '<span class="fiz-tag" style="margin-left:6px;">' + (CCY_LABELS[f.ccy] || f.ccy) + '</span></label>' +
+                '<div class="fiz-input-row">' +
+                    '<div class="fiz-input-wrap" style="flex:1;">' +
+                        '<span class="fiz-pre" id="' + f.id + '_pre">' + pre + '</span>' +
+                        '<input class="' + inputCls + '" id="' + f.id + '" value="' + fmt(f.val, 2) + '" disabled>' +
+                        unitSuf +
+                    '</div>' +
+                '</div>' +
+                convLine +
+            '</div>';
+        }
+
+        function convText(v, ccy) {
+            if (ccy === 'USD') {
+                return 'TL <span class="calc">' + fmt(v * USD(), 2) + '</span>' +
+                       ' &nbsp;&middot;&nbsp; EUR <span class="calc">' + fmt(v / USD_PER_EUR(), 2) + '</span>';
+            } else if (ccy === 'TRY') {
+                return '$ <span class="calc">' + fmt(v / USD(), 4) + '</span>' +
+                       ' &nbsp;&middot;&nbsp; EUR <span class="calc">' + fmt(v / EUR(), 4) + '</span>';
+            } else {
+                return '$ <span class="calc">' + fmt(v * USD_PER_EUR(), 2) + '</span>' +
+                       ' &nbsp;&middot;&nbsp; TL <span class="calc">' + fmt(v * EUR(), 2) + '</span>';
+            }
+        }
+        function recalcFin() {
+            var all = KIRA.concat(FIN).concat(REKLAM);
+            all.forEach(function(f) {
+                var convEl = document.getElementById(f.id + '_conv');
+                if (convEl) convEl.innerHTML = convText(f.val, f.ccy);
+            });
+        }
+
+        var stations = [];
+        function syncP(s) {
+            return {
+                satisUsd: +s.pTL     / USD(),
+                satisEur: +s.pTL     / EUR(),
+                alisUsd:  +s.alisKwh / USD(),
+                alisEur:  +s.alisKwh / EUR()
+            };
+        }
+
+        function renderStations() {
+            var wrap = document.getElementById('stWrap');
+            if (stations.length === 0) {
+                wrap.innerHTML = '<div class="fiz-empty"><span class="material-symbols-outlined">table_rows</span><p>Bu fizibilite için istasyon verisi bulunmuyor.</p></div>';
+            } else {
+                var rows = stations.map(function(s) {
+                    var p = syncP(s);
+                    return '<tr>' +
+                        '<td><span class="hat-badge">' + s.type + '</span></td>' +
+                        '<td class="text-right">' + fmt(s.adet, 0) + '</td>' +
+                        '<td class="text-right">' + fmt(s.soket, 0) + '</td>' +
+                        '<td class="text-right">' + fmt(s.daily, 0) + '</td>' +
+                        '<td class="text-right">' + fmt(s.avgkwh, 0) + '</td>' +
+                        '<td class="fiz-price-cell">' +
+                            '<div class="mono">' + fmt(s.pTL, 2) + '</div>' +
+                            '<div class="fiz-price-sub"><span>$ ' + fmt(p.satisUsd, 4) + '</span><span>€ ' + fmt(p.satisEur, 4) + '</span></div>' +
+                        '</td>' +
+                        '<td class="fiz-price-cell">' +
+                            '<div class="mono">' + fmt(s.alisKwh, 2) + '</div>' +
+                            '<div class="fiz-price-sub"><span>$ ' + fmt(p.alisUsd, 4) + '</span><span>€ ' + fmt(p.alisEur, 4) + '</span></div>' +
+                        '</td>' +
+                        '<td class="text-right">' + fmt(s.bedel, 0) + '</td>' +
+                        '<td>' + s.ccy + '</td>' +
+                        '<td>' + s.contract + '</td>' +
+                        '<td class="text-right">' + fmt(s.oran, 0) + '</td>' +
+                        '</tr>';
+                }).join('');
+                wrap.innerHTML = '<table class="table"><thead><tr>' +
+                    '<th>İstasyon Türü</th><th class="text-right">İstasyon Adeti</th><th class="text-right">Soket Adeti</th>' +
+                    '<th class="text-right">Günlük Soket Başı Şarjlanma</th><th class="text-right">1 kerede yapılacak Ort Şarjlanma (kwh)</th>' +
+                    '<th class="text-right">Satış TL/kWh</th><th class="text-right">Alış TL/kWh</th>' +
+                    '<th class="text-right">Bedel / Adet</th><th>Para Birimi</th><th>Sözleşme Türü</th><th class="text-right">Oran %</th>' +
+                    '</tr></thead><tbody>' + rows + '</tbody></table>';
+            }
+            document.getElementById('stCount').textContent = stations.length;
+        }
+
+        function hesaplaFin() {
+            var P = parseFloat(document.getElementById('krediTutar').value) || 0;
+            var yillik = parseFloat(document.getElementById('faizOran').value) || 0;
+            var n = parseInt(document.getElementById('vadeAy').value) || 0;
+            var taksit = 0, toplamOdeme = 0, toplamFaiz = 0;
+            if (P > 0 && n > 0) {
+                var r = yillik / 100 / 12;
+                if (r === 0) {
+                    taksit = P / n; toplamOdeme = P; toplamFaiz = 0;
+                } else {
+                    var f = Math.pow(1 + r, n);
+                    taksit = P * r * f / (f - 1);
+                    toplamOdeme = taksit * n;
+                    toplamFaiz = toplamOdeme - P;
+                }
+            }
+            document.getElementById('toplamFaiz').textContent  = 'TL ' + fmt(toplamFaiz, 0);
+            document.getElementById('aylikTaksit').textContent = 'TL ' + fmt(taksit, 0);
+            document.getElementById('toplamOdeme').textContent = 'TL ' + fmt(toplamOdeme, 0);
+        }
+
+        // ── Salt-okunur ön yükleme ──────────────────────────────────────────
+        function applyPreload(p) {
+            document.getElementById('loc').value   = p.locationId;
+            document.getElementById('fname').value = p.feasibilityName;
+
+            FX[0].buy = p.usdRate; FX[0].sell = p.usdRate;
+            FX[1].buy = p.eurRate; FX[1].sell = p.eurRate;
+            renderFx();
+
+            INF[0].v = p.inflTl;
+            INF[1].v = p.inflEur;
+            INF[2].v = p.inflUsd;
+            renderInf();
+
+            var finMap = {
+                bakim:   { val: p.postWarrantyCost,  ccy: ccyFromNum(p.postWarrantyCurrency) },
+                giris:   { val: p.providerFee,       ccy: ccyFromNum(p.providerFeeCurrency) },
+                altyapi: { val: p.infraCost,         ccy: ccyFromNum(p.infraCostCurrency) },
+                cihaz:   { val: p.deviceCost,        ccy: ccyFromNum(p.deviceCostCurrency) }
+            };
+            FIN.forEach(function(f) {
+                var m = finMap[f.id]; if (!m) return;
+                f.val = m.val; f.ccy = m.ccy;
+            });
+            document.getElementById('finGrid').innerHTML = FIN.map(finFieldHtml).join('');
+
+            var sozlesmeEl = document.getElementById('sozlesmeAy');
+            if (sozlesmeEl && p.contractMonths) sozlesmeEl.value = p.contractMonths;
+            var kayipEl = document.getElementById('kayipGunYuzde');
+            if (kayipEl && p.monthlyLostDaysPercent) kayipEl.value = p.monthlyLostDaysPercent;
+
+            if (p.advertisingRevenue > 0) {
+                document.getElementById('reklamVar').checked = true;
+                document.getElementById('reklamBlock').classList.remove('hidden');
+                REKLAM[0].val = p.advertisingRevenue;
+                REKLAM[0].ccy = ccyFromNum(p.advertisingRevenueCurrency);
+                document.getElementById('reklamBlock').innerHTML = REKLAM.map(finFieldHtml).join('');
+            }
+
+            if (p.hasRent) {
+                document.getElementById('kiraVar').checked = true;
+                document.getElementById('kiraBlock').classList.remove('hidden');
+                KIRA[0].val = p.monthlyRent;
+                KIRA[0].ccy = ccyFromNum(p.rentCurrency);
+                KIRA[1].val = p.monthlyRent * 12;
+                document.getElementById('kiraBlock').innerHTML = KIRA.map(finFieldHtml).join('');
+            }
+
+            if (p.hasLoan) {
+                document.getElementById('krediVar').checked = true;
+                document.getElementById('financePanel').classList.add('open');
+                document.getElementById('krediTutar').value = p.loanAmount;
+                document.getElementById('faizOran').value   = p.loanRate;
+                document.getElementById('vadeAy').value     = p.loanMonths;
+                hesaplaFin();
+            }
+
+            stations = (p.stations || []).map(function(s) {
+                return {
+                    type: s.type, adet: s.adet, soket: s.soket,
+                    daily: s.daily, avgkwh: s.avgkwh, pTL: s.pTL,
+                    alisKwh: s.alisKwh, ccy: s.ccy, bedel: s.bedel,
+                    contract: s.contract, oran: s.oran
+                };
+            });
+            renderStations();
+            recalcFin();
+        }
+
+        // Form panelindeki tüm girişleri salt-okunur yap.
+        function lockForm() {
+            document.querySelectorAll('#pane-form input, #pane-form select, #pane-form textarea')
+                .forEach(function(el) { el.disabled = true; });
+        }
+
+        if (_preload) {
+            applyPreload(_preload);
+        } else {
+            renderFx(); renderInf();
+            document.getElementById('finGrid').innerHTML = FIN.map(finFieldHtml).join('');
+            renderStations(); recalcFin();
+        }
+        lockForm();
+    </script>
+}

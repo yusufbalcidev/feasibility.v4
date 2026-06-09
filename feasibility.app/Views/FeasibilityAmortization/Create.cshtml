@@ -175,9 +175,11 @@
                 <div class="fiz-field" id="f-kayipgun">
     <label>Aylık Kayıp Gün</label>
     <div class="fiz-input-wrap">
-        <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" min="0" max="100" step="0.1" placeholder="0" style="padding-left:12px;">
+        <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" min="0" max="100" step="0.1" placeholder="0" style="padding-left:12px;"
+               oninput="this.closest('.fiz-field').classList.remove('bad')">
         <span class="fiz-suf" style="font-size: 1.2rem; font-weight: 600; line-height: 1;">%</span>
     </div>
+    <span class="fiz-err">0 ile 100 arasında bir değer giriniz.</span>
 </div>
             </div>
             <div class="fiz-fin-grid" id="finGrid" style="margin-top:18px;"></div>
@@ -807,6 +809,15 @@
             var sozlesme = parseInt(document.getElementById('sozlesmeAy').value, 10);
             if (!sozlesme || sozlesme < 1) { document.getElementById('f-sozlesme').classList.add('bad'); ok = false; markCard('card-04'); }
 
+            // 04 — Aylık kayıp gün (girilirse 0–100 aralığında olmalı)
+            var kayip = document.getElementById('kayipGunYuzde').value.trim();
+            if (kayip !== '') {
+                var kayipNum = parseFloat(kayip);
+                if (isNaN(kayipNum) || kayipNum < 0 || kayipNum > 100) {
+                    document.getElementById('f-kayipgun').classList.add('bad'); ok = false; markCard('card-04');
+                }
+            }
+
             if (!ok) {
                 showToast('Lütfen kırmızı ile işaretlenen zorunlu alanları doldurunuz.', true);
                 if (firstBadCard) document.getElementById(firstBadCard).scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -840,11 +851,24 @@
             })
             .then(function(html) {
                 content.innerHTML = html;
+                runInjectedScripts(content);
             })
             .catch(function(err) {
                 if (empty) empty.style.display = '';
                 content.innerHTML = '';
                 showToast(err.message || 'Hesaplama sırasında hata oluştu.', true);
+            });
+        }
+
+        // innerHTML ile enjekte edilen <script> blokları tarayıcı tarafından çalıştırılmaz.
+        // Sonuç partial'ındaki yıl seçici / kart toggle / para birimi fonksiyonlarının
+        // tanımlanması için script düğümlerini klonlayıp yeniden ekleyerek çalıştırıyoruz.
+        function runInjectedScripts(container) {
+            container.querySelectorAll('script').forEach(function(old) {
+                var s = document.createElement('script');
+                if (old.src) { s.src = old.src; }
+                else { s.textContent = old.textContent; }
+                old.parentNode.replaceChild(s, old);
             });
         }
 
@@ -884,7 +908,8 @@
                 return r.json();
             })
             .then(function(data) {
-                window.location.href = '/FeasibilityAmortization/Result/' + data.id;
+                // Kayıt sonrası düzenlenebilir sonuç sayfasına git (sekmeli: veri + sonuç).
+                window.location.href = '/FeasibilityAmortization/Edit/' + data.id;
             })
             .catch(function(err) {
                 setSaveLoading(false);

@@ -5,7 +5,7 @@
 namespace feasibility.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class calculate : Migration
+    public partial class init2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

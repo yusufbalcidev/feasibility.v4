@@ -12,8 +12,8 @@ using feasibility.DataAccess.Context;
 namespace feasibility.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260601083131_inittt")]
-    partial class inittt
+    [Migration("20260609090129_AddStudyVersion")]
+    partial class AddStudyVersion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -428,6 +428,323 @@ namespace feasibility.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.DeviceLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AgreementGenre")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("AgreementRate")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<decimal>("AvgKwh")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal>("DailyChargesPerSocket")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DeletedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("DeviceCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DeviceType")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("PurchasePriceTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("SalePriceTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("SocketCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StudyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("UnitLocationCost")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("UnitLocationCostCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitLocationCostTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudyId");
+
+                    b.ToTable("DeviceLines", (string)null);
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.Study", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AdvertisingRevenue")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("AdvertisingRevenueCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("AdvertisingRevenueTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("ContractMonths")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DeletedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal>("DeviceUnitCost")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("DeviceUnitCostCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DeviceUnitCostTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("EurRate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("FeasibilityName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("HasLoan")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasRent")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("InflationEur")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<decimal>("InflationTl")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<decimal>("InflationUsd")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<decimal>("InfrastructureCost")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("InfrastructureCostCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("InfrastructureCostTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LoanAmount")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("LoanAnnualInterestRate")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<int>("LoanTermMonths")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("MonthlyLostDaysPercent")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<decimal>("MonthlyRent")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("MonthlyRentTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("PostWarrantyMaintenanceCost")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("PostWarrantyMaintenanceCostTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("PostWarrantyMaintenanceCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ProviderEntryFee")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("ProviderEntryFeeCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ProviderEntryFeeTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("RentCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("StationUnitCost")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("StationUnitCostCurrency")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("StationUnitCostTl")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal>("UsdRate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("Studies", (string)null);
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.YearProjection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal>("DailyChargePerSocket")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DeletedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("DeviceLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("PurchasePriceH1")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PurchasePriceH2")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SalePriceH1")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SalePriceH2")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<decimal>("UsdRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceLineId");
+
+                    b.ToTable("YearProjections", (string)null);
+                });
+
             modelBuilder.Entity("feasibility.Entity.Entities.Identity.AppRole", b =>
                 {
                     b.Property<Guid>("Id")
@@ -643,7 +960,7 @@ namespace feasibility.DataAccess.Migrations
                         });
                 });
 
-            modelBuilder.Entity("feasibility.Entity.Entities.Location.Location", b =>
+            modelBuilder.Entity("feasibility.Entity.Entities.Locations.Location", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -724,7 +1041,7 @@ namespace feasibility.DataAccess.Migrations
                     b.ToTable("Locations", (string)null);
                 });
 
-            modelBuilder.Entity("feasibility.Entity.Entities.Location.LocationTypeMaintenance", b =>
+            modelBuilder.Entity("feasibility.Entity.Entities.Locations.LocationTypeMaintenance", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -973,9 +1290,42 @@ namespace feasibility.DataAccess.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("feasibility.Entity.Entities.Location.Location", b =>
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.DeviceLine", b =>
                 {
-                    b.HasOne("feasibility.Entity.Entities.Location.LocationTypeMaintenance", "LocationTypeMaintenance")
+                    b.HasOne("feasibility.Entity.Entities.FeasibilityAmortization.Study", "Study")
+                        .WithMany("DeviceLines")
+                        .HasForeignKey("StudyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Study");
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.Study", b =>
+                {
+                    b.HasOne("feasibility.Entity.Entities.Locations.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.YearProjection", b =>
+                {
+                    b.HasOne("feasibility.Entity.Entities.FeasibilityAmortization.DeviceLine", "DeviceLine")
+                        .WithMany("YearProjections")
+                        .HasForeignKey("DeviceLineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DeviceLine");
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.Locations.Location", b =>
+                {
+                    b.HasOne("feasibility.Entity.Entities.Locations.LocationTypeMaintenance", "LocationTypeMaintenance")
                         .WithMany("Locations")
                         .HasForeignKey("LocationTypeMaintenanceId")
                         .OnDelete(DeleteBehavior.SetNull);
@@ -988,7 +1338,17 @@ namespace feasibility.DataAccess.Migrations
                     b.Navigation("RolePermissions");
                 });
 
-            modelBuilder.Entity("feasibility.Entity.Entities.Location.LocationTypeMaintenance", b =>
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.DeviceLine", b =>
+                {
+                    b.Navigation("YearProjections");
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.Study", b =>
+                {
+                    b.Navigation("DeviceLines");
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.Locations.LocationTypeMaintenance", b =>
                 {
                     b.Navigation("Locations");
                 });

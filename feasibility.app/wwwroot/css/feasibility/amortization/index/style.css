@@ -45,6 +45,14 @@
 .mono { font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; }
 .text-right { text-align: right !important; }
 
+/* Versiyon etiketi — sade, göze batmayan */
+.version-tag {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
 /* Index table — prevent layout break at 100% zoom */
 #tab-list .table-wrapper { overflow-x: auto; }
 

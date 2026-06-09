@@ -113,12 +113,17 @@ namespace feasibility.App.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
         {
+            // Eski versiyon salt-okunur: doğrudan URL ile gelinse bile düzenleme açılmaz, görüntülemeye yönlendirilir.
+            if (!await _feasibilityAmortizationService.IsLatestVersionAsync(id, ct))
+                return RedirectToAction(nameof(View), new { id });
+
             var preloadJson = await _feasibilityAmortizationService.GetEditPreloadJsonAsync(id, ct);
             if (preloadJson is null) return NotFound();
 
             var formDataTask = _feasibilityAmortizationService.GetCreateFormDataAsync(ct);
             var infTask      = _feasibilityAmortizationService.GetSonEnflasyonlarAsync(ct);
-            await Task.WhenAll(formDataTask, infTask);
+            var detailTask   = _feasibilityAmortizationService.GetDetailAsync(id, ct);
+            await Task.WhenAll(formDataTask, infTask, detailTask);
 
             var formData = formDataTask.Result;
             ViewBag.Locations = formData.Locations
@@ -131,7 +136,8 @@ namespace feasibility.App.Controllers
             ViewBag.EurInfJson = eur is not null ? eur.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
             ViewBag.StudyId       = id;
             ViewBag.PreloadJson   = preloadJson;
-            return View();
+            // Düzenleme sayfasındaki "Fizibilite Sonuçları" sekmesini ilk açılışta dolu getir.
+            return View(detailTask.Result);
         }
 
         [HttpPost]
@@ -139,6 +145,10 @@ namespace feasibility.App.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(new { message = "Geçersiz veri." });
+
+            // Eski versiyon salt-okunur: güncelleme isteği gelse bile reddedilir.
+            if (!await _feasibilityAmortizationService.IsLatestVersionAsync(id, ct))
+                return BadRequest(new { message = "Bu fizibilitenin daha güncel bir versiyonu var; eski versiyon düzenlenemez." });
 
             try
             {
@@ -151,12 +161,22 @@ namespace feasibility.App.Controllers
             }
         }
 
+        // Salt-okunur görüntüleme: veri girişleri (düzenlenemez) + sonuçlar sekmeli.
         [HttpGet]
-        public async Task<IActionResult> Result(Guid id, CancellationToken ct)
+        public async Task<IActionResult> View(Guid id, CancellationToken ct)
         {
             var detail = await _feasibilityAmortizationService.GetDetailAsync(id, ct);
             if (detail is null) return NotFound();
-            return View(detail);
+
+            var preloadJson = await _feasibilityAmortizationService.GetEditPreloadJsonAsync(id, ct);
+
+            var formData = await _feasibilityAmortizationService.GetCreateFormDataAsync(ct);
+            ViewBag.Locations = formData.Locations
+                .Select(l => new SelectListItem { Value = l.Value, Text = l.Text })
+                .ToList();
+            ViewBag.PreloadJson = preloadJson ?? "null";
+
+            return base.View("View", detail);
         }
 
         [HttpPost]

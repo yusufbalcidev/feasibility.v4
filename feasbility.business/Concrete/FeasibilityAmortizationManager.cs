@@ -89,6 +89,9 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var study = _mapper.Map<Study>(dto);
         ApplyTlShadows(study, dto);
 
+        // Versiyon: normal yeni kayıt 1; "yeni versiyon olarak ekle" ise kaynak kaydın versiyonu + 1.
+        study.Version = dto.SaveAsNewVersion ? dto.BaseVersion + 1 : 1;
+
         foreach (var lineDto in dto.DeviceLines)
         {
             var line = _mapper.Map<DeviceLine>(lineDto);
@@ -112,6 +115,13 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync(ct);
 
+        // Aynı ada sahip aktif kayıtlar arasındaki en yüksek versiyon — sadece bu "en güncel" sayılır,
+        // daha eski versiyonlar salt-okunur olur (Düzenle gizlenir).
+        var latestByName = studies
+            .Where(s => !s.IsDeleted)
+            .GroupBy(s => s.FeasibilityName)
+            .ToDictionary(g => g.Key, g => g.Max(x => x.Version));
+
         return studies.Select(s =>
         {
             // Toplam yatırım (TL): study geneli tek seferlik kalemler + cihaz/lokasyon bedelleri
@@ -130,6 +140,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             {
                 Id                 = s.Id,
                 FeasibilityName    = s.FeasibilityName,
+                Version            = s.Version,
                 LocationName       = s.Location != null
                     ? $"{s.Location.Name} — {s.Location.City} / {s.Location.District}"
                     : string.Empty,
@@ -140,6 +151,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                     .ToList(),
                 TotalInvestmentUsd = Math.Round(totalUsd, 0),
                 IsDeleted          = s.IsDeleted,
+                IsLatest           = !latestByName.TryGetValue(s.FeasibilityName, out var maxV) || s.Version >= maxV,
                 CreatedAt          = s.CreatedAt,
                 CreatedByName      = s.CreatedByName,
             };
@@ -573,6 +585,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         {
             locationId               = s.LocationId.ToString(),
             feasibilityName          = s.FeasibilityName,
+            version                  = s.Version,
             usdRate                  = s.UsdRate,
             eurRate                  = s.EurRate,
             inflTl                   = s.InflationTl,
@@ -635,6 +648,24 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         }
 
         await _studyService.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> IsLatestVersionAsync(Guid id, CancellationToken ct = default)
+    {
+        var study = await _studyService.Query(ignoreFilters: true)
+            .Where(s => s.Id == id)
+            .Select(s => new { s.FeasibilityName, s.Version })
+            .FirstOrDefaultAsync(ct);
+
+        if (study is null) return false;
+
+        // Aynı ada sahip aktif (silinmemiş) kayıtlar arasındaki en yüksek versiyon
+        var maxVersion = await _studyService.Query()
+            .Where(s => s.Kind == FeasibilityKind.Amortization && s.FeasibilityName == study.FeasibilityName)
+            .Select(s => (int?)s.Version)
+            .MaxAsync(ct) ?? study.Version;
+
+        return study.Version >= maxVersion;
     }
 
     private static void ApplyTlShadows(Study study, FeasibilityAmortizationSaveDto dto)

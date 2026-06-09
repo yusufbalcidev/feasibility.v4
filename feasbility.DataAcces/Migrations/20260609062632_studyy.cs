@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace feasibility.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialClean : Migration
+    public partial class studyy : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,6 +33,10 @@ namespace feasibility.DataAccess.Migrations
                     ActionType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     ErrorMessage = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    RequestContentType = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    RequestBody = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ResponseContentType = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    ResponseBody = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
@@ -340,6 +344,144 @@ namespace feasibility.DataAccess.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Studies",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LocationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FeasibilityName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Kind = table.Column<int>(type: "int", nullable: false),
+                    UsdRate = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    EurRate = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    InflationTl = table.Column<decimal>(type: "decimal(8,4)", nullable: false),
+                    InflationUsd = table.Column<decimal>(type: "decimal(8,4)", nullable: false),
+                    InflationEur = table.Column<decimal>(type: "decimal(8,4)", nullable: false),
+                    HasRent = table.Column<bool>(type: "bit", nullable: false),
+                    MonthlyRent = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    RentCurrency = table.Column<int>(type: "int", nullable: false),
+                    MonthlyRentTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    ContractMonths = table.Column<int>(type: "int", nullable: false),
+                    MonthlyLostDaysPercent = table.Column<decimal>(type: "decimal(8,4)", nullable: false),
+                    PostWarrantyMaintenanceCost = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    PostWarrantyMaintenanceCurrency = table.Column<int>(type: "int", nullable: false),
+                    PostWarrantyMaintenanceCostTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    AdvertisingRevenue = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    AdvertisingRevenueCurrency = table.Column<int>(type: "int", nullable: false),
+                    AdvertisingRevenueTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    StationUnitCost = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    StationUnitCostCurrency = table.Column<int>(type: "int", nullable: false),
+                    StationUnitCostTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    ProviderEntryFee = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    ProviderEntryFeeCurrency = table.Column<int>(type: "int", nullable: false),
+                    ProviderEntryFeeTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    InfrastructureCost = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    InfrastructureCostCurrency = table.Column<int>(type: "int", nullable: false),
+                    InfrastructureCostTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    DeviceUnitCost = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    DeviceUnitCostCurrency = table.Column<int>(type: "int", nullable: false),
+                    DeviceUnitCostTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    HasLoan = table.Column<bool>(type: "bit", nullable: false),
+                    LoanAmount = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    LoanAnnualInterestRate = table.Column<decimal>(type: "decimal(8,4)", nullable: false),
+                    LoanTermMonths = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DeletedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Studies", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Studies_Locations_LocationId",
+                        column: x => x.LocationId,
+                        principalTable: "Locations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DeviceLines",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    StudyId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DeviceType = table.Column<int>(type: "int", nullable: false),
+                    DeviceCount = table.Column<int>(type: "int", nullable: false),
+                    SocketCount = table.Column<int>(type: "int", nullable: false),
+                    DailyChargesPerSocket = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    AvgKwh = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    SalePriceTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    PurchasePriceTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    UnitLocationCost = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    UnitLocationCostCurrency = table.Column<int>(type: "int", nullable: false),
+                    UnitLocationCostTl = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    AgreementGenre = table.Column<int>(type: "int", nullable: false),
+                    AgreementRate = table.Column<decimal>(type: "decimal(8,4)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DeletedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeviceLines", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DeviceLines_Studies_StudyId",
+                        column: x => x.StudyId,
+                        principalTable: "Studies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "YearProjections",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DeviceLineId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Year = table.Column<int>(type: "int", nullable: false),
+                    DailyChargePerSocket = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
+                    SalePriceH1 = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    SalePriceH2 = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PurchasePriceH1 = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PurchasePriceH2 = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    UsdRate = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DeletedByName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_YearProjections", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_YearProjections_DeviceLines_DeviceLineId",
+                        column: x => x.DeviceLineId,
+                        principalTable: "DeviceLines",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.InsertData(
                 table: "Pages",
                 columns: new[] { "Id", "CreatedAt", "CreatedBy", "CreatedByName", "DeletedAt", "DeletedBy", "DeletedByName", "Description", "DisplayOrder", "Icon", "IsDeleted", "Key", "Name", "UpdatedAt", "UpdatedBy", "UpdatedByName" },
@@ -350,7 +492,8 @@ namespace feasibility.DataAccess.Migrations
                     { new Guid("11111111-1111-1111-1111-000000000003"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, null, 3, "category", false, "LocationTypeMaintenance", "Lokasyon Bakım Tipleri", null, null, null },
                     { new Guid("11111111-1111-1111-1111-000000000004"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, null, 4, "group", false, "User", "Kullanıcılar", null, null, null },
                     { new Guid("11111111-1111-1111-1111-000000000005"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, null, 5, "admin_panel_settings", false, "Role", "Roller", null, null, null },
-                    { new Guid("11111111-1111-1111-1111-000000000006"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, null, 6, "history", false, "ActivityLog", "Aktivite Logları", null, null, null }
+                    { new Guid("11111111-1111-1111-1111-000000000006"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, null, 6, "history", false, "ActivityLog", "Aktivite Logları", null, null, null },
+                    { new Guid("11111111-1111-1111-1111-000000000007"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, null, 7, "ev_station", false, "Feasibility", "Fizibilite Projeleri", null, null, null }
                 });
 
             migrationBuilder.InsertData(
@@ -373,7 +516,8 @@ namespace feasibility.DataAccess.Migrations
                     { new Guid("44444444-4444-4444-4444-000000000003"), true, true, true, true, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, false, new Guid("11111111-1111-1111-1111-000000000003"), new Guid("22222222-2222-2222-2222-000000000001"), null, null, null },
                     { new Guid("44444444-4444-4444-4444-000000000004"), true, true, true, true, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, false, new Guid("11111111-1111-1111-1111-000000000004"), new Guid("22222222-2222-2222-2222-000000000001"), null, null, null },
                     { new Guid("44444444-4444-4444-4444-000000000005"), true, true, true, true, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, false, new Guid("11111111-1111-1111-1111-000000000005"), new Guid("22222222-2222-2222-2222-000000000001"), null, null, null },
-                    { new Guid("44444444-4444-4444-4444-000000000006"), true, true, true, true, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, false, new Guid("11111111-1111-1111-1111-000000000006"), new Guid("22222222-2222-2222-2222-000000000001"), null, null, null }
+                    { new Guid("44444444-4444-4444-4444-000000000006"), true, true, true, true, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, false, new Guid("11111111-1111-1111-1111-000000000006"), new Guid("22222222-2222-2222-2222-000000000001"), null, null, null },
+                    { new Guid("44444444-4444-4444-4444-000000000007"), true, true, true, true, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, null, null, false, new Guid("11111111-1111-1111-1111-000000000007"), new Guid("22222222-2222-2222-2222-000000000001"), null, null, null }
                 });
 
             migrationBuilder.InsertData(
@@ -390,6 +534,11 @@ namespace feasibility.DataAccess.Migrations
                 name: "IX_ActivityLogs_UserId",
                 table: "ActivityLogs",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DeviceLines_StudyId",
+                table: "DeviceLines",
+                column: "StudyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Locations_LocationTypeMaintenanceId",
@@ -431,6 +580,11 @@ namespace feasibility.DataAccess.Migrations
                 filter: "[NormalizedName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Studies_LocationId",
+                table: "Studies",
+                column: "LocationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserClaims_UserId",
                 table: "UserClaims",
                 column: "UserId");
@@ -456,6 +610,11 @@ namespace feasibility.DataAccess.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_YearProjections_DeviceLineId",
+                table: "YearProjections",
+                column: "DeviceLineId");
         }
 
         /// <inheritdoc />
@@ -463,9 +622,6 @@ namespace feasibility.DataAccess.Migrations
         {
             migrationBuilder.DropTable(
                 name: "ActivityLogs");
-
-            migrationBuilder.DropTable(
-                name: "Locations");
 
             migrationBuilder.DropTable(
                 name: "RoleClaims");
@@ -486,7 +642,7 @@ namespace feasibility.DataAccess.Migrations
                 name: "UserTokens");
 
             migrationBuilder.DropTable(
-                name: "LocationTypeMaintenances");
+                name: "YearProjections");
 
             migrationBuilder.DropTable(
                 name: "Pages");
@@ -496,6 +652,18 @@ namespace feasibility.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "DeviceLines");
+
+            migrationBuilder.DropTable(
+                name: "Studies");
+
+            migrationBuilder.DropTable(
+                name: "Locations");
+
+            migrationBuilder.DropTable(
+                name: "LocationTypeMaintenances");
         }
     }
 }

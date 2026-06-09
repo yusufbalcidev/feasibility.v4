@@ -12,8 +12,8 @@ using feasibility.DataAccess.Context;
 namespace feasibility.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260607204534_AddWarrantyMonths")]
-    partial class AddWarrantyMonths
+    [Migration("20260609064038_init2")]
+    partial class init2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -431,7 +431,6 @@ namespace feasibility.DataAccess.Migrations
             modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.DeviceLine", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("AgreementGenre")
@@ -512,16 +511,12 @@ namespace feasibility.DataAccess.Migrations
 
                     b.HasIndex("StudyId");
 
-                    b.HasIndex("StudyId", "DeviceType")
-                        .IsUnique();
-
                     b.ToTable("DeviceLines", (string)null);
                 });
 
             modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.Study", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("AdvertisingRevenue")
@@ -532,6 +527,9 @@ namespace feasibility.DataAccess.Migrations
 
                     b.Property<decimal>("AdvertisingRevenueTl")
                         .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("ContractMonths")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -614,6 +612,9 @@ namespace feasibility.DataAccess.Migrations
                     b.Property<Guid>("LocationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("MonthlyLostDaysPercent")
+                        .HasColumnType("decimal(8,4)");
+
                     b.Property<decimal>("MonthlyRent")
                         .HasColumnType("decimal(18,4)");
 
@@ -663,12 +664,7 @@ namespace feasibility.DataAccess.Migrations
                     b.Property<decimal>("UsdRate")
                         .HasColumnType("decimal(18,4)");
 
-                    b.Property<int>("WarrantyMonths")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
 
                     b.HasIndex("LocationId");
 
@@ -678,7 +674,6 @@ namespace feasibility.DataAccess.Migrations
             modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityAmortization.YearProjection", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -712,6 +707,18 @@ namespace feasibility.DataAccess.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<decimal>("PurchasePriceH1")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PurchasePriceH2")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SalePriceH1")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SalePriceH2")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -722,15 +729,15 @@ namespace feasibility.DataAccess.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<decimal>("UsdRate")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("Year")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceLineId");
-
-                    b.HasIndex("DeviceLineId", "Year")
-                        .IsUnique();
 
                     b.ToTable("YearProjections", (string)null);
                 });

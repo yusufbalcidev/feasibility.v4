@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="~/css/layout/site.css" />
     <link rel="stylesheet" href="~/css/login/login.css" />
     <link rel="stylesheet" href="~/lib/alertifyjs/css/alertify.min.css" />
-    <link rel="icon" type="image/png" href="~/images/eka-logo-Photoroom.png" />
+    <link rel="icon" type="image/x-icon" href="https://ekaenerjiteknoloji.com.tr/favicon.ico" />
 </head>
 <body class="auth-body">
     <div class="auth-card">
@@ -21,6 +21,11 @@
         </div>
         <h1>Giriş Yap</h1>
         <p class="auth-sub">Hesabınızla devam edin</p>
+
+        @if (TempData["Error"] is string loginError && !string.IsNullOrEmpty(loginError))
+        {
+            <div class="auth-alert auth-alert-error" role="alert">@loginError</div>
+        }
 
         <form asp-action="Index" method="post" class="form">
             @Html.AntiForgeryToken()
@@ -50,10 +55,10 @@
     <script src="~/js/login/login.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var success = '@(TempData["Success"] as string ?? "")';
-            var error = '@(TempData["Error"] as string ?? "")';
-            if (success) alertify.success(success);
-            if (error) alertify.error(error);
+            var success = @Html.Raw(Json.Serialize(TempData["Success"] as string ?? ""));
+            var error = @Html.Raw(Json.Serialize(TempData["Error"] as string ?? ""));
+            if (success && window.alertify) alertify.success(success);
+            if (error && window.alertify) alertify.error(error);
         });
     </script>
 </body>

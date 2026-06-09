@@ -5,25 +5,25 @@
 namespace feasibility.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class RemoveWarrantyMonths : Migration
+    public partial class AddStudyVersion : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "WarrantyMonths",
-                table: "Studies");
+            migrationBuilder.AddColumn<int>(
+                name: "Version",
+                table: "Studies",
+                type: "int",
+                nullable: false,
+                defaultValue: 1);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
-                name: "WarrantyMonths",
-                table: "Studies",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
+            migrationBuilder.DropColumn(
+                name: "Version",
+                table: "Studies");
         }
     }
 }

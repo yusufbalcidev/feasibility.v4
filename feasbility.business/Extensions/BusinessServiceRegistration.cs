@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Enums;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
 namespace feasibility.Business.Extensions;
@@ -35,7 +36,14 @@ public static class BusinessServiceRegistration
         });
 
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-        services.AddFluentValidationAutoValidation();
+        // AutoValidation opt-in moduna alındı. Varsayılan (All) modda global filtre,
+        // view controller'larında doğrulama hatasında View yerine 400 JSON ProblemDetails
+        // döndürdüğü için Login gibi sayfalarda Türkçe uyarı yerine ham JSON görünüyordu.
+        // Annotations stratejisiyle yalnızca [AutoValidation] attribute'u taşıyan
+        // JSON/API action'ları otomatik doğrulanır; view controller'ları kendi
+        // ModelState kontrolüyle (if (!ModelState.IsValid) return View(dto)) çalışır.
+        services.AddFluentValidationAutoValidation(config =>
+            config.ValidationStrategy = ValidationStrategy.Annotations);
 
         services.AddJwtAuthentication(configuration);
         return services;

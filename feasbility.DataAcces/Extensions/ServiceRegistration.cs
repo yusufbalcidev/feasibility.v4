@@ -14,8 +14,16 @@ public static class ServiceRegistration
 {
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
     {
+        // Bağlantı dizesi hassas bilgidir; kaynak kodda/appsettings.json'da tutulmaz.
+        // Local'de User Secrets'tan, ortamda environment değişkeninden okunur.
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException(
+                "ConnectionStrings:DefaultConnection ayarı bulunamadı. " +
+                "Local için 'dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"...\"' komutuyla tanımlayın.");
+
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(connectionString));
 
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 

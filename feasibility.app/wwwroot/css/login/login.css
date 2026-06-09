@@ -19,6 +19,19 @@
 .auth-sub { text-align: center; color: var(--text-muted); font-size: 13px; margin: 0 0 20px; }
 .auth-card .form { width: 100%; }
 .auth-submit { width: 100%; justify-content: center; padding: 12px; }
+.auth-alert {
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+.auth-alert-error {
+    background: #fdecea;
+    color: #b71c1c;
+    border: 1px solid #f5c6c2;
+}
+.text-danger { color: #b71c1c; font-size: 13px; }
+.field-validation-error { color: #b71c1c; font-size: 12px; display: block; margin-top: 4px; }
 .auth-foot { text-align: center; margin-top: 12px; font-size: 13px; }
 .auth-foot a { color: var(--primary); font-weight: 500; }
 .auth-foot a:hover { text-decoration: underline; }

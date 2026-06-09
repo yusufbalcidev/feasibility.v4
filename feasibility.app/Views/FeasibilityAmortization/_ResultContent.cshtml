@@ -17,63 +17,71 @@
 }
 
 <!-- KPI Kartları -->
-<div class="kpi-row">
-    <div class="kpi-card">
-        <div class="kpi-ico" style="background:var(--primary-50);color:var(--primary);">
-            <span class="material-symbols-outlined">account_balance_wallet</span>
+<div class="res-kpi-row">
+    <div class="res-kpi">
+        <div class="res-kpi-header">
+            <div class="res-kpi-icon"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+            <span class="res-kpi-badge">Yatırım</span>
         </div>
         <div>
-            <div class="kpi-lbl">Toplam Yatırım</div>
-            <div class="kpi-v"><span class="js-money" data-tl="@RAW(Model.TotalInvestmentTl)" data-dec="0">@N0(Model.TotalInvestmentTl) ₺</span></div>
+            <div class="res-kpi-value"><span class="js-money" data-tl="@RAW(Model.TotalInvestmentTl)" data-dec="0">@N0(Model.TotalInvestmentTl) ₺</span></div>
+            <div class="res-kpi-label">Toplam Yatırım</div>
         </div>
     </div>
-    <div class="kpi-card">
-        <div class="kpi-ico" style="background:var(--success-50);color:var(--success);">
-            <span class="material-symbols-outlined">restart_alt</span>
+    <div class="res-kpi">
+        <div class="res-kpi-header">
+            <div class="res-kpi-icon"><span class="material-symbols-outlined">restart_alt</span></div>
+            <span class="res-kpi-badge">Amortisman</span>
         </div>
         <div>
-            <div class="kpi-lbl">Amortisman Süresi</div>
-            <div class="kpi-v @(Model.PaybackYears > 0 ? "" : "neg")">
+            <div class="res-kpi-value @(Model.PaybackYears > 0 ? "" : "neg")">
                 @(Model.PaybackYears > 0 ? Model.PaybackYears.ToString("0.0", tr) + " Yıl" : "—")
             </div>
+            <div class="res-kpi-label">Amortisman Süresi</div>
         </div>
     </div>
-    <div class="kpi-card">
-        <div class="kpi-ico" style="background:var(--warning-50);color:var(--warning);">
-            <span class="material-symbols-outlined">trending_up</span>
+    <div class="res-kpi">
+        <div class="res-kpi-header">
+            <div class="res-kpi-icon"><span class="material-symbols-outlined">trending_up</span></div>
+            <span class="res-kpi-badge">Yıl 1</span>
         </div>
         <div>
-            <div class="kpi-lbl">Yıl 1 Net Kâr</div>
-            <div class="kpi-v @(pos(Model.AnnualNetProfitTl) ? "pos" : "neg")">
+            <div class="res-kpi-value @(pos(Model.AnnualNetProfitTl) ? "pos" : "neg")">
                 <span class="js-money" data-tl="@RAW(Model.AnnualNetProfitTl)" data-dec="0">@sign(Model.AnnualNetProfitTl)@N0(Model.AnnualNetProfitTl) ₺</span>
             </div>
+            <div class="res-kpi-label">Yıl 1 Net Kâr</div>
         </div>
     </div>
-    <div class="kpi-card">
-        <div class="kpi-ico" style="background:var(--primary-50);color:var(--primary);">
-            <span class="material-symbols-outlined">percent</span>
+    <div class="res-kpi">
+        <div class="res-kpi-header">
+            <div class="res-kpi-icon"><span class="material-symbols-outlined">percent</span></div>
+            <span class="res-kpi-badge">ROI</span>
         </div>
         <div>
-            <div class="kpi-lbl">Yıllık ROI</div>
-            <div class="kpi-v @(pos(Model.RoiPercent) ? "pos" : "neg")">
+            <div class="res-kpi-value @(pos(Model.RoiPercent) ? "pos" : "neg")">
                 @sign(Model.RoiPercent)@PCT(Model.RoiPercent)
             </div>
+            <div class="res-kpi-label">Yıllık ROI</div>
         </div>
     </div>
 </div>
 
 <!-- Yatırım + Sabit Giderler özeti -->
 <div class="summary-grid">
-    <div class="card res-section collapsible">
-        <div class="card-header" onclick="toggleCard(this)">
-            <div class="res-card-header">
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
                 <div class="fiz-ix">01</div>
                 <div>
                     <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Dağılımı</h2>
                     <div class="fiz-sub">Toplam sermaye harcaması</div>
                 </div>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
             </div>
-            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
         </div>
         <div class="card-body collapse-body">
             @if (Model.StationUnitCostTl > 0)
@@ -95,16 +103,20 @@
         </div>
     </div>
 
-    <div class="card res-section collapsible">
-        <div class="card-header" onclick="toggleCard(this)">
-            <div class="res-card-header">
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
                 <div class="fiz-ix">02</div>
                 <div>
                     <h2 style="font-size:14px;font-weight:600;margin:0;">Yıllık Sabit Giderler &amp; Parametreler</h2>
                     <div class="fiz-sub">Kur, enflasyon ve gider kalemleri</div>
                 </div>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
             </div>
-            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
         </div>
         <div class="card-body collapse-body">
             <div class="res-row"><span class="rl">USD/TL Kuru</span><span class="rv">@N2(Model.UsdRate)</span></div>
@@ -136,23 +148,20 @@
 <!-- 10 Yıllık Projeksiyon Tablosu -->
 @if (Model.YearSummaries.Any())
 {
-    <div class="card res-section collapsible">
-        <div class="card-header" onclick="toggleCard(this)">
-            <div class="res-card-header">
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
                 <div class="fiz-ix">03</div>
                 <div>
                     <h2 style="font-size:14px;font-weight:600;margin:0;">Yıllık Nakit Akışı Projeksiyonu</h2>
-                </div>s
-                <div class="fiz-cur-wrap" onclick="event.stopPropagation();">
-                    <label>Para Birimi</label>
-                    <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
-                        <option value="TRY">₺ TRY</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                    </select>
+                    <div class="fiz-sub">10 yıllık net kâr ve kümülatif denge</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
                 </div>
             </div>
-            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
         </div>
         <div class="table-wrapper collapse-body">
             <table class="table">
@@ -211,26 +220,22 @@
 <!-- İstasyon Bedeli Hariç (Gömülü) Yatırımın Amorti Tablosu -->
 @if (Model.SunkAmortization.Any())
 {
-    <div class="card res-section collapsible">
-        <div class="card-header" onclick="toggleCard(this)">
-            <div class="res-card-header">
-                <div class="fiz-ix" style="background:var(--success);">
-                    <span class="material-symbols-outlined" style="font-size:18px;color:#fff;">savings</span>
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">
+                    <span class="material-symbols-outlined" style="font-size:18px;">recovery</span>
                 </div>
                 <div>
                     <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Geri Kazanım (Amorti) Süresi</h2>
                     <div class="fiz-sub">Şarj istasyonu donanımı taşınabilir olduğundan amortismana dahil edilmez; yalnızca geri kazanılamayan masraflar dikkate alınır.</div>
                 </div>
-                <div class="fiz-cur-wrap" onclick="event.stopPropagation();">
-                    <label>Para Birimi</label>
-                    <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
-                        <option value="TRY">₺ TRY</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                    </select>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
                 </div>
             </div>
-            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
         </div>
         <div class="card-body collapse-body">
             <div class="res-row">
@@ -293,9 +298,9 @@
 @{ int lineNo = 4; }
 @foreach (var line in Model.DeviceLines)
 {
-    <div class="card res-section collapsible">
-        <div class="card-header" onclick="toggleCard(this)">
-            <div class="res-card-header">
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
                 <div class="fiz-ix">@lineNo.ToString("00")</div>
                 <div>
                     <h2 style="font-size:14px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;">
@@ -304,16 +309,12 @@
                     </h2>
                     <div class="fiz-sub">Hat yatırımı: <span class="js-money" data-tl="@RAW(line.LineInvestmentTl)" data-dec="0">@N0(line.LineInvestmentTl) ₺</span> · Yıl 1 net marj: <span class="@(pos(line.AnnualNetMarginTl) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(line.AnnualNetMarginTl)" data-dec="0">@sign(line.AnnualNetMarginTl)@N0(line.AnnualNetMarginTl) ₺</span></span></div>
                 </div>
-                <div class="fiz-cur-wrap" onclick="event.stopPropagation();">
-                    <label>Para Birimi</label>
-                    <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
-                        <option value="TRY">₺ TRY</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                    </select>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
                 </div>
             </div>
-            <span class="material-symbols-outlined collapse-chevron">expand_more</span>
         </div>
         @if (line.YearProjections.Any())
         {
@@ -484,7 +485,7 @@
     .card.collapsed > .card-header .collapse-chevron { transform: rotate(-90deg); }
     .card.collapsed > .collapse-body { display: none !important; }
 
-    /* Para birimi seçici (tablo başlığı sağ üst) */
+    /* Para birimi seçici */
     .fiz-cur-wrap {
         display: flex; align-items: center; gap: 6px;
         margin-left: auto;
@@ -504,8 +505,10 @@
 </style>
 
 <script>
-    function toggleCard(header) {
-        header.closest('.card.collapsible').classList.toggle('collapsed');
+    // Benzersiz ad: Edit/Create sayfasındaki toggleCard(id) ile çakışmasın.
+    function resToggleCard(el) {
+        var card = el.closest('.fiz-card') || el.closest('.card');
+        if (card) card.classList.toggle('collapsed');
     }
 
     function mbSelectYear(sel) {
@@ -553,6 +556,17 @@
                 var val = CUR === 'TRY' ? tl : (rate > 0 ? tl / rate : 0);
                 var neg = val < 0;
                 var abs = Math.abs(val);
+                // TL tutarları çoğunlukla data-dec="0" ile saklanır. USD/EUR'a çevirince
+                // küçük değerler 0 ondalıkla "0"a yuvarlanmasın diye ondalık basamağı artır:
+                // en az 2 göster; gerekirse sıfır olmayan ilk basamağı yakalayana dek uzat.
+                if (CUR !== 'TRY') {
+                    if (dec < 2) dec = 2;
+                    if (abs > 0) {
+                        // abs'in büyüklük sırasına göre yeterli ondalık (ör. 0.03 -> 2, 0.0004 -> 4)
+                        var needed = Math.ceil(-Math.log10(abs)) + 1;
+                        if (needed > dec) dec = Math.min(needed, 6);
+                    }
+                }
                 // Sembol konumu: ₺ sonda, $/€ başta (mevcut görünümle uyumlu)
                 var body = (CUR === 'TRY') ? (fmt(abs, dec) + ' ' + sym) : (sym + ' ' + fmt(abs, dec));
                 el.textContent = (neg ? '-' : '') + body;

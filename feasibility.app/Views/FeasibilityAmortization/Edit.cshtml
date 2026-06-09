@@ -1,18 +1,34 @@
+@model feasibility.Entity.Dtos.FeasibilityAmortization.FeasibilityAmortizationDetailDto
 @{
     ViewData["Title"] = "Fizibilite Düzenle";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
     var studyId = ViewBag.StudyId?.ToString() ?? "";
+    var hasResult = Model != null && Model.DeviceLines != null && Model.DeviceLines.Any();
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/feasibility/create/style.css" />
+    <link rel="stylesheet" href="~/css/feasibility/amortization/result/style.css" />
 }
 
 <div class="page-header">
-    <div>
-        <div class="crumb">Fizibiliteler &middot; Amortisman &middot; <strong>Düzenle</strong></div>
-        <h1>Amortisman Fizibilitesini Düzenle</h1>
-        <p>Mevcut fizibilite verilerini güncelleyin.</p>
+    
+</div>
+
+<div class="fiz-tabbar">
+    <button class="fiz-tab active" data-tab="form" onclick="switchTab('form')">
+        <span class="material-symbols-outlined">edit_note</span> Veri Girişleri
+    </button>
+    <button class="fiz-tab" data-tab="results" onclick="switchTab('results')">
+        <span class="material-symbols-outlined">bar_chart</span> Fizibilite Sonuçları
+    </button>
+    <div class="fiz-tabbar-cur res-cur-wrap">
+        <label>Para Birimi</label>
+        <select class="fiz-cur-select res-cur-select" onchange="fizSelectCurrency(this)">
+            <option value="TRY">₺ TRY</option>
+            <option value="USD">$ USD</option>
+            <option value="EUR">€ EUR</option>
+        </select>
     </div>
 </div>
 
@@ -162,12 +178,14 @@
                         <span class="fiz-suf">ay</span>
                     </div>
                 </div>
-                <div class="fiz-field">
+                <div class="fiz-field" id="f-kayip">
                     <label>Aylık Kayıp Gün</label>
                     <div class="fiz-input-wrap">
-                        <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" min="0" max="100" step="0.1" placeholder="0" style="padding-left:12px;">
+                        <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" min="0" max="100" step="0.1" placeholder="0" style="padding-left:12px;"
+                               oninput="this.closest('.fiz-field').classList.remove('bad')">
                         <span class="fiz-suf">%</span>
                     </div>
+                    <span class="fiz-err">0 ile 100 arasında bir değer giriniz.</span>
                     <span class="fiz-hint" style="margin-top:4px;">İstasyonun çalışmadığı gün payı — geliri zarar olarak düşürür.</span>
                 </div>
             </div>
@@ -236,14 +254,80 @@
     </div>
 
     <div class="fiz-form-actions">
-        <a href="/FeasibilityAmortization/Result/@studyId" class="btn btn-secondary">
+        <a href="/FeasibilityAmortization/View/@studyId" class="btn btn-secondary">
             <span class="material-symbols-outlined">arrow_back</span> İptal
         </a>
-        <button class="btn btn-primary" onclick="submitForm()">
+        <button class="btn btn-primary" onclick="openSaveModal()">
             <span class="material-symbols-outlined">save</span> Değişiklikleri Kaydet
         </button>
     </div>
 
+</div>
+
+<!-- ════════════ FİZİBİLİTE SONUÇLARI ════════════ -->
+<div class="fiz-pane" id="pane-results">
+    
+
+    <div class="fiz-results-empty" id="resultsEmpty" style="@(hasResult ? "display:none;" : "")">
+        <div class="fiz-glyph">
+            <span class="material-symbols-outlined">bar_chart</span>
+        </div>
+        <h3>Fizibilite Sonuçları</h3>
+        <p>Veri girişlerini güncelledikten sonra <strong>Fizibilite Hesapla</strong> butonuna basın; amortisman, ROI ve projeksiyon raporu burada görüntülenir.</p>
+    </div>
+
+    <div id="resultsContent">
+        @if (hasResult)
+        {
+            <partial name="_ResultContent" model="Model" />
+        }
+    </div>
+</div>
+
+<!-- ═══ Versiyon / Kaydetme yöntemi modalı ═══════════════════════════ -->
+<div class="fiz-overlay" id="save-overlay">
+    <div class="fiz-modal" style="max-width:520px;">
+        <div class="fiz-modal-header">
+            <div class="fiz-modal-icon">
+                <span class="material-symbols-outlined">save_as</span>
+            </div>
+            <div>
+                <div class="fiz-modal-title">Kaydetme Yöntemi</div>
+                <div class="fiz-modal-sub">Değişiklikleri nasıl kaydetmek istersiniz?</div>
+            </div>
+            <button class="fiz-modal-close" onclick="closeSaveModal()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="fiz-modal-body">
+            <div class="fiz-save-opts">
+                <label class="fiz-save-opt">
+                    <input type="radio" name="saveMode" value="update" checked>
+                    <div class="fiz-save-opt-body">
+                        <div class="fiz-save-opt-title">
+                            <span class="material-symbols-outlined">edit</span> Mevcut fizibilitede düzenle
+                        </div>
+                        <div class="fiz-save-opt-desc">Bu fizibilitenin üzerine yazılır; ayrı bir kayıt oluşmaz.</div>
+                    </div>
+                </label>
+                <label class="fiz-save-opt">
+                    <input type="radio" name="saveMode" value="new">
+                    <div class="fiz-save-opt-body">
+                        <div class="fiz-save-opt-title">
+                            <span class="material-symbols-outlined">add_chart</span> Yeni bir fizibilite versiyonu oluştur
+                        </div>
+                        <div class="fiz-save-opt-desc">Mevcut fizibilite korunur; girdiğiniz verilerle yeni bir versiyon (<strong>v2, v3…</strong>) olarak ayrı kayıt açılır.</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <div class="fiz-modal-footer">
+            <button class="btn btn-secondary" onclick="closeSaveModal()">Vazgeç</button>
+            <button class="btn btn-primary" id="confirmSaveBtn" onclick="confirmSave()">
+                <span class="material-symbols-outlined">check</span> Kaydet
+            </button>
+        </div>
+    </div>
 </div>
 
 
@@ -348,6 +432,59 @@
         var ccyFromNum = function(n) { return n === 1 ? 'USD' : n === 2 ? 'EUR' : 'TRY'; };
 
 function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+        function switchTab(t) {
+            document.querySelectorAll('.fiz-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === t); });
+            document.getElementById('pane-form').classList.toggle('active', t === 'form');
+            document.getElementById('pane-results').classList.toggle('active', t === 'results');
+        }
+
+        // Kaydetmeden hesaplar; sonucu "Fizibilite Sonuçları" sekmesine yansıtır.
+        function calculate() {
+            if (!validateEditForm()) { switchTab('form'); return; }
+
+            var payload = collectPayload();
+            var empty   = document.getElementById('resultsEmpty');
+            var content = document.getElementById('resultsContent');
+            switchTab('results');
+            content.innerHTML = '<div class="fiz-empty"><span class="material-symbols-outlined">hourglass_top</span><p>Hesaplanıyor…</p></div>';
+            if (empty) empty.style.display = 'none';
+
+            return fetch('/FeasibilityAmortization/Calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) {
+                if (!r.ok) return r.text().then(function(t) {
+                    var msg = 'Sunucu hatası (' + r.status + ')';
+                    try { msg = JSON.parse(t).message || msg; } catch(e) {}
+                    throw new Error(msg);
+                });
+                return r.text();
+            })
+            .then(function(html) {
+                content.innerHTML = html;
+                runInjectedScripts(content);
+            })
+            .catch(function(err) {
+                if (empty) empty.style.display = '';
+                content.innerHTML = '';
+                showToast(err.message || 'Hesaplama sırasında hata oluştu.', true);
+            });
+        }
+
+        // innerHTML ile enjekte edilen <script> blokları tarayıcı tarafından çalıştırılmaz.
+        // Sonuç partial'ındaki yıl seçici / kart toggle / para birimi fonksiyonlarının
+        // tanımlanması için script düğümlerini klonlayıp yeniden ekleyerek çalıştırıyoruz.
+        function runInjectedScripts(content) {
+            content.querySelectorAll('script').forEach(function(old) {
+                var s = document.createElement('script');
+                if (old.src) { s.src = old.src; }
+                else { s.textContent = old.textContent; }
+                old.parentNode.replaceChild(s, old);
+            });
+        }
 
         function renderFx() {
             document.getElementById('fxBody').innerHTML = FX.map(function(f) {
@@ -779,22 +916,93 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             };
         }
 
-        function submitForm() {
+        // Düzenlenen kaydın versiyonu — "yeni versiyon olarak ekle" bunun bir fazlasını alır.
+        var BASE_VERSION = (_preload && _preload.version) ? _preload.version : 1;
+
+        // Formu doğrular; geçerliyse true döner, değilse alanları işaretler.
+        function validateEditForm() {
             var ok = true;
             if (!document.getElementById('loc').value)          { document.getElementById('f-loc').classList.add('bad');  ok = false; }
             if (!document.getElementById('fname').value.trim()) { document.getElementById('f-name').classList.add('bad'); ok = false; }
+            var kayip = document.getElementById('kayipGunYuzde').value.trim();
+            if (kayip !== '') {
+                var kayipNum = parseFloat(kayip);
+                if (isNaN(kayipNum) || kayipNum < 0 || kayipNum > 100) {
+                    document.getElementById('f-kayip').classList.add('bad'); ok = false;
+                }
+            }
             if (stations.length === 0) {
                 showToast('En az bir istasyon türü ekleyiniz.', true);
                 document.getElementById('card-03').classList.remove('collapsed');
+                return false;
+            }
+            if (!ok) { showToast('Zorunlu alanları doldurunuz.', true); return false; }
+            return true;
+        }
+
+        // "Değişiklikleri Kaydet" → önce doğrula, sonra kaydetme yöntemi modalını aç.
+        function openSaveModal() {
+            if (!validateEditForm()) return;
+            // Varsayılan: mevcut kayıtta düzenle
+            document.querySelector('input[name="saveMode"][value="update"]').checked = true;
+            document.getElementById('save-overlay').classList.add('show');
+        }
+        function closeSaveModal() { document.getElementById('save-overlay').classList.remove('show'); }
+
+        function setConfirmLoading(on) {
+            var btn = document.getElementById('confirmSaveBtn');
+            if (!btn) return;
+            if (on) {
+                btn.dataset.html = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined fiz-spin">progress_activity</span> Kaydediliyor…';
+            } else {
+                btn.disabled = false;
+                if (btn.dataset.html) btn.innerHTML = btn.dataset.html;
+            }
+        }
+
+        function confirmSave() {
+            var mode = document.querySelector('input[name="saveMode"]:checked').value;
+
+            if (mode === 'new') {
+                // Ad sorulmaz: aynı ad korunur, sunucu versiyonu (BASE_VERSION + 1) atar.
+                var payload = collectPayload();
+                payload.saveAsNewVersion = true;
+                payload.baseVersion      = BASE_VERSION;
+                setConfirmLoading(true);
+                fetch('/FeasibilityAmortization/Save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(function(r) {
+                    if (!r.ok) return r.text().then(function(t) {
+                        var msg = 'Sunucu hatası (' + r.status + ')';
+                        try { msg = JSON.parse(t).message || msg; } catch(e) {}
+                        throw new Error(msg);
+                    });
+                    return r.json();
+                })
+                .then(function(data) {
+                    showToast('Yeni fizibilite versiyonu oluşturuldu.');
+                    // Yeni versiyon ayrı bir kayıt; onun düzenleme sayfasına geç.
+                    setTimeout(function() { window.location.href = '/FeasibilityAmortization/Edit/' + data.id; }, 1000);
+                })
+                .catch(function(err) {
+                    setConfirmLoading(false);
+                    showToast(err.message || 'Kayıt sırasında hata oluştu.', true);
+                });
                 return;
             }
-            if (!ok) { showToast('Zorunlu alanları doldurunuz.', true); return; }
 
-            var payload = collectPayload();
+            // mode === 'update' → mevcut kaydı güncelle
+            var updPayload = collectPayload();
+            setConfirmLoading(true);
             fetch('/FeasibilityAmortization/Update?id=' + STUDY_ID, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(updPayload)
             })
             .then(function(r) {
                 if (!r.ok) return r.text().then(function(t) {
@@ -805,15 +1013,22 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
                 return r.json();
             })
             .then(function(data) {
+                setConfirmLoading(false);
+                closeSaveModal();
                 showToast('Fizibilite başarıyla güncellendi.');
-                setTimeout(function() {
-                    window.location.href = '/FeasibilityAmortization/Result/' + STUDY_ID;
-                }, 1200);
+                // Sayfada kal; sonuçları kaydedilen verilerle yeniden hesaplayıp sonuç sekmesini göster.
+                calculate();
             })
             .catch(function(err) {
+                setConfirmLoading(false);
                 showToast(err.message || 'Güncelleme sırasında hata oluştu.', true);
             });
         }
+
+        // Overlay boş alana tıklanınca kapat
+        document.getElementById('save-overlay').addEventListener('click', function(e) {
+            if (e.target.id === 'save-overlay') closeSaveModal();
+        });
 
         function toggleFinance() {
             var on = document.getElementById('krediVar').checked;

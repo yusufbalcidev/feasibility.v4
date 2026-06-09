@@ -661,6 +661,9 @@ namespace feasibility.DataAccess.Migrations
                     b.Property<decimal>("UsdRate")
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("LocationId");

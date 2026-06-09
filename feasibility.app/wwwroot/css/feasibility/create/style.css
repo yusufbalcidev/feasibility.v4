@@ -6,13 +6,16 @@
 /* ---- Tab bar ---- */
 .fiz-tabbar {
     display: flex;
+    align-items: center;
     gap: 4px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 24px;
     background: var(--surface);
     border-radius: var(--radius) var(--radius) 0 0;
-    padding: 0 4px;
+    padding: 0 12px 0 4px;
 }
+/* Para birimi seçici — sekme barının sağında */
+.fiz-tabbar-cur { margin-left: auto; }
 .fiz-tab {
     position: relative;
     display: inline-flex;
@@ -681,6 +684,26 @@ select.fiz-ctl {
 .res-row .rv { font-weight: 700; color: var(--text); font-family: 'Courier New', monospace; font-size: .875rem; }
 .res-row .rv.pos { color: var(--success); }
 .res-row .rv.neg { color: var(--danger); }
+
+/* ── Kaydetme yöntemi / versiyon seçim modalı ───────────────────────── */
+.fiz-save-opts { display: flex; flex-direction: column; gap: 10px; }
+.fiz-save-opt {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+}
+.fiz-save-opt:hover { background: var(--surface-2); }
+.fiz-save-opt input[type="radio"] { margin-top: 3px; accent-color: var(--primary); width: 16px; height: 16px; flex-shrink: 0; }
+.fiz-save-opt:has(input:checked) { border-color: var(--primary); background: var(--primary-50); }
+.fiz-save-opt-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 600; color: var(--text);
+}
+.fiz-save-opt-title .material-symbols-outlined { font-size: 18px; color: var(--primary); }
+.fiz-save-opt-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.45; }
 .res-row.total { background: var(--surface-2); border-radius: 8px; padding: .55rem .65rem; margin-top: 4px; }
 .res-row.total .rl { font-weight: 700; color: var(--text); }
 .res-row.total .rv { font-size: 1rem; }

@@ -12,8 +12,8 @@ using feasibility.DataAccess.Context;
 namespace feasibility.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260608202415_homestudy")]
-    partial class homestudy
+    [Migration("20260609062632_studyy")]
+    partial class studyy
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

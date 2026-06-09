@@ -15,4 +15,7 @@ public interface IFeasibilityAmortizationService
     Task RestoreAsync(Guid id, CancellationToken ct = default);
     Task<string?> GetEditPreloadJsonAsync(Guid id, CancellationToken ct = default);
     Task UpdateStudyAsync(Guid id, FeasibilityAmortizationSaveDto dto, CancellationToken ct = default);
+
+    /// <summary>Kayıt, aynı ada sahip aktif kayıtlar arasında en yüksek versiyon mu? (Değilse salt-okunur — düzenlenemez.)</summary>
+    Task<bool> IsLatestVersionAsync(Guid id, CancellationToken ct = default);
 }
