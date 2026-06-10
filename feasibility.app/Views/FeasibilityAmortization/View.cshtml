@@ -58,6 +58,10 @@
                     <label>Fizibilite Adı</label>
                     <input class="fiz-ctl" id="fname" maxlength="50" />
                 </div>
+                <div class="fiz-field" id="f-startdate">
+                    <label>Sözleşme Başlangıç Tarihi</label>
+                    <input class="fiz-ctl" id="sozlesmeBaslangic" type="date" />
+                </div>
             </div>
         </div>
     </div>
@@ -456,6 +460,8 @@
 
             var sozlesmeEl = document.getElementById('sozlesmeAy');
             if (sozlesmeEl && p.contractMonths) sozlesmeEl.value = p.contractMonths;
+            var startEl = document.getElementById('sozlesmeBaslangic');
+            if (startEl && p.contractStartDate) startEl.value = p.contractStartDate;
             var kayipEl = document.getElementById('kayipGunYuzde');
             if (kayipEl && p.monthlyLostDaysPercent) kayipEl.value = p.monthlyLostDaysPercent;
 

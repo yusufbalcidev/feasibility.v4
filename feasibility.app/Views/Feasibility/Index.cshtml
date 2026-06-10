@@ -413,6 +413,66 @@
                 padding: 2.5rem 1.25rem 3rem;
             }
         }
+
+        /* ---------- Dark mode ----------
+           Bu sayfa yukarıda kendi :root değişkenlerini sabit açık renklerle tanımlıyor;
+           bu yüzden site temasının dark değerleri eziliyordu. Burada aynı değişkenleri
+           ve sabit-renkli birkaç öğeyi koyu temaya göre eziyoruz. Açık mod değişmez. */
+        [data-theme="dark"] {
+            --ink: #e7ebf3;
+            --ink-soft: #aab4c6;
+            --muted: #8b96aa;
+            --canvas: #0e1521;
+            --surface: #171f2e;
+            --line: #2c3851;
+            --line-strong: #3a4763;
+            --blue-soft: #16263a;
+            --emerald-soft: #16291f;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.35);
+            --shadow-md: 0 24px 60px -20px rgba(0,0,0,.6), 0 8px 24px -12px rgba(0,0,0,.5);
+        }
+
+        [data-theme="dark"] .fz-bg {
+            background:
+                radial-gradient(1200px 520px at 50% -8%, rgba(37,99,235,.16), transparent 60%),
+                radial-gradient(900px 480px at 92% 10%, rgba(15,157,107,.12), transparent 55%),
+                linear-gradient(180deg, #0e1521 0%, #0b111b 100%);
+        }
+
+        [data-theme="dark"] .fz-bg::before {
+            background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+        }
+
+        /* başlık gradyanı açık tonlu metin yapsın (koyu metin koyu zeminde görünmüyordu) */
+        [data-theme="dark"] .page-header h1 {
+            background: linear-gradient(180deg, #f1f4fa 0%, #aeb9cd 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        [data-theme="dark"] .chip {
+            background: #1c2433;
+        }
+
+        [data-theme="dark"] .icon-blue {
+            background: linear-gradient(160deg, #1a2a40, #16263a);
+            color: #7fb0ec;
+            box-shadow: inset 0 0 0 1px rgba(127,176,236,.18);
+        }
+
+        [data-theme="dark"] .icon-green {
+            background: linear-gradient(160deg, #16291f, #143524);
+            color: #5fd49f;
+            box-shadow: inset 0 0 0 1px rgba(95,212,159,.18);
+        }
+
+        [data-theme="dark"] .ghost-num {
+            color: rgba(255,255,255,.04);
+        }
+
+        [data-theme="dark"] #fz-loading {
+            background: rgba(14,21,33,.72) !important;
+        }
     </style>
 }
 
@@ -429,7 +489,6 @@
             <!-- Tarife -->
             <a href="/TarifeFizibilite/Index" class="fiz-card" id="card-tarife" onclick="sel(event,'tarife')">
                 <div class="card-bar bar-blue"></div>
-                <span class="ghost-num">01</span>
                 <div class="card-head">
                     <div class="card-icon icon-blue">
                         <span class="material-symbols-outlined">price_check</span>
@@ -459,7 +518,6 @@
             <!-- Amortisman -->
             <a href="/FeasibilityAmortization/Index" class="fiz-card" id="card-amort" onclick="sel(event,'amort')">
                 <div class="card-bar bar-green"></div>
-                <span class="ghost-num">02</span>
                 <div class="card-head">
                     <div class="card-icon icon-green">
                         <span class="material-symbols-outlined">ev_station</span>

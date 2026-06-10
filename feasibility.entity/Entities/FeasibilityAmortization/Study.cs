@@ -40,6 +40,9 @@ public class Study : BaseEntity
 
     public int ContractMonths { get; set; }
 
+    /// <summary>Sözleşme başlangıç tarihi (opsiyonel).</summary>
+    public DateTime? ContractStartDate { get; set; }
+
     /// <summary>Aylık kayıp gün oranı (% — örn. 10 = ayda günlerin %10'unda şarj olmaz). Geliri ve elektrik maliyetini oranla düşürür.</summary>
     public decimal MonthlyLostDaysPercent { get; set; }
 

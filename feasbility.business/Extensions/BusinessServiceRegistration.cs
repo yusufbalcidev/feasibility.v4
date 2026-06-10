@@ -21,6 +21,7 @@ public static class BusinessServiceRegistration
         services.AddMemoryCache();
         services.AddHttpClient<ITcmbService, TcmbService>();
         services.AddHttpClient<IWorldBankService, WorldBankService>();
+        services.AddHttpClient<IEvdsInflationService, EvdsInflationService>();
         services.AddScoped<IFeasibilityAmortizationService, FeasibilityAmortizationManager>();
         services.AddScoped(typeof(IGenericService<>), typeof(GenericManager<>));
         services.AddScoped<IJwtService, JwtService>();

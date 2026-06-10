@@ -182,14 +182,19 @@ select.fiz-ctl {
 .fiz-input-wrap input { padding-left: 27px; }
 .fiz-suf {
     position: absolute; right: 12px;
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: 600;
     pointer-events: none;
     white-space: nowrap;
 }
-.fiz-input-wrap input.has-suf { padding-right: 68px; }
+.fiz-input-wrap input.has-suf { padding-right: 38px; }
+
+/* Native sayı input spinner okları (▲▼) özel tasarımla çakışıyor; gizle.
+   Değer yine elle yazılabilir, alan daha temiz görünür. */
+.fiz-ctl[type="number"]::-webkit-outer-spin-button,
+.fiz-ctl[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fiz-ctl[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
 /* ---- Input + currency selector row ---- */
 .fiz-input-row {
@@ -355,6 +360,17 @@ select.fiz-ctl {
     color: var(--text-muted, #94a3b8);
     font-variant-numeric: tabular-nums;
 }
+
+/* ---- İstasyon Bilgileri tablosu (card-03): kompakt & taşma-güvenli ----
+   Varsayılan .table boşluğu (12px 18px) 12 sütun için çok geniş; sütunlar
+   sıkışınca sağa hizalı input'larda "30.000" gibi değerler soldan kırpılıyor.
+   Boşluğu daraltıp sayısal hücrelere min genişlik veriyoruz. Toplam sığmazsa
+   sarmalayıcı (#stWrap = .table-wrapper) yatay kayar; değer kırpılmaz. */
+#stWrap table.table { min-width: 1040px; }
+#stWrap .table th,
+#stWrap .table td { padding: 8px 10px; }
+#stWrap .table th { line-height: 1.3; }
+#stWrap .fiz-cell-in { min-width: 72px; }
 
 /* table utility classes used by JS */
 .table .text-right { text-align: right; }
@@ -622,8 +638,15 @@ select.fiz-ctl {
 [data-theme="dark"] .fiz-cell-sel:focus {
     background: var(--surface);
 }
-[data-theme="dark"] select.fiz-ctl {
+/* Yalnızca aktif (disabled olmayan) select'lerde chevron göster.
+   Not: .fiz-ctl:disabled "background" kısa-yazımı background-repeat/position'ı
+   sıfırlar; disabled select'leri kapsamına alırsak chevron tüm kutuya döşenir
+   (dark temada "v v v v" görüntüsü). :not(:disabled) ile bunu engelliyoruz ve
+   repeat/position'ı burada tekrar tanımlayarak konumu garanti altına alıyoruz. */
+[data-theme="dark"] select.fiz-ctl:not(:disabled) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2398a4ba' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
 }
 [data-theme="dark"] .fiz-cell-sel {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2398a4ba' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");

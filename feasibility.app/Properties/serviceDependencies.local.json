@@ -2,6 +2,9 @@
   "dependencies": {
     "secrets1": {
       "type": "secrets.user"
+    },
+    "secrets2": {
+      "type": "secrets.user"
     }
   }
 }

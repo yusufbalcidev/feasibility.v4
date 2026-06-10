@@ -16,6 +16,18 @@
     Func<decimal, string> RAW = v => v.ToString("0.########", inv);
 }
 
+<!-- Para birimi seçici (varsayılan: USD) -->
+<div class="res-cur-bar">
+    <div class="fiz-cur-wrap">
+        <label>Para Birimi</label>
+        <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
+            <option value="USD" selected>$ USD</option>
+            <option value="TRY">₺ TRY</option>
+            <option value="EUR">€ EUR</option>
+        </select>
+    </div>
+</div>
+
 <!-- KPI Kartları -->
 <div class="res-kpi-row">
     <div class="res-kpi">
@@ -92,6 +104,10 @@
             <div class="res-row"><span class="rl">Altyapı Yatırımı</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.InfrastructureCostTl)" data-dec="0">@N0(Model.InfrastructureCostTl) ₺</span></span></div>
             <div class="res-row"><span class="rl">Cihaz + Lokasyon</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.DeviceTotalTl)" data-dec="0">@N0(Model.DeviceTotalTl) ₺</span></span></div>
             <div class="res-row total"><span class="rl">Toplam Yatırım</span><span class="rv"><span class="js-money" data-tl="@RAW(Model.TotalInvestmentTl)" data-dec="0">@N0(Model.TotalInvestmentTl) ₺</span></span></div>
+            @if (Model.ContractStartDate.HasValue)
+            {
+                <div class="res-row"><span class="rl">Sözleşme Başlangıç Tarihi</span><span class="rv">@Model.ContractStartDate.Value.ToString("dd.MM.yyyy", tr)</span></div>
+            }
             @if (Model.ContractMonths > 0)
             {
                 <div class="res-row"><span class="rl">Sözleşme Süresi</span><span class="rv">@Model.ContractMonths ay</span></div>
@@ -154,9 +170,13 @@
                 <div class="fiz-ix">03</div>
                 <div>
                     <h2 style="font-size:14px;font-weight:600;margin:0;">Yıllık Nakit Akışı Projeksiyonu</h2>
-                    <div class="fiz-sub">10 yıllık net kâr ve kümülatif denge</div>
+                    <div class="fiz-sub">15 yıllık net kâr ve kümülatif denge</div>
                 </div>
                 <div class="fiz-card-tools">
+                    <button type="button" class="btn btn-secondary btn-sm roi-toggle-btn" onclick="roiToggleChart(this)">
+                        <span class="material-symbols-outlined">show_chart</span>
+                        <span class="roi-btn-lbl">ROİ Grafiğini Göster</span>
+                    </button>
                     <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
                         <span class="material-symbols-outlined">expand_more</span>
                     </button>
@@ -182,11 +202,11 @@
                     {
                         <tr>
                             <td><strong>@r.Year</strong></td>
-                            <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(r.TotalRevenueTl)" data-dec="0">@N0(r.TotalRevenueTl) ₺</span></td>
-                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.TotalElectricityCostTl)" data-dec="0">-@N0(r.TotalElectricityCostTl) ₺</span></td>
-                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.TotalCommissionTl)" data-dec="0">-@N0(r.TotalCommissionTl) ₺</span></td>
-                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.FixedCostsTl)" data-dec="0">-@N0(r.FixedCostsTl) ₺</span></td>
-                            <td class="text-right @(pos(r.NetProfitTl) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(r.NetProfitTl)" data-dec="0">@sign(r.NetProfitTl)@N0(r.NetProfitTl) ₺</span></td>
+                            <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(r.TotalRevenueTl)" data-rate="@RAW(r.UsdRate)" data-dec="0">@N0(r.TotalRevenueTl) ₺</span></td>
+                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.TotalElectricityCostTl)" data-rate="@RAW(r.UsdRate)" data-dec="0">-@N0(r.TotalElectricityCostTl) ₺</span></td>
+                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.TotalCommissionTl)" data-rate="@RAW(r.UsdRate)" data-dec="0">-@N0(r.TotalCommissionTl) ₺</span></td>
+                            <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.FixedCostsTl)" data-rate="@RAW(r.UsdRate)" data-dec="0">-@N0(r.FixedCostsTl) ₺</span></td>
+                            <td class="text-right @(pos(r.NetProfitTl) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(r.NetProfitTl)" data-rate="@RAW(r.UsdRate)" data-dec="0">@sign(r.NetProfitTl)@N0(r.NetProfitTl) ₺</span></td>
                             <td class="text-right c-neu">@N2(r.UsdRate)</td>
                             <td class="text-right @(pos(r.CumulativeBalanceUsd) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(r.CumulativeBalanceUsd)" data-dec="0">@sign(r.CumulativeBalanceUsd)@USD(r.CumulativeBalanceUsd)</span></td>
                         </tr>
@@ -194,25 +214,54 @@
                 </tbody>
                 <tfoot>
                     @{
-                        var tRev  = Model.YearSummaries.Sum(r => r.TotalRevenueTl);
-                        var tElec = Model.YearSummaries.Sum(r => r.TotalElectricityCostTl);
-                        var tComm = Model.YearSummaries.Sum(r => r.TotalCommissionTl);
-                        var tFix  = Model.YearSummaries.Sum(r => r.FixedCostsTl);
-                        var tNet  = Model.YearSummaries.Sum(r => r.NetProfitTl);
-                        var tCumU = Model.YearSummaries.Last().CumulativeBalanceUsd;
+                        // Yıllar arası nominal TL toplamı tek kura çevrilemediğinden (her yılın kuru farklı),
+                        // toplamlar her yılın kendi projeksiyon kuruyla USD'ye çevrilip toplanır → data-usd.
+                        var tRevU  = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.TotalRevenueTl         / r.UsdRate : 0m);
+                        var tElecU = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.TotalElectricityCostTl / r.UsdRate : 0m);
+                        var tCommU = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.TotalCommissionTl      / r.UsdRate : 0m);
+                        var tFixU  = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.FixedCostsTl           / r.UsdRate : 0m);
+                        var tNetU  = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.NetProfitTl            / r.UsdRate : 0m);
+                        var tCumU  = Model.YearSummaries.Last().CumulativeBalanceUsd;
                     }
                     <tr class="tfoot-row">
                         <td>Toplam</td>
-                        <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(tRev)" data-dec="0">@N0(tRev) ₺</span></td>
-                        <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-tElec)" data-dec="0">-@N0(tElec) ₺</span></td>
-                        <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-tComm)" data-dec="0">-@N0(tComm) ₺</span></td>
-                        <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-tFix)" data-dec="0">-@N0(tFix) ₺</span></td>
-                        <td class="text-right @(pos(tNet) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(tNet)" data-dec="0">@sign(tNet)@N0(tNet) ₺</span></td>
+                        <td class="text-right c-pos"><span class="js-money" data-usd="@RAW(tRevU)" data-dec="0">@USD(tRevU)</span></td>
+                        <td class="text-right c-neg"><span class="js-money" data-usd="@RAW(-tElecU)" data-dec="0">-@USD(tElecU)</span></td>
+                        <td class="text-right c-neg"><span class="js-money" data-usd="@RAW(-tCommU)" data-dec="0">-@USD(tCommU)</span></td>
+                        <td class="text-right c-neg"><span class="js-money" data-usd="@RAW(-tFixU)" data-dec="0">-@USD(tFixU)</span></td>
+                        <td class="text-right @(pos(tNetU) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(tNetU)" data-dec="0">@sign(tNetU)@USD(tNetU)</span></td>
                         <td class="text-right">—</td>
                         <td class="text-right @(pos(tCumU) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(tCumU)" data-dec="0">@sign(tCumU)@USD(tCumU)</span></td>
                     </tr>
                 </tfoot>
             </table>
+        </div>
+        <div class="roi-modal-overlay" id="roiPanel" onclick="if(event.target===this)roiCloseChart()">
+            <div class="roi-modal" role="dialog" aria-modal="true" aria-label="ROİ geri dönüş eğrisi">
+                <div class="roi-modal-head">
+                    <div class="roi-modal-titlewrap">
+                        <div class="roi-modal-icon"><span class="material-symbols-outlined">show_chart</span></div>
+                        <div>
+                            <div class="roi-chart-title">Yatırım Geri Dönüş (ROİ) Eğrisi</div>
+                            <div class="roi-chart-desc">Kümülatif nakit akışı — yatırımla negatiften başlar, başabaş (amorti) noktasında sıfır çizgisini geçerek kâra döner.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="roi-modal-close" onclick="roiCloseChart()" aria-label="Kapat">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="roi-modal-body">
+                    <div class="roi-legend">
+                        <span class="roi-lg"><i class="roi-sw neg"></i> Zarar bölgesi</span>
+                        <span class="roi-lg"><i class="roi-sw pos"></i> Kâr bölgesi</span>
+                        <span class="roi-lg"><i class="roi-sw be"></i> Başabaş</span>
+                    </div>
+                    <div class="roi-chart-wrap" id="roiWrap">
+                        <svg id="roiSvg" class="roi-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ROİ geri dönüş eğrisi"></svg>
+                        <div class="roi-tip" id="roiTip" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -337,10 +386,10 @@
                             <tr>
                                 <td><strong>@p.Year</strong></td>
                                 <td class="text-right">@N2(p.DailyChargePerSocket)</td>
-                                <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(p.AnnualRevenueTl)" data-dec="0">@N0(p.AnnualRevenueTl) ₺</span></td>
-                                <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-p.AnnualElectricityCostTl)" data-dec="0">-@N0(p.AnnualElectricityCostTl) ₺</span></td>
-                                <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-p.AnnualCommissionTl)" data-dec="0">-@N0(p.AnnualCommissionTl) ₺</span></td>
-                                <td class="text-right @(pos(margin) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(margin)" data-dec="0">@sign(margin)@N0(margin) ₺</span></td>
+                                <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(p.AnnualRevenueTl)" data-rate="@RAW(p.UsdRate)" data-dec="0">@N0(p.AnnualRevenueTl) ₺</span></td>
+                                <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-p.AnnualElectricityCostTl)" data-rate="@RAW(p.UsdRate)" data-dec="0">-@N0(p.AnnualElectricityCostTl) ₺</span></td>
+                                <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-p.AnnualCommissionTl)" data-rate="@RAW(p.UsdRate)" data-dec="0">-@N0(p.AnnualCommissionTl) ₺</span></td>
+                                <td class="text-right @(pos(margin) ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(margin)" data-rate="@RAW(p.UsdRate)" data-dec="0">@sign(margin)@N0(margin) ₺</span></td>
                             </tr>
                         }
                     </tbody>
@@ -403,30 +452,30 @@
                                     </tr>
                                     <tr class="mb-sep">
                                         <td>Satış Fiyatı (/kWh)</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right"><span class="js-money" data-tl="@RAW(r.SalePriceTlPerKwh)" data-dec="2">@N2(r.SalePriceTlPerKwh) ₺</span></td> }
+                                        @foreach (var r in yb.Months) { <td class="text-right"><span class="js-money" data-tl="@RAW(r.SalePriceTlPerKwh)" data-rate="@RAW(yb.UsdRate)" data-dec="2">@N2(r.SalePriceTlPerKwh) ₺</span></td> }
                                     </tr>
                                     <tr>
                                         <td>Aylık İstasyon Satış Geliri</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(r.RevenueTl)" data-dec="0">@N0(r.RevenueTl) ₺</span></td> }
+                                        @foreach (var r in yb.Months) { <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(r.RevenueTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(r.RevenueTl) ₺</span></td> }
                                     </tr>
                                     <tr class="mb-sep">
                                         <td>Yer Sağlayıcı Komisyonu</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.CommissionTl)" data-dec="0">-@N0(r.CommissionTl) ₺</span></td> }
+                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.CommissionTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(r.CommissionTl) ₺</span></td> }
                                     </tr>
                                     @if (yb.Months.Any(r => r.RentTl > 0))
                                     {
                                         <tr>
                                             <td>Aylık Kira Bedeli</td>
-                                            @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.RentTl)" data-dec="0">-@N0(r.RentTl) ₺</span></td> }
+                                            @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.RentTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(r.RentTl) ₺</span></td> }
                                         </tr>
                                     }
                                     <tr class="mb-sep">
                                         <td>Aylık İstasyon Elektrik Maliyeti</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.ElectricityCostTl)" data-dec="0">-@N0(r.ElectricityCostTl) ₺</span></td> }
+                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.ElectricityCostTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(r.ElectricityCostTl) ₺</span></td> }
                                     </tr>
                                     <tr class="tfoot-row mb-sep">
                                         <td><strong>Cihaz Başına Aylık Brüt Kâr</strong></td>
-                                        @foreach (var r in yb.Months) { <td class="text-right @(r.GrossProfitTl >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(r.GrossProfitTl)" data-dec="0">@N0(r.GrossProfitTl) ₺</span></td> }
+                                        @foreach (var r in yb.Months) { <td class="text-right @(r.GrossProfitTl >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(r.GrossProfitTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(r.GrossProfitTl) ₺</span></td> }
                                     </tr>
                                 </tbody>
                                 <tfoot>
@@ -440,11 +489,11 @@
                                     <tr class="tfoot-row">
                                         <td>Yıl Toplamı (cihaz başına)</td>
                                         <td class="text-right" colspan="12">
-                                            Ciro: <strong class="c-pos"><span class="js-money" data-tl="@RAW(yRev)" data-dec="0">@N0(yRev) ₺</span></strong> ·
-                                            Komisyon: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yComm)" data-dec="0">-@N0(yComm) ₺</span></strong> ·
-                                            @if (yRent > 0) { <text>Kira: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yRent)" data-dec="0">-@N0(yRent) ₺</span></strong> · </text> }
-                                            Elektrik: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yElec)" data-dec="0">-@N0(yElec) ₺</span></strong> ·
-                                            Brüt Kâr: <strong class="@(yGross >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(yGross)" data-dec="0">@N0(yGross) ₺</span></strong>
+                                            Ciro: <strong class="c-pos"><span class="js-money" data-tl="@RAW(yRev)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(yRev) ₺</span></strong> ·
+                                            Komisyon: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yComm)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(yComm) ₺</span></strong> ·
+                                            @if (yRent > 0) { <text>Kira: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yRent)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(yRent) ₺</span></strong> · </text> }
+                                            Elektrik: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yElec)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(yElec) ₺</span></strong> ·
+                                            Brüt Kâr: <strong class="@(yGross >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(yGross)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(yGross) ₺</span></strong>
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -486,6 +535,7 @@
     .card.collapsed > .collapse-body { display: none !important; }
 
     /* Para birimi seçici */
+    .res-cur-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
     .fiz-cur-wrap {
         display: flex; align-items: center; gap: 6px;
         margin-left: auto;
@@ -502,6 +552,69 @@
     }
     /* Başlıkta seçici varken chevron'dan önce gelsin, tıklama kart toggle'ını tetiklemesin */
     .res-card-header { display: flex; align-items: center; gap: 10px; }
+
+    /* ── ROİ geri dönüş grafiği (pop-up modal) ──────────────────────── */
+    .roi-toggle-btn { white-space: nowrap; }
+    .roi-toggle-btn .material-symbols-outlined { font-size: 18px; }
+
+    .roi-modal-overlay {
+        position: fixed; inset: 0; z-index: 1000;
+        display: none; align-items: center; justify-content: center;
+        padding: 24px;
+        background: rgba(15, 23, 42, .55);
+        backdrop-filter: blur(2px);
+        animation: roiFade .18s ease;
+    }
+    .roi-modal-overlay.roi-open { display: flex; }
+    @@keyframes roiFade { from { opacity: 0; } to { opacity: 1; } }
+    .roi-modal {
+        width: 100%; max-width: 920px; max-height: 92vh;
+        display: flex; flex-direction: column;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.32);
+        overflow: hidden;
+        animation: roiPop .2s cubic-bezier(.2,.8,.25,1);
+    }
+    @@keyframes roiPop { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+    .roi-modal-head {
+        display: flex; align-items: flex-start; gap: 12px;
+        padding: 16px 18px; border-bottom: 1px solid var(--border);
+    }
+    .roi-modal-titlewrap { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+    .roi-modal-icon {
+        width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--surface-2); border: 1px solid var(--border);
+    }
+    .roi-modal-icon .material-symbols-outlined { font-size: 20px; color: var(--primary); }
+    .roi-modal-close {
+        flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px;
+        display: flex; align-items: center; justify-content: center;
+        background: transparent; border: 1px solid var(--border);
+        color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s;
+    }
+    .roi-modal-close:hover { background: var(--surface-2); color: var(--text); }
+    .roi-modal-body { padding: 16px 18px 18px; overflow: auto; }
+    .roi-chart-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .roi-chart-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .roi-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .roi-lg { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .roi-sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+    .roi-sw.pos { background: color-mix(in srgb, var(--success) 55%, transparent); }
+    .roi-sw.neg { background: color-mix(in srgb, var(--danger) 45%, transparent); }
+    .roi-sw.be  { background: var(--surface); border: 2px solid var(--success); border-radius: 50%; }
+    .roi-chart-wrap { position: relative; width: 100%; }
+    .roi-svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .roi-tip {
+        position: absolute; pointer-events: none; z-index: 5;
+        background: var(--text); color: var(--surface);
+        border-radius: 8px; padding: 7px 10px; font-size: 12px; line-height: 1.35;
+        box-shadow: 0 6px 18px rgba(0,0,0,.18);
+        transform: translate(-50%, -122%); white-space: nowrap;
+    }
+    .roi-tip .roi-tip-yr  { font-weight: 600; opacity: .82; font-size: 11px; }
+    .roi-tip .roi-tip-val { font-weight: 800; font-size: 14px; margin: 1px 0; }
+    .roi-tip .roi-tip-sub { opacity: .7; font-size: 10px; }
 </style>
 
 <script>
@@ -523,9 +636,12 @@
        Tüm tutarlar .js-money span'lerinde TL tabanında (data-tl) saklanır.
        Seçilen para birimine göre güncel kura bölünüp yeniden biçimlenir.   */
     (function () {
-        var FXR = { TRY: 1, USD: 0, EUR: 0 };   // 1 birim para = kaç TL (TRY hariç canlıdan gelir)
+        var FXR = { TRY: 1, USD: 0, EUR: 0 };   // 1 birim para = kaç TL (canlı TCMB; EUR çaprazı için)
         var SYM = { TRY: '₺', USD: '$', EUR: '€' };
-        var CUR = 'TRY';
+        var CUR = 'USD';                         // varsayılan görünüm: dolar
+        // Çalışmanın baz USD/TL kuru (projeksiyonun 1. yılı). Sonraki yılların hücreleri
+        // kendi enflasyon-farkı kuruyla data-rate üzerinden gelir; bu, baz/şimdiki değerler içindir.
+        var BASE_USD_RATE = @RAW(Model.UsdRate);
 
         function fmt(n, dec) {
             // tr-TR biçimi: binlik nokta, ondalık virgül
@@ -535,40 +651,45 @@
         }
 
         function renderMoney() {
-            var rate = FXR[CUR] || 0;          // TL -> seçili birim için bölünecek kur
-            var sym  = SYM[CUR];
-            // Seçili para birimi TRY değil ama kuru henüz gelmediyse dönüştürme (yanlış 0 gösterme)
-            if (CUR !== 'TRY' && rate <= 0) return;
+            var cur = CUR;
+            var sym = SYM[cur];
+            // USD/TL tabanı: çalışmanın baz kuru (yoksa canlı kura düş). USD görünümü buna yeter;
+            // EUR ayrıca canlı USD/EUR çaprazına ihtiyaç duyar.
+            var baseUsd = BASE_USD_RATE > 0 ? BASE_USD_RATE : (FXR.USD || 0);
+            if (cur === 'USD' && baseUsd <= 0) return;
+            if (cur === 'EUR' && (baseUsd <= 0 || (FXR.USD || 0) <= 0 || (FXR.EUR || 0) <= 0)) return;
             document.querySelectorAll('.js-money').forEach(function (el) {
-                // Taban değer TL'dir. data-tl varsa doğrudan; data-usd varsa güncel USD kuruyla TL'ye çevrilir.
-                var tl;
+                var dec = parseInt(el.getAttribute('data-dec') || '0', 10);
                 var aTl = el.getAttribute('data-tl');
+                var tl, usd;
                 if (aTl !== null) {
                     tl = parseFloat(aTl);
+                    if (isNaN(tl)) return;
+                    // Yıla özel projeksiyon kuru (data-rate) varsa onunla, yoksa baz kurla USD'ye çevir.
+                    var pr = parseFloat(el.getAttribute('data-rate'));
+                    var rate = (!isNaN(pr) && pr > 0) ? pr : baseUsd;
+                    usd = rate > 0 ? tl / rate : 0;
                 } else {
-                    var usd = parseFloat(el.getAttribute('data-usd'));
-                    // Kur henüz gelmediyse USD tabanlı hücreyi sunucu metniyle bırak (0 göstermesin)
-                    if (isNaN(usd) || (FXR.USD || 0) <= 0) return;
-                    tl = usd * FXR.USD;
+                    usd = parseFloat(el.getAttribute('data-usd'));
+                    if (isNaN(usd)) return;
+                    tl = usd * baseUsd;   // USD tabanlı (kümülatif/amorti) hücrelerin TL karşılığı
                 }
-                if (isNaN(tl)) return;
-                var dec = parseInt(el.getAttribute('data-dec') || '0', 10);
-                var val = CUR === 'TRY' ? tl : (rate > 0 ? tl / rate : 0);
-                var neg = val < 0;
-                var abs = Math.abs(val);
-                // TL tutarları çoğunlukla data-dec="0" ile saklanır. USD/EUR'a çevirince
-                // küçük değerler 0 ondalıkla "0"a yuvarlanmasın diye ondalık basamağı artır:
-                // en az 2 göster; gerekirse sıfır olmayan ilk basamağı yakalayana dek uzat.
-                if (CUR !== 'TRY') {
+                var val;
+                if (cur === 'TRY')      val = tl;
+                else if (cur === 'USD') val = usd;
+                else                    val = (FXR.USD > 0 && FXR.EUR > 0) ? usd * FXR.USD / FXR.EUR : 0;
+                var neg = val < 0, abs = Math.abs(val);
+                // TL tutarları çoğunlukla data-dec="0" ile saklanır; USD/EUR'a çevirince küçük
+                // değerler "0"a yuvarlanmasın diye ondalık basamağı artır (en az 2).
+                if (cur !== 'TRY') {
                     if (dec < 2) dec = 2;
                     if (abs > 0) {
-                        // abs'in büyüklük sırasına göre yeterli ondalık (ör. 0.03 -> 2, 0.0004 -> 4)
                         var needed = Math.ceil(-Math.log10(abs)) + 1;
                         if (needed > dec) dec = Math.min(needed, 6);
                     }
                 }
-                // Sembol konumu: ₺ sonda, $/€ başta (mevcut görünümle uyumlu)
-                var body = (CUR === 'TRY') ? (fmt(abs, dec) + ' ' + sym) : (sym + ' ' + fmt(abs, dec));
+                // Sembol konumu: ₺ sonda, $/€ başta
+                var body = (cur === 'TRY') ? (fmt(abs, dec) + ' ' + sym) : (sym + ' ' + fmt(abs, dec));
                 el.textContent = (neg ? '-' : '') + body;
             });
         }
@@ -605,3 +726,244 @@
         }
     })();
 </script>
+
+@if (Model.YearSummaries.Any())
+{
+    var roiParts = new List<string>();
+    roiParts.Add("{l:\"Başlangıç\",v:" + RAW(-Model.TotalInvestmentUsd) + "}");
+    foreach (var r in Model.YearSummaries)
+    {
+        roiParts.Add("{l:\"" + r.Year + "\",v:" + RAW(r.CumulativeBalanceUsd) + "}");
+    }
+    var roiJson = "[" + string.Join(",", roiParts) + "]";
+
+    <script>
+    /* ===== ROİ geri dönüş eğrisi =======================================
+       USD tabanlı kümülatif nakit akışı; negatif yatırımdan başlar, yıllık
+       net kâr eklenir, sıfırı geçtiği yıl "başabaş" olarak işaretlenir.
+       Tablo .js-money mantığıyla aynı: USD tabanı seçili para birimine
+       güncel TCMB kuruyla çevrilir. Tema (açık/koyu) CSS değişkenleriyle. */
+    (function () {
+        var ROI_BASE = @Html.Raw(roiJson);            // [{l, v(USD)}]
+        if (!ROI_BASE || !ROI_BASE.length) return;
+
+        var NS  = 'http://www.w3.org/2000/svg';
+        var FXR = { USD: 0, EUR: 0 };
+        var LAYOUT = null;
+        var hoverBound = false;
+
+        function mk(name, attrs, style) {
+            var e = document.createElementNS(NS, name);
+            for (var k in attrs) e.setAttribute(k, attrs[k]);
+            if (style) e.setAttribute('style', style);
+            return e;
+        }
+        function curNow() {
+            var s = document.querySelector('.fiz-cur-select');
+            return s ? s.value : 'USD';
+        }
+        // USD tabanlı değeri seçili para birimine çevirir (kur yoksa USD'de kalır).
+        function conv(usd) {
+            var c = curNow();
+            if (c === 'TRY') return FXR.USD > 0 ? usd * FXR.USD : usd;
+            if (c === 'EUR') return (FXR.USD > 0 && FXR.EUR > 0) ? usd * FXR.USD / FXR.EUR : usd;
+            return usd;
+        }
+        function sym() {
+            var c = curNow();
+            if (c === 'TRY') return FXR.USD > 0 ? '₺' : '$';
+            if (c === 'EUR') return (FXR.USD > 0 && FXR.EUR > 0) ? '€' : '$';
+            return '$';
+        }
+        function fmtFull(v) { return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(v); }
+        function fmtShort(v) {
+            var a = Math.abs(v), s = v < 0 ? '-' : '';
+            if (a >= 1e9) return s + (a / 1e9).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' Mr';
+            if (a >= 1e6) return s + (a / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' M';
+            if (a >= 1e3) return s + (a / 1e3).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' B';
+            return s + Math.round(a);
+        }
+
+        function draw() {
+            var svg = document.getElementById('roiSvg');
+            if (!svg) return;
+            while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+            var W = 860, H = 360, padL = 66, padR = 28, padT = 28, padB = 52;
+            var plotW = W - padL - padR, plotH = H - padT - padB;
+            svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+            var pts = ROI_BASE.map(function (p) { return { l: p.l, v: conv(p.v) }; });
+            var n = pts.length;
+            var vals = pts.map(function (p) { return p.v; }).concat(0);
+            var dMin = Math.min.apply(null, vals), dMax = Math.max.apply(null, vals);
+            if (dMin === dMax) dMax = dMin + 1;
+            var room = (dMax - dMin) * 0.10;
+            var minV = dMin - room, maxV = dMax + room;
+
+            function X(i) { return padL + (n === 1 ? 0 : (i / (n - 1)) * plotW); }
+            function Y(v) { return padT + (maxV - v) / (maxV - minV) * plotH; }
+            var yZero = Y(0);
+
+            // Gradyan: sıfır çizgisinin üstü yeşil (kâr), altı kırmızı (zarar).
+            var zeroOff = Math.max(0, Math.min(1, (yZero - padT) / plotH));
+            var defs = mk('defs', {});
+            function grad(id, aTop, aBot) {
+                var g = mk('linearGradient', { id: id, x1: 0, y1: padT, x2: 0, y2: padT + plotH, gradientUnits: 'userSpaceOnUse' });
+                g.appendChild(mk('stop', { offset: 0 },       'stop-color:var(--success);stop-opacity:' + aTop));
+                g.appendChild(mk('stop', { offset: zeroOff }, 'stop-color:var(--success);stop-opacity:' + aTop));
+                g.appendChild(mk('stop', { offset: zeroOff }, 'stop-color:var(--danger);stop-opacity:' + aBot));
+                g.appendChild(mk('stop', { offset: 1 },       'stop-color:var(--danger);stop-opacity:' + aBot));
+                return g;
+            }
+            defs.appendChild(grad('roiFill', 0.30, 0.22));
+            defs.appendChild(grad('roiLine', 1, 1));
+            svg.appendChild(defs);
+
+            // Yatay ızgara + Y eksen etiketleri
+            var ticks = 4;
+            for (var t = 0; t <= ticks; t++) {
+                var gv = minV + (maxV - minV) * t / ticks, gy = Y(gv);
+                svg.appendChild(mk('line', { x1: padL, y1: gy, x2: W - padR, y2: gy, 'stroke-dasharray': '3 4' }, 'stroke:var(--border);stroke-width:1;opacity:.7'));
+                var yl = mk('text', { x: padL - 10, y: gy + 4, 'text-anchor': 'end', 'font-size': 11 }, 'fill:var(--text-muted)');
+                yl.textContent = fmtShort(gv);
+                svg.appendChild(yl);
+            }
+
+            // Sıfır (başabaş) ekseni
+            svg.appendChild(mk('line', { x1: padL, y1: yZero, x2: W - padR, y2: yZero, 'stroke-dasharray': '5 4' }, 'stroke:var(--text-muted);stroke-width:1.4;opacity:.85'));
+
+            // Alan (eğri ile sıfır arası) — gradyanla kâr/zarar boyanır
+            var dArea = 'M ' + X(0) + ' ' + Y(pts[0].v);
+            for (var i = 1; i < n; i++) dArea += ' L ' + X(i) + ' ' + Y(pts[i].v);
+            dArea += ' L ' + X(n - 1) + ' ' + yZero + ' L ' + X(0) + ' ' + yZero + ' Z';
+            svg.appendChild(mk('path', { d: dArea, fill: 'url(#roiFill)' }, 'stroke:none'));
+
+            // Çizgi
+            var dLine = 'M ' + X(0) + ' ' + Y(pts[0].v);
+            for (var j = 1; j < n; j++) dLine += ' L ' + X(j) + ' ' + Y(pts[j].v);
+            svg.appendChild(mk('path', { d: dLine, fill: 'none', stroke: 'url(#roiLine)', 'stroke-width': 2.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+
+            // Başabaş noktası (ilk v >= 0)
+            var beIdx = -1;
+            for (var b = 0; b < n; b++) { if (pts[b].v >= 0) { beIdx = b; break; } }
+            if (beIdx > 0) {
+                var bx = X(beIdx);
+                svg.appendChild(mk('line', { x1: bx, y1: padT, x2: bx, y2: H - padB, 'stroke-dasharray': '4 4' }, 'stroke:var(--success);stroke-width:1;opacity:.6'));
+                var anch = bx > W - 72 ? 'end' : (bx < padL + 72 ? 'start' : 'middle');
+                var flag = mk('text', { x: bx, y: padT - 9, 'text-anchor': anch, 'font-size': 11, 'font-weight': 700 }, 'fill:var(--success)');
+                flag.textContent = '★ Başabaş (' + pts[beIdx].l + ')';
+                svg.appendChild(flag);
+            }
+
+            // Noktalar + X etiketleri; ekran koordinatları LAYOUT'a kaydedilir
+            var layoutPts = [];
+            for (var k = 0; k < n; k++) {
+                var px = X(k), py = Y(pts[k].v);
+                var posv = pts[k].v >= 0;
+                if (k === beIdx) {
+                    svg.appendChild(mk('circle', { cx: px, cy: py, r: 6.5 }, 'fill:var(--surface);stroke:var(--success);stroke-width:3'));
+                } else {
+                    svg.appendChild(mk('circle', { cx: px, cy: py, r: 3.2 }, 'fill:' + (posv ? 'var(--success)' : 'var(--danger)') + ';stroke:var(--surface);stroke-width:1.5'));
+                }
+                var xl = mk('text', { x: px, y: H - padB + 18, 'text-anchor': 'middle', 'font-size': 10 }, 'fill:var(--text-muted)');
+                xl.textContent = pts[k].l;
+                svg.appendChild(xl);
+                layoutPts.push({ x: px, y: py, l: pts[k].l, v: pts[k].v });
+            }
+
+            // Hover göstergeleri (üstte)
+            svg.appendChild(mk('line', { id: 'roiHL', y1: padT, y2: H - padB, opacity: 0, 'stroke-dasharray': '4 3', 'pointer-events': 'none' }, 'stroke:var(--primary);stroke-width:1'));
+            svg.appendChild(mk('circle', { id: 'roiHD', r: 5.5, opacity: 0, 'pointer-events': 'none' }, 'fill:var(--primary);stroke:var(--surface);stroke-width:2'));
+
+            LAYOUT = { points: layoutPts, W: W, H: H };
+            setupHover();
+        }
+
+        function tipHtml(idx, p) {
+            var yr  = idx === 0 ? 'Başlangıç · Yatırım' : ('Yıl ' + p.l);
+            var sgn = p.v > 0 ? '+' : (p.v < 0 ? '-' : '');
+            var sm  = sym(), num = fmtFull(Math.abs(p.v));
+            var body = sm === '₺' ? (num + ' ' + sm) : (sm + ' ' + num);
+            return '<div class="roi-tip-yr">' + yr + '</div>' +
+                   '<div class="roi-tip-val" style="color:' + (p.v >= 0 ? 'var(--success)' : 'var(--danger)') + '">' + sgn + body + '</div>' +
+                   '<div class="roi-tip-sub">Kümülatif nakit akışı</div>';
+        }
+
+        function setupHover() {
+            if (hoverBound) return;
+            var svg = document.getElementById('roiSvg');
+            var tip = document.getElementById('roiTip');
+            if (!svg || !tip) return;
+            svg.addEventListener('mousemove', function (ev) {
+                if (!LAYOUT) return;
+                var rect = svg.getBoundingClientRect();
+                if (!rect.width) return;
+                var vx = (ev.clientX - rect.left) / rect.width * LAYOUT.W;
+                var best = 0, bd = Infinity;
+                for (var i = 0; i < LAYOUT.points.length; i++) {
+                    var dd = Math.abs(LAYOUT.points[i].x - vx);
+                    if (dd < bd) { bd = dd; best = i; }
+                }
+                var p  = LAYOUT.points[best];
+                var hl = document.getElementById('roiHL'), hd = document.getElementById('roiHD');
+                if (hl) { hl.setAttribute('x1', p.x); hl.setAttribute('x2', p.x); hl.setAttribute('opacity', 0.45); }
+                if (hd) { hd.setAttribute('cx', p.x); hd.setAttribute('cy', p.y); hd.setAttribute('opacity', 1); }
+                tip.innerHTML = tipHtml(best, p);
+                tip.style.display = 'block';
+                tip.style.left = (p.x / LAYOUT.W * rect.width) + 'px';
+                tip.style.top  = (p.y / LAYOUT.H * rect.height) + 'px';
+            });
+            svg.addEventListener('mouseleave', function () {
+                tip.style.display = 'none';
+                var hl = document.getElementById('roiHL'), hd = document.getElementById('roiHD');
+                if (hl) hl.setAttribute('opacity', 0);
+                if (hd) hd.setAttribute('opacity', 0);
+            });
+            hoverBound = true;
+        }
+
+        function ensureRates(cb) {
+            if (FXR.USD > 0) { cb(); return; }
+            fetch('/FeasibilityAmortization/GetRates')
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d) { if (d.usdSell > 0) FXR.USD = d.usdSell; if (d.eurSell > 0) FXR.EUR = d.eurSell; } cb(); })
+                .catch(function () { cb(); });
+        }
+
+        function roiIsOpen() {
+            var panel = document.getElementById('roiPanel');
+            return panel && panel.classList.contains('roi-open');
+        }
+
+        // "ROİ Grafiğini Göster" → grafiği pop-up modal olarak aç.
+        window.roiToggleChart = function () {
+            var panel = document.getElementById('roiPanel');
+            if (!panel) return;
+            panel.classList.add('roi-open');
+            document.body.style.overflow = 'hidden';   // arka plan kaymasın
+            ensureRates(draw);
+        };
+        window.roiCloseChart = function () {
+            var panel = document.getElementById('roiPanel');
+            if (panel) panel.classList.remove('roi-open');
+            document.body.style.overflow = '';
+        };
+
+        // ESC ile kapat (tek sefer bağla)
+        if (!window.__roiEscBound) {
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && roiIsOpen()) window.roiCloseChart();
+            });
+            window.__roiEscBound = true;
+        }
+
+        // Para birimi değişince, modal açıksa grafiği yeniden çiz.
+        var _origCur = window.fizSelectCurrency;
+        window.fizSelectCurrency = function (sel) {
+            if (typeof _origCur === 'function') _origCur(sel);
+            if (roiIsOpen()) ensureRates(draw);
+        };
+    })();
+    </script>
+}

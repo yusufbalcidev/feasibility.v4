@@ -56,6 +56,10 @@
                            oninput="document.getElementById('nameCt').textContent=this.value.length; this.closest('.fiz-field').classList.remove('bad')" />
                     <span class="fiz-err">Fizibilite adı zorunludur.</span>
                 </div>
+                <div class="fiz-field" id="f-startdate">
+                    <label>Sözleşme Başlangıç Tarihi</label>
+                    <input class="fiz-ctl" id="sozlesmeBaslangic" type="date" onchange="onContractStartChange()" />
+                </div>
             </div>
         </div>
     </div>
@@ -177,7 +181,7 @@
     <div class="fiz-input-wrap">
         <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" min="0" max="100" step="0.1" placeholder="0" style="padding-left:12px;"
                oninput="this.closest('.fiz-field').classList.remove('bad')">
-        <span class="fiz-suf" style="font-size: 1.2rem; font-weight: 600; line-height: 1;">%</span>
+        <span class="fiz-suf">%</span>
     </div>
     <span class="fiz-err">0 ile 100 arasında bir değer giriniz.</span>
 </div>
@@ -274,7 +278,7 @@
             <span class="material-symbols-outlined">bar_chart</span>
         </div>
         <h3>Fizibilite Sonuçları</h3>
-        <p>Veri girişlerini tamamladıktan sonra <strong>Fizibilite Hesapla</strong> butonuna basın; amortisman, ROI ve 10 yıllık projeksiyon raporu burada görüntülenir.</p>
+        <p>Veri girişlerini tamamladıktan sonra <strong>Fizibilite Hesapla</strong> butonuna basın; amortisman, ROI ve 15 yıllık projeksiyon raporu burada görüntülenir.</p>
     </div>
 
     <div id="resultsContent"></div>
@@ -365,10 +369,20 @@
         var REKLAM = [
             { id: "reklam",   label: "Reklam Geliri",                    ccy: "TRY", val: 0 }
         ];
-        var DEFAULT_PROJ = [
-            [2026,3],[2027,4],[2028,5],[2029,6],[2030,7],
-            [2031,8],[2032,9],[2033,10],[2034,11],[2035,12]
-        ];
+        // Projeksiyon, "Sözleşme Başlangıç Tarihi"nin yılından itibaren 15 yıl boyunca istenir.
+        var PROJ_YEARS = 15;
+        function projStartYear() {
+            var el = document.getElementById('sozlesmeBaslangic');
+            var v = el && el.value ? el.value : '';
+            var y = v ? parseInt(v.substring(0, 4), 10) : 0;
+            return y > 0 ? y : new Date().getFullYear();
+        }
+        function buildProjYears() {
+            var start = projStartYear();
+            var arr = [];
+            for (var i = 0; i < PROJ_YEARS; i++) arr.push(start + i);
+            return arr;
+        }
         var _defSatis = 0, _defAlis = 0;
         function initDefaultPrices() {
             var pTL = stations.length > 0 ? stations[0].pTL : 0;
@@ -560,8 +574,32 @@
         var stations = [];
         var newProj = function(satis, alis, daily) {
             satis = satis || 0; alis = alis || 0; daily = daily || 8;
-            return DEFAULT_PROJ.map(function(p) { return { year: p[0], daily: daily, sH1: satis, sH2: satis, pH1: alis, pH2: alis, usd: USD() }; });
+            return buildProjYears().map(function(year) { return { year: year, daily: daily, sH1: satis, sH2: satis, pH1: alis, pH2: alis, usd: USD() }; });
         };
+
+        // Projeksiyon satırlarını sözleşme başlangıç yılından itibaren 15 yıla hizalar;
+        // girilmiş değerleri satır sırasına göre korur, eksik yılları boş ekler.
+        function resyncProjYears() {
+            var years = buildProjYears();
+            stations.forEach(function(s) {
+                var old = s.proj || [];
+                s.proj = years.map(function(year, i) {
+                    var o = old[i];
+                    return o
+                        ? { year: year, daily: o.daily, sH1: o.sH1, sH2: o.sH2, pH1: o.pH1, pH2: o.pH2, usd: o.usd }
+                        : { year: year, daily: (old[0] ? old[0].daily : (s.daily || 0)) || 0, sH1: 0, sH2: 0, pH1: 0, pH2: 0, usd: USD() };
+                });
+            });
+        }
+        // Sözleşme başlangıç tarihi değişince projeksiyon yıllarını yeniden hizala.
+        function onContractStartChange() {
+            resyncProjYears();
+            if (modalIdx >= 0 && document.getElementById('fiz-overlay').classList.contains('show')) {
+                modalDraft = stations[modalIdx].proj.map(function(p) { return { year: p.year, daily: p.daily, sH1: p.sH1||0, sH2: p.sH2||0, pH1: p.pH1||0, pH2: p.pH2||0, usd: p.usd||USD() }; });
+                renderProj();
+            }
+            renderStations();
+        }
         function usedTypes(except) { return stations.filter(function(s, i) { return i !== except; }).map(function(s) { return s.type; }); }
         function nextType() { return ST_TYPES.find(function(t) { return !usedTypes(-1).includes(t); }); }
 
@@ -745,6 +783,7 @@
                 monthlyRent:                     hasRent ? finVal('kira') : 0,
                 rentCurrency:                    hasRent ? finCcy('kira') : 0,
                 contractMonths:                  parseInt(document.getElementById('sozlesmeAy').value) || 0,
+                contractStartDate:               document.getElementById('sozlesmeBaslangic').value || null,
                 monthlyLostDaysPercent:          parseFloat(document.getElementById('kayipGunYuzde').value) || 0,
                 postWarrantyMaintenanceCost:     finVal('bakim'),
                 postWarrantyMaintenanceCurrency: finCcy('bakim'),
@@ -988,6 +1027,7 @@
             document.getElementById('nameCt').textContent = '0';
             document.querySelectorAll('.fiz-field').forEach(function(f) { f.classList.remove('bad'); });
             var sozlesmeEl = document.getElementById('sozlesmeAy'); if (sozlesmeEl) sozlesmeEl.value = '';
+            var startEl = document.getElementById('sozlesmeBaslangic'); if (startEl) startEl.value = '';
             var kayipEl = document.getElementById('kayipGunYuzde'); if (kayipEl) kayipEl.value = '';
             document.getElementById('kiraVar').checked = false;
             document.getElementById('kiraBlock').classList.add('hidden');

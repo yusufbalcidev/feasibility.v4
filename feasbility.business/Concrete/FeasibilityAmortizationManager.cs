@@ -17,6 +17,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
     private readonly IGenericService<DeviceLine> _deviceLineService;
     private readonly ITcmbService                _tcmb;
     private readonly IWorldBankService           _worldBank;
+    private readonly IEvdsInflationService       _evds;
     private readonly IMapper                     _mapper;
 
     public FeasibilityAmortizationManager(
@@ -25,6 +26,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         IGenericService<DeviceLine> deviceLineService,
         ITcmbService tcmb,
         IWorldBankService worldBank,
+        IEvdsInflationService evds,
         IMapper mapper)
     {
         _locationService   = locationService;
@@ -32,6 +34,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         _deviceLineService = deviceLineService;
         _tcmb      = tcmb;
         _worldBank = worldBank;
+        _evds      = evds;
         _mapper            = mapper;
     }
 
@@ -77,11 +80,15 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
     public async Task<(decimal? tl, decimal? usd, decimal? eur)> GetSonEnflasyonlarAsync(CancellationToken ct = default)
     {
-        var tlTask  = _worldBank.GetLatestInflationAsync("TR",  ct);
-        var usdTask = _worldBank.GetLatestInflationAsync("US",  ct);
-        var eurTask = _worldBank.GetLatestInflationAsync("EMU", ct);
-        await Task.WhenAll(tlTask, usdTask, eurTask);
-        return (tlTask.Result, usdTask.Result, eurTask.Result);
+        // TL: önce TCMB EVDS (güncel aylık TÜFE yıllık değişim); boşsa World Bank'a düş.
+        var tlEvdsTask = _evds.GetLatestTufeAnnualAsync(ct);
+        var tlWbTask   = _worldBank.GetLatestInflationAsync("TR",  ct);
+        var usdTask    = _worldBank.GetLatestInflationAsync("US",  ct);
+        var eurTask    = _worldBank.GetLatestInflationAsync("EMU", ct);
+        await Task.WhenAll(tlEvdsTask, tlWbTask, usdTask, eurTask);
+
+        var tl = tlEvdsTask.Result ?? tlWbTask.Result;
+        return (tl, usdTask.Result, eurTask.Result);
     }
 
     public async Task<Guid> SaveStudyAsync(FeasibilityAmortizationSaveDto dto, CancellationToken ct = default)
@@ -238,6 +245,24 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var uptimeFactor = 1m - Math.Clamp(s.MonthlyLostDaysPercent, 0m, 100m) / 100m;
 
         var activeLines = s.DeviceLines.Where(d => !d.IsDeleted).OrderBy(d => d.DeviceType).ToList();
+
+        // ── Yıllık USD/TRY projeksiyonu ─────────────────────────────────────────
+        // USD enflasyonu bu yılki değerde sabit kabul edilip her yıl bileşik uygulanır.
+        // TL enflasyonu KULLANILMAZ; kur yalnızca USD enflasyonu kadar yükselir:
+        //   kur(n) = baz × (1 + usdEnf)^n   (n = yıl − ilk projeksiyon yılı)
+        int baseProjYear = activeLines
+            .SelectMany(d => d.YearProjections.Where(y => !y.IsDeleted).Select(y => y.Year))
+            .DefaultIfEmpty(0)
+            .Min();
+        decimal ProjectedUsdRate(int year)
+        {
+            if (s.UsdRate <= 0) return s.UsdRate;
+            var offset = baseProjYear > 0 ? year - baseProjYear : 0;
+            if (offset <= 0) return s.UsdRate;
+            var factor = 1m + s.InflationUsd / 100m;
+            return s.UsdRate * (decimal)Math.Pow((double)factor, offset);
+        }
+
         var linesDtos   = new List<DeviceLineDetailDto>();
         decimal totalRevTl = 0, totalElecTl = 0, totalCommTl = 0;
 
@@ -297,7 +322,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                         SalePriceH2             = y.SalePriceH2,
                         PurchasePriceH1         = y.PurchasePriceH1,
                         PurchasePriceH2         = y.PurchasePriceH2,
-                        UsdRate                 = y.UsdRate,
+                        UsdRate                 = ProjectedUsdRate(y.Year),
                         AnnualRevenueTl         = revTl,
                         AnnualElectricityCostTl = elecTl,
                         AnnualCommissionTl      = comm,
@@ -311,7 +336,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 .OrderBy(y => y.Year)
                 .Select(y =>
                 {
-                    var yUsd = y.UsdRate > 0 ? y.UsdRate : s.UsdRate;
+                    var yUsd = ProjectedUsdRate(y.Year);
                     var rows = new List<MonthlyBreakdownRowDto>();
                     for (int m = 1; m <= 12; m++)
                     {
@@ -408,13 +433,12 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         foreach (var year in allYears)
         {
             decimal yRevTl = 0, yElecTl = 0, yCommTl = 0;
-            decimal yUsdRate = s.UsdRate;
+            decimal yUsdRate = ProjectedUsdRate(year);
 
             foreach (var d in activeLines)
             {
                 var y = d.YearProjections.FirstOrDefault(p => p.Year == year && !p.IsDeleted);
                 if (y == null) continue;
-                if (y.UsdRate > 0) yUsdRate = y.UsdRate;
 
                 // Projeksiyon fiyatı 0 ise cihaz satırındaki baz fiyatı kullan (annualNetTl ile tutarlı)
                 var daily = y.DailyChargePerSocket > 0 ? y.DailyChargePerSocket : d.DailyChargesPerSocket;
@@ -511,6 +535,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             InflationUsd               = s.InflationUsd,
             InflationEur               = s.InflationEur,
             ContractMonths             = s.ContractMonths,
+            ContractStartDate          = s.ContractStartDate,
             MonthlyLostDaysPercent     = s.MonthlyLostDaysPercent,
             StationUnitCostTl          = s.StationUnitCostTl,
             ProviderEntryFeeTl         = s.ProviderEntryFeeTl,
@@ -597,6 +622,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             monthlyRent              = s.MonthlyRent,
             rentCurrency             = (int)s.RentCurrency,
             contractMonths           = s.ContractMonths,
+            contractStartDate        = s.ContractStartDate.HasValue ? s.ContractStartDate.Value.ToString("yyyy-MM-dd") : null,
             monthlyLostDaysPercent   = s.MonthlyLostDaysPercent,
             postWarrantyCost         = s.PostWarrantyMaintenanceCost,
             postWarrantyCurrency     = (int)s.PostWarrantyMaintenanceCurrency,

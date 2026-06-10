@@ -30,6 +30,8 @@ public class FeasibilityAmortizationSaveDto
 
     public int ContractMonths { get; set; }
 
+    public DateTime? ContractStartDate { get; set; }
+
     public decimal MonthlyLostDaysPercent { get; set; }
 
     public decimal PostWarrantyMaintenanceCost { get; set; }
