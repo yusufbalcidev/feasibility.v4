@@ -359,7 +359,8 @@
             { id: "bakim",    label: "Garanti Sonrası Bakım (Yıllık)",   ccy: "TRY", val: 0 },
             { id: "giris",    label: "Yer Sağlayıcı Proje Giriş Bedeli", ccy: "TRY", val: 0 },
             { id: "altyapi",  label: "Altyapı Yatırım Bedeli",           ccy: "TRY", val: 0 },
-            { id: "cihaz",    label: "Cihaz Başına Yatırım",             ccy: "TRY", val: 0 }
+            // Otomatik: Giriş + Altyapı + Σ(istasyon bedeli × adet). Sadece gösterim — toplam yatırıma ayrıca girmez.
+            { id: "cihaz",    label: "Toplam Cihaz Yatırımı",            ccy: "TRY", val: 0, disabled: true }
         ];
         var REKLAM = [
             { id: "reklam",   label: "Reklam Geliri",                    ccy: "TRY", val: 0 }
@@ -508,6 +509,38 @@
             }
         }
 
+        // Seçili para birimindeki tutarı TL'ye çevirir (backend ToTl ile aynı mantık).
+        function toTl(v, ccy) {
+            if (ccy === 'USD') return v * USD();
+            if (ccy === 'EUR') return v * EUR();
+            return v;
+        }
+        // "Toplam Cihaz Yatırımı" = Giriş + Altyapı + Σ(istasyon bedeli × adet) — hepsi TL'ye çevrilir.
+        function recalcDeviceTotal() {
+            var f = FIN.find(function(x) { return x.id === 'cihaz'; });
+            if (!f) return;
+            var girisEl = document.getElementById('giris');
+            var altyapiEl = document.getElementById('altyapi');
+            var girisF = FIN.find(function(x) { return x.id === 'giris'; });
+            var altyapiF = FIN.find(function(x) { return x.id === 'altyapi'; });
+            var total = 0;
+            if (girisEl && girisF)   total += toTl(parse(girisEl.value),   girisF.ccy);
+            if (altyapiEl && altyapiF) total += toTl(parse(altyapiEl.value), altyapiF.ccy);
+            (stations || []).forEach(function(s) {
+                var bedel = isEmptyVal(s.bedel) ? 0 : +s.bedel;
+                var adet  = isEmptyVal(s.adet)  ? 0 : +s.adet;
+                total += toTl(bedel, s.ccy) * adet;
+            });
+            f.ccy = 'TRY';
+            f.val = total;
+            var el = document.getElementById('cihaz');
+            if (el) el.value = fmt(total, 2);
+            var preEl = document.getElementById('cihaz_pre');
+            if (preEl) preEl.textContent = CCY_LABELS.TRY;
+            var convEl = document.getElementById('cihaz_conv');
+            if (convEl) convEl.innerHTML = convText(total, 'TRY');
+        }
+
         function recalcFin() {
             if (document.getElementById('kiraVar').checked) {
                 var ky = document.getElementById('kiraY');
@@ -515,11 +548,13 @@
             }
             var all = KIRA.concat(FIN).concat(REKLAM);
             all.forEach(function(f) {
+                if (f.id === 'cihaz') return; // otomatik alan recalcDeviceTotal ile yönetilir
                 var el = document.getElementById(f.id); if (!el) return;
                 var v = parse(el.value);
                 var convEl = document.getElementById(f.id + '_conv');
                 if (convEl) convEl.innerHTML = convText(v, f.ccy);
             });
+            recalcDeviceTotal();
         }
 
         var stations = [];
@@ -565,7 +600,7 @@
                         '<td><select class="fiz-cell-sel" onchange="setSt(' + i + ',\'type\',this.value)">' + typeOpt + '</select></td>' +
                         '<td><input class="fiz-cell-in" data-key="adet" value="' + fmtCell(s.adet,0) + '" onchange="setNum(' + i + ',\'adet\',this,1,0)"></td>' +
                         '<td><input class="fiz-cell-in" data-key="soket" value="' + fmtCell(s.soket,0) + '" onchange="setNum(' + i + ',\'soket\',this,1,0)"></td>' +
-                        '<td><input class="fiz-cell-in" data-key="daily" value="' + fmtCell(s.daily,0) + '" onchange="setNum(' + i + ',\'daily\',this,0,0)"></td>' +
+                        '<td><input class="fiz-cell-in" data-key="daily" value="' + fmtCell(s.daily,1) + '" onchange="setNum(' + i + ',\'daily\',this,0,0)"></td>' +
                         '<td><input class="fiz-cell-in" data-key="avgkwh" value="' + fmtCell(s.avgkwh,0) + '" onchange="setNum(' + i + ',\'avgkwh\',this,0,0)"></td>' +
                         '<td class="fiz-price-cell">' +
                             '<input class="fiz-cell-in" data-key="pTL" value="' + fmtCell(s.pTL,2) + '" onchange="setPrice(' + i + ',this)">' +
@@ -594,6 +629,7 @@
             }
             document.getElementById('addSt').disabled = stations.length >= ST_TYPES.length;
             document.getElementById('stCount').textContent = stations.length;
+            recalcDeviceTotal(); // istasyon bedeli/adedi değiştikçe "Toplam Cihaz Yatırımı" güncellensin
         }
         function setSt(i, k, v) { stations[i][k] = v; renderStations(); }
         function setNum(i, k, el, min, max) {
@@ -720,8 +756,10 @@
                 providerEntryFeeCurrency:        finCcy('giris'),
                 infrastructureCost:              finVal('altyapi'),
                 infrastructureCostCurrency:      finCcy('altyapi'),
-                deviceUnitCost:                  finVal('cihaz'),
-                deviceUnitCostCurrency:          finCcy('cihaz'),
+                // "Toplam Cihaz Yatırımı" otomatik/salt-okunur gösterim alanı; bileşenleri (giriş, altyapı,
+                // istasyon bedeli) zaten ayrı gönderiliyor. Çift sayımı önlemek için 0 gönderilir.
+                deviceUnitCost:                  0,
+                deviceUnitCostCurrency:          0,
                 hasLoan:                         hasLoan,
                 loanAmount:                      hasLoan ? (parseFloat(document.getElementById('krediTutar').value) || 0) : 0,
                 loanAnnualInterestRate:          hasLoan ? (parseFloat(document.getElementById('faizOran').value) || 0) : 0,
@@ -908,8 +946,8 @@
                 return r.json();
             })
             .then(function(data) {
-                // Kayıt sonrası düzenlenebilir sonuç sayfasına git (sekmeli: veri + sonuç).
-                window.location.href = '/FeasibilityAmortization/Edit/' + data.id;
+                // Kayıt sonrası düzenlenebilir sayfaya git ve doğrudan sonuç sekmesini aç.
+                window.location.href = '/FeasibilityAmortization/Edit/' + data.id + '?showResults=1';
             })
             .catch(function(err) {
                 setSaveLoading(false);

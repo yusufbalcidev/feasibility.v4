@@ -21,6 +21,26 @@ builder.Services.AddBusiness(builder.Configuration);
 
 var app = builder.Build();
 
+// Açılışta veritabanını hazırla. LocalDB soğuk başlatmada geç kalkabildiği için
+// (process failed to start / Local Database Runtime error) kısa bir retry döngüsüyle sarmalandı.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            logger.LogWarning(ex, "Veritabanı hazırlanamadı (deneme {Attempt}/10), 3 sn sonra tekrar denenecek.", attempt);
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+        }
+    }
+}
 
 if (!app.Environment.IsDevelopment())
 {

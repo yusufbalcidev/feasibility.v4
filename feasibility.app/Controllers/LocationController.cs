@@ -96,7 +96,7 @@ public class LocationController : Controller
         {
             Id = entity.Id,
             Name = entity.Name,
-            Description = entity.Description,
+            Description = entity.Description ?? string.Empty,
             City = entity.City,
             District = entity.District,
             Address = entity.Address,

@@ -129,9 +129,8 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                           + s.ProviderEntryFeeTl
                           + s.InfrastructureCostTl;
 
-            var deviceTl = s.DeviceLines.Sum(d =>
-                  d.UnitLocationCostTl
-                + s.DeviceUnitCostTl * d.DeviceCount);
+            var deviceTl = s.DeviceLines.Where(d => !d.IsDeleted).Sum(d =>
+                  d.UnitLocationCostTl * d.DeviceCount);
 
             var totalTl  = oneTimeTl + deviceTl;
             var totalUsd = s.UsdRate > 0 ? totalTl / s.UsdRate : 0m;
@@ -205,7 +204,10 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
     private FeasibilityAmortizationDetailDto BuildDetail(Study s)
     {
         var oneTimeTl = s.StationUnitCostTl + s.ProviderEntryFeeTl + s.InfrastructureCostTl;
-        var deviceTl  = s.DeviceLines.Sum(d => d.UnitLocationCostTl + s.DeviceUnitCostTl * d.DeviceCount);
+        // Yalnızca aktif (silinmemiş) hatlar yatırıma dahil — ciro hesabıyla (activeLines) simetrik olmalı.
+        // İstasyon bedeli cihaz BAŞINA olduğundan adetle çarpılır. DeviceUnitCostTl artık ayrı kalem değil
+        // (UI'da "Toplam Cihaz Yatırımı" sadece gösterim), bu yüzden toplama girmez.
+        var deviceTl  = s.DeviceLines.Where(d => !d.IsDeleted).Sum(d => d.UnitLocationCostTl * d.DeviceCount);
         var totalTl   = oneTimeTl + deviceTl;
         var totalUsd  = s.UsdRate > 0 ? totalTl / s.UsdRate : 0m;
 
@@ -247,7 +249,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
         foreach (var d in activeLines)
         {
-            var lineInvestment = d.UnitLocationCostTl + s.DeviceUnitCostTl * d.DeviceCount;
+            var lineInvestment = d.UnitLocationCostTl * d.DeviceCount;
             var y1 = d.YearProjections.Where(y => !y.IsDeleted).OrderBy(y => y.Year).FirstOrDefault();
 
             decimal annualRev, annualElec;

@@ -5,7 +5,7 @@ namespace feasibility.Entity.Entities.Locations;
 public class Location : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public string City { get; set; } = string.Empty;
     public string District { get; set; } = string.Empty;
     public string? Address { get; set; }

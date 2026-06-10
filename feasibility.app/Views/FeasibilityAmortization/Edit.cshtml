@@ -413,7 +413,8 @@
             { id: "bakim",    label: "Garanti Sonrası Bakım (Yıllık)",   ccy: "TRY", val: 0   },
             { id: "giris",    label: "Yer Sağlayıcı Proje Giriş Bedeli", ccy: "TRY", val: 0   },
             { id: "altyapi",  label: "Altyapı Yatırım Bedeli",           ccy: "TRY", val: 0   },
-            { id: "cihaz",    label: "Cihaz Başına Yatırım",             ccy: "TRY", val: 0   }
+            // Otomatik: Giriş + Altyapı + Σ(istasyon bedeli × adet). Sadece gösterim — toplam yatırıma ayrıca girmez.
+            { id: "cihaz",    label: "Toplam Cihaz Yatırımı",            ccy: "TRY", val: 0, disabled: true }
         ];
         var REKLAM = [
             { id: "reklam",   label: "Reklam Geliri",                    ccy: "TRY", val: 0   }
@@ -595,6 +596,38 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
                        ' &nbsp;&middot;&nbsp; TL <span class="calc">' + fmt(v * EUR(), 2) + '</span>';
             }
         }
+        // Seçili para birimindeki tutarı TL'ye çevirir (backend ToTl ile aynı mantık).
+        function toTl(v, ccy) {
+            if (ccy === 'USD') return v * USD();
+            if (ccy === 'EUR') return v * EUR();
+            return v;
+        }
+        // "Toplam Cihaz Yatırımı" = Giriş + Altyapı + Σ(istasyon bedeli × adet) — hepsi TL'ye çevrilir.
+        function recalcDeviceTotal() {
+            var f = FIN.find(function(x) { return x.id === 'cihaz'; });
+            if (!f) return;
+            var girisEl = document.getElementById('giris');
+            var altyapiEl = document.getElementById('altyapi');
+            var girisF = FIN.find(function(x) { return x.id === 'giris'; });
+            var altyapiF = FIN.find(function(x) { return x.id === 'altyapi'; });
+            var total = 0;
+            if (girisEl && girisF)   total += toTl(parse(girisEl.value),   girisF.ccy);
+            if (altyapiEl && altyapiF) total += toTl(parse(altyapiEl.value), altyapiF.ccy);
+            (stations || []).forEach(function(s) {
+                var bedel = +s.bedel || 0;
+                var adet  = +s.adet  || 0;
+                total += toTl(bedel, s.ccy) * adet;
+            });
+            f.ccy = 'TRY';
+            f.val = total;
+            var el = document.getElementById('cihaz');
+            if (el) el.value = fmt(total, 2);
+            var preEl = document.getElementById('cihaz_pre');
+            if (preEl) preEl.textContent = CCY_LABELS.TRY;
+            var convEl = document.getElementById('cihaz_conv');
+            if (convEl) convEl.innerHTML = convText(total, 'TRY');
+        }
+
         function recalcFin() {
             if (document.getElementById('kiraVar').checked) {
                 var ky = document.getElementById('kiraY');
@@ -602,11 +635,13 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             }
             var all = KIRA.concat(FIN).concat(REKLAM);
             all.forEach(function(f) {
+                if (f.id === 'cihaz') return; // otomatik alan recalcDeviceTotal ile yönetilir
                 var el = document.getElementById(f.id); if (!el) return;
                 var v = parse(el.value);
                 var convEl = document.getElementById(f.id + '_conv');
                 if (convEl) convEl.innerHTML = convText(v, f.ccy);
             });
+            recalcDeviceTotal();
         }
 
         var stations = [];
@@ -650,7 +685,7 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
                         '<td><select class="fiz-cell-sel" onchange="setSt(' + i + ',\'type\',this.value)">' + typeOpt + '</select></td>' +
                         '<td><input class="fiz-cell-in" value="' + s.adet + '" onchange="setNum(' + i + ',\'adet\',this,1,0)"></td>' +
                         '<td><input class="fiz-cell-in" value="' + s.soket + '" onchange="setNum(' + i + ',\'soket\',this,1,0)"></td>' +
-                        '<td><input class="fiz-cell-in" value="' + fmt(s.daily,0) + '" onchange="setNum(' + i + ',\'daily\',this,0,0)"></td>' +
+                        '<td><input class="fiz-cell-in" value="' + fmt(s.daily,1) + '" onchange="setNum(' + i + ',\'daily\',this,0,0)"></td>' +
                         '<td><input class="fiz-cell-in" value="' + fmt(s.avgkwh,0) + '" onchange="setNum(' + i + ',\'avgkwh\',this,0,0)"></td>' +
                         '<td class="fiz-price-cell">' +
                             '<input class="fiz-cell-in" value="' + fmt(s.pTL,2) + '" onchange="setPrice(' + i + ',this)">' +
@@ -678,6 +713,7 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             }
             document.getElementById('addSt').disabled = stations.length >= ST_TYPES.length;
             document.getElementById('stCount').textContent = stations.length;
+            recalcDeviceTotal(); // istasyon bedeli/adedi değiştikçe "Toplam Cihaz Yatırımı" güncellensin
         }
         function setSt(i, k, v) { stations[i][k] = v; renderStations(); }
         function setNum(i, k, el, min, max) {
@@ -794,8 +830,8 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             var finMap = {
                 bakim:   { val: p.postWarrantyCost,  ccy: ccyFromNum(p.postWarrantyCurrency) },
                 giris:   { val: p.providerFee,       ccy: ccyFromNum(p.providerFeeCurrency) },
-                altyapi: { val: p.infraCost,         ccy: ccyFromNum(p.infraCostCurrency) },
-                cihaz:   { val: p.deviceCost,        ccy: ccyFromNum(p.deviceCostCurrency) }
+                altyapi: { val: p.infraCost,         ccy: ccyFromNum(p.infraCostCurrency) }
+                // cihaz: otomatik hesaplanır (recalcDeviceTotal), preload'dan yüklenmez
             };
             FIN.forEach(function(f) {
                 var m = finMap[f.id]; if (!m) return;
@@ -889,8 +925,10 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
                 providerEntryFeeCurrency:        finCcy('giris'),
                 infrastructureCost:              finVal('altyapi'),
                 infrastructureCostCurrency:      finCcy('altyapi'),
-                deviceUnitCost:                  finVal('cihaz'),
-                deviceUnitCostCurrency:          finCcy('cihaz'),
+                // "Toplam Cihaz Yatırımı" otomatik/salt-okunur gösterim alanı; bileşenleri (giriş, altyapı,
+                // istasyon bedeli) zaten ayrı gönderiliyor. Çift sayımı önlemek için 0 gönderilir.
+                deviceUnitCost:                  0,
+                deviceUnitCostCurrency:          0,
                 hasLoan:                         hasLoan,
                 loanAmount:                      hasLoan ? (parseFloat(document.getElementById('krediTutar').value) || 0) : 0,
                 loanAnnualInterestRate:          hasLoan ? (parseFloat(document.getElementById('faizOran').value) || 0) : 0,
@@ -1055,5 +1093,12 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             document.getElementById('aylikTaksit').textContent = 'TL ' + fmt(taksit, 0);
             document.getElementById('toplamOdeme').textContent = 'TL ' + fmt(toplamOdeme, 0);
         }
+
+        // Yeni kayıt sonrası (?showResults=1) doğrudan "Fizibilite Sonuçları" sekmesini aç.
+        (function () {
+            if (/[?&]showResults=1\b/.test(window.location.search)) {
+                switchTab('results');
+            }
+        })();
     </script>
 }

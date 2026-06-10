@@ -23,7 +23,11 @@ public static class ServiceRegistration
                 "Local için 'dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"...\"' komutuyla tanımlayın.");
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseSqlServer(connectionString, sql =>
+                sql.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorNumbersToAdd: null)));
 
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
