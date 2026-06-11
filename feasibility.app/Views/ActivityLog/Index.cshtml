@@ -1,4 +1,4 @@
-@model List<ActivityLogListDto>
+@model PagedResult<ActivityLogListDto>
 @{
     ViewData["Title"] = "Aktivite Logları";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
@@ -18,7 +18,10 @@
 <div class="card">
     <div class="card-header">
         <h2>İşlem Kayıtları</h2>
-        <span class="badge badge-info">@Model.Count kayıt (son 500)</span>
+        <span class="badge badge-info">@Model.TotalCount kayıt (son 500 içinden)</span>
+    </div>
+    <div class="card-header list-toolbar">
+        @await Html.PartialAsync("_SearchBar", Model.Search, new ViewDataDictionary(ViewData) { { "Placeholder", "Kullanıcı, sayfa, IP veya tip ara..." } })
     </div>
     <div class="table-wrapper">
         <table class="table">
@@ -37,11 +40,11 @@
                 </tr>
             </thead>
             <tbody>
-                @if (!Model.Any())
+                @if (!Model.Items.Any())
                 {
-                    <tr><td colspan="10"><div class="empty-state"><span class="material-symbols-outlined">history</span>Henüz kayıt bulunmuyor.</div></td></tr>
+                    <tr><td colspan="10"><div class="empty-state"><span class="material-symbols-outlined">history</span>@(string.IsNullOrWhiteSpace(Model.Search) ? "Henüz kayıt bulunmuyor." : $"\"{Model.Search}\" için sonuç bulunamadı.")</div></td></tr>
                 }
-                @foreach (var log in Model)
+                @foreach (var log in Model.Items)
                 {
                     <tr>
                         <td>@log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td>
@@ -74,4 +77,5 @@
             </tbody>
         </table>
     </div>
+    <partial name="_Pagination" model="@((IPagedResult)Model)" />
 </div>

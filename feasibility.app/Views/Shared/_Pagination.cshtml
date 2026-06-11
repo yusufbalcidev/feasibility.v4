@@ -1,0 +1,87 @@
+@*
+    Yeniden kullanılabilir sayfalama çubuğu. Aktif arama (q) sayfa bağlantılarında korunur.
+    Kullanım: <partial name="_Pagination" model="(IPagedResult)Model" />
+*@
+@using feasibility.Entity.Dtos.Common
+@model IPagedResult
+@{
+    var totalPages = Model.TotalPages;
+    var current = Model.Page;
+    var search = Model.Search;
+
+    // Geçerli sayfa etrafında bir pencere göster (en fazla 5 numara).
+    var windowSize = 5;
+    var start = Math.Max(1, current - windowSize / 2);
+    var end = Math.Min(totalPages, start + windowSize - 1);
+    start = Math.Max(1, end - windowSize + 1);
+}
+
+@if (Model.TotalCount > 0)
+{
+    <nav class="pagination" aria-label="Sayfalama">
+        <span class="pagination-info">
+            @Model.TotalCount kayıttan @Model.FirstItemIndex–@Model.LastItemIndex arası gösteriliyor
+        </span>
+
+        @if (totalPages > 1)
+        {
+            <ul class="pagination-list">
+                <li>
+                    @if (Model.HasPrevious)
+                    {
+                        <a class="page-link" asp-action="Index" asp-route-page="@(current - 1)" asp-route-q="@search" aria-label="Önceki">
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link disabled"><span class="material-symbols-outlined">chevron_left</span></span>
+                    }
+                </li>
+
+                @if (start > 1)
+                {
+                    <li><a class="page-link" asp-action="Index" asp-route-page="1" asp-route-q="@search">1</a></li>
+                    @if (start > 2)
+                    {
+                        <li><span class="page-ellipsis">…</span></li>
+                    }
+                }
+
+                @for (var i = start; i <= end; i++)
+                {
+                    if (i == current)
+                    {
+                        <li><span class="page-link active">@i</span></li>
+                    }
+                    else
+                    {
+                        <li><a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-q="@search">@i</a></li>
+                    }
+                }
+
+                @if (end < totalPages)
+                {
+                    @if (end < totalPages - 1)
+                    {
+                        <li><span class="page-ellipsis">…</span></li>
+                    }
+                    <li><a class="page-link" asp-action="Index" asp-route-page="@totalPages" asp-route-q="@search">@totalPages</a></li>
+                }
+
+                <li>
+                    @if (Model.HasNext)
+                    {
+                        <a class="page-link" asp-action="Index" asp-route-page="@(current + 1)" asp-route-q="@search" aria-label="Sonraki">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link disabled"><span class="material-symbols-outlined">chevron_right</span></span>
+                    }
+                </li>
+            </ul>
+        }
+    </nav>
+}

@@ -1,0 +1,25 @@
+@*
+    Yeniden kullanılabilir arama çubuğu. GET form ile Index'e q parametresi gönderir.
+    Kullanım:
+        @await Html.PartialAsync("_SearchBar", new ViewDataDictionary(ViewData) {
+            { "Search", Model.Search }, { "Placeholder", "Ara..." } })
+    veya basitçe:
+        <partial name="_SearchBar" model="Model.Search" />
+*@
+@model string
+@{
+    var search = Model;
+    var placeholder = ViewData["Placeholder"] as string ?? "Ara...";
+}
+<form method="get" asp-action="Index" class="search-bar" role="search">
+    <span class="material-symbols-outlined search-icon">search</span>
+    <input type="text" name="q" value="@search" class="search-input"
+           placeholder="@placeholder" autocomplete="off" />
+    <button type="submit" class="btn btn-primary search-submit">Ara</button>
+    @if (!string.IsNullOrWhiteSpace(search))
+    {
+        <a asp-action="Index" class="btn btn-ghost search-clear" title="Aramayı temizle">
+            <span class="material-symbols-outlined">close</span>
+        </a>
+    }
+</form>

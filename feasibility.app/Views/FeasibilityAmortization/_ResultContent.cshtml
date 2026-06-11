@@ -161,6 +161,118 @@
     </div>
 </div>
 
+<!-- ROİ (Yatırım Geri Dönüş) Tablosu — Nakit Akışı Projeksiyonunun üzerinde -->
+@if (Model.YearSummaries.Any())
+{
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">
+                    <span class="material-symbols-outlined" style="font-size:18px;">show_chart</span>
+                </div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Geri Dönüş (ROİ) Tablosu</h2>
+                    <div class="fiz-sub">Kümülatif nakit akışı — yatırımla negatiften başlar, başabaş (amorti) noktasında sıfırı geçerek kâra döner.</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="table-wrapper collapse-body">
+            @{
+                // ROİ eğrisinin tablo karşılığı: "Başlangıç" satırı yatırımı (negatif) gösterir,
+                // ardından her yıl net kâr eklenir ve kümülatif denge ile ROI % izlenir.
+                var roiInvestUsd = Model.TotalInvestmentUsd;
+                var roiBeIdx = -1;
+                for (int i = 0; i < Model.YearSummaries.Count; i++)
+                {
+                    if (Model.YearSummaries[i].CumulativeBalanceUsd >= 0) { roiBeIdx = i; break; }
+                }
+            }
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Dönem</th>
+                        <th class="text-right">Yıllık Net Kâr</th>
+                        <th class="text-right">Kümülatif Denge</th>
+                        <th class="text-right">Kümülatif ROİ</th>
+                        <th class="text-center">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Başlangıç</strong></td>
+                        <td class="text-right c-neg"><span class="js-money" data-usd="@RAW(-roiInvestUsd)" data-dec="0">-@USD(roiInvestUsd)</span></td>
+                        <td class="text-right c-neg"><span class="js-money" data-usd="@RAW(-roiInvestUsd)" data-dec="0">-@USD(roiInvestUsd)</span></td>
+                        <td class="text-right c-neg">@PCT(-100)</td>
+                        <td class="text-center"><span class="c-neu">Yatırım</span></td>
+                    </tr>
+                    @for (int i = 0; i < Model.YearSummaries.Count; i++)
+                    {
+                        var r = Model.YearSummaries[i];
+                        var roiPct = roiInvestUsd > 0 ? Math.Round(r.CumulativeBalanceUsd / roiInvestUsd * 100, 1) : 0m;
+                        var isBe = i == roiBeIdx;
+                        <tr class="@(isBe ? "tfoot-row" : "")">
+                            <td><strong>@r.Year</strong></td>
+                            <td class="text-right @(pos(r.NetProfitUsd) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(r.NetProfitUsd)" data-dec="0">@sign(r.NetProfitUsd)@USD(r.NetProfitUsd)</span></td>
+                            <td class="text-right @(pos(r.CumulativeBalanceUsd) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(r.CumulativeBalanceUsd)" data-dec="0">@sign(r.CumulativeBalanceUsd)@USD(r.CumulativeBalanceUsd)</span></td>
+                            <td class="text-right @(pos(roiPct) ? "c-pos" : "c-neg")">@sign(roiPct)@PCT(roiPct)</td>
+                            <td class="text-center">
+                                @if (isBe)
+                                {
+                                    <span class="hat-badge" style="background:var(--success-50);color:var(--success);">★ Başabaş</span>
+                                }
+                                else if (pos(r.CumulativeBalanceUsd))
+                                {
+                                    <span class="c-pos">Kârda</span>
+                                }
+                                else
+                                {
+                                    <span class="c-neg">Zararda</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ROİ Geri Dönüş Eğrisi — tablonun hemen altında, ekranda gömülü gösterilir -->
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">
+                    <span class="material-symbols-outlined" style="font-size:18px;">show_chart</span>
+                </div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Geri Dönüş (ROİ) Eğrisi</h2>
+                    <div class="fiz-sub">Kümülatif nakit akışı — yatırımla negatiften başlar, başabaş (amorti) noktasında sıfır çizgisini geçerek kâra döner.</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="roi-chart-body collapse-body">
+            <div class="roi-legend">
+                <span class="roi-lg"><i class="roi-sw neg"></i> Zarar bölgesi</span>
+                <span class="roi-lg"><i class="roi-sw pos"></i> Kâr bölgesi</span>
+                <span class="roi-lg"><i class="roi-sw be"></i> Başabaş</span>
+            </div>
+            <div class="roi-chart-wrap" id="roiWrap">
+                <svg id="roiSvg" class="roi-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ROİ geri dönüş eğrisi"></svg>
+                <div class="roi-tip" id="roiTip" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+}
+
 <!-- 10 Yıllık Projeksiyon Tablosu -->
 @if (Model.YearSummaries.Any())
 {
@@ -173,10 +285,6 @@
                     <div class="fiz-sub">15 yıllık net kâr ve kümülatif denge</div>
                 </div>
                 <div class="fiz-card-tools">
-                    <button type="button" class="btn btn-secondary btn-sm roi-toggle-btn" onclick="roiToggleChart(this)">
-                        <span class="material-symbols-outlined">show_chart</span>
-                        <span class="roi-btn-lbl">ROİ Grafiğini Göster</span>
-                    </button>
                     <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
                         <span class="material-symbols-outlined">expand_more</span>
                     </button>
@@ -235,33 +343,6 @@
                     </tr>
                 </tfoot>
             </table>
-        </div>
-        <div class="roi-modal-overlay" id="roiPanel" onclick="if(event.target===this)roiCloseChart()">
-            <div class="roi-modal" role="dialog" aria-modal="true" aria-label="ROİ geri dönüş eğrisi">
-                <div class="roi-modal-head">
-                    <div class="roi-modal-titlewrap">
-                        <div class="roi-modal-icon"><span class="material-symbols-outlined">show_chart</span></div>
-                        <div>
-                            <div class="roi-chart-title">Yatırım Geri Dönüş (ROİ) Eğrisi</div>
-                            <div class="roi-chart-desc">Kümülatif nakit akışı — yatırımla negatiften başlar, başabaş (amorti) noktasında sıfır çizgisini geçerek kâra döner.</div>
-                        </div>
-                    </div>
-                    <button type="button" class="roi-modal-close" onclick="roiCloseChart()" aria-label="Kapat">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-                <div class="roi-modal-body">
-                    <div class="roi-legend">
-                        <span class="roi-lg"><i class="roi-sw neg"></i> Zarar bölgesi</span>
-                        <span class="roi-lg"><i class="roi-sw pos"></i> Kâr bölgesi</span>
-                        <span class="roi-lg"><i class="roi-sw be"></i> Başabaş</span>
-                    </div>
-                    <div class="roi-chart-wrap" id="roiWrap">
-                        <svg id="roiSvg" class="roi-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ROİ geri dönüş eğrisi"></svg>
-                        <div class="roi-tip" id="roiTip" style="display:none;"></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 }
@@ -507,7 +588,113 @@
     lineNo++;
 }
 
+<!-- PDF / Yazdır indirme butonu — sonucun en altında -->
+<div class="res-pdf-bar">
+    <button type="button" class="btn btn-primary res-pdf-btn" onclick="resDownloadPdf()">
+        <span class="material-symbols-outlined">picture_as_pdf</span> PDF olarak indir
+    </button>
+    <span class="res-pdf-hint">Tarayıcının yazdırma penceresi açılır; hedef olarak <strong>"PDF olarak kaydet"</strong> seçin.</span>
+</div>
+
 <style>
+    /* ── PDF / Yazdır butonu ──────────────────────────────────────────── */
+    .res-pdf-bar {
+        display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 22px; padding: 18px;
+        border-top: 1px dashed var(--border);
+    }
+    .res-pdf-btn .material-symbols-outlined { font-size: 18px; }
+    .res-pdf-hint { font-size: 12px; color: var(--text-muted); }
+
+    /* ── Yazdırma (PDF) düzeni — A4 dikey ──────────────────────────────
+       Yalnızca sonuç paneli yazdırılır; sayfa başlığı, sekmeler, butonlar
+       ve form paneli gizlenir. İçerik A4 genişliğine sığacak şekilde küçültülür. */
+    @@page {
+        size: A4 portrait;
+        margin: 12mm 10mm;
+    }
+    @@media print {
+        /* Tarayıcının arka plan rengini/gradyanını basması (kartlar, rozetler) */
+        html, body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            background: #fff !important;
+        }
+        body * { visibility: hidden; }
+        #pane-results, #pane-results * { visibility: visible; }
+        #pane-results {
+            position: absolute; left: 0; top: 0;
+            width: 100% !important; max-width: 100% !important;
+            padding: 0 !important; margin: 0 !important;
+            display: block !important;
+            font-size: 9pt;            /* A4 için kompakt taban yazı boyutu */
+        }
+        #pane-results .card,
+        #pane-results .res-section {
+            box-shadow: none !important;
+            border: 1px solid #d0d5dd !important;
+            margin: 0 0 8px 0 !important;
+            border-radius: 6px !important;
+            width: 100% !important;
+        }
+        /* Yazdırmada gereksiz öğeleri tamamen kaldır */
+        .res-cur-bar, .res-pdf-bar, .fiz-collapse-btn,
+        .fiz-results-actions, .fiz-results-hint,
+        .fiz-card-tools {
+            display: none !important;
+        }
+        /* Katlanmış kartlar yazdırmada açık görünsün */
+        .card.collapsed > .collapse-body { display: block !important; }
+        .mb-block { display: block !important; }
+        .mb-block > summary .mb-chevron { display: none !important; }
+        .mb-block > :not(summary) { display: revert !important; }
+
+        /* KPI kartları: A4'te 4'ü yan yana sığsın, küçült */
+        .res-kpi-row {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 6px !important;
+        }
+        .res-kpi { padding: 8px !important; }
+        .res-kpi-value { font-size: 12pt !important; }
+        .res-kpi-label { font-size: 7.5pt !important; }
+        /* Özet grid: iki kart yan yana */
+        .summary-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+        }
+
+        /* Tablolar A4 genişliğine sığsın; sabit yerleşim + kelime kırma */
+        #pane-results table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+            font-size: 8pt !important;
+        }
+        #pane-results th, #pane-results td {
+            padding: 3px 4px !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
+        }
+        /* 12 aylık döküm tablosu çok geniş — daha da küçült */
+        #pane-results .mb-table { font-size: 6.5pt !important; }
+        #pane-results .mb-table th,
+        #pane-results .mb-table td { padding: 2px !important; }
+
+        h2 { font-size: 11pt !important; }
+        .fiz-sub { font-size: 7.5pt !important; }
+
+        /* Kartlar ve tablo satırları sayfa ortasından bölünmesin */
+        .res-section, .card, .res-kpi-row, table, thead, tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        thead { display: table-header-group; }   /* uzun tablo bölünürse başlık tekrar etsin */
+    }
+
     /* Özet grid: her iki kart da açıkken eşit yükseklikte dursun.
        Ama bir kart kapanınca o kart içeriğine göre küçülsün (boşluk bırakmasın). */
     .summary-grid { align-items: stretch; }
@@ -553,50 +740,8 @@
     /* Başlıkta seçici varken chevron'dan önce gelsin, tıklama kart toggle'ını tetiklemesin */
     .res-card-header { display: flex; align-items: center; gap: 10px; }
 
-    /* ── ROİ geri dönüş grafiği (pop-up modal) ──────────────────────── */
-    .roi-toggle-btn { white-space: nowrap; }
-    .roi-toggle-btn .material-symbols-outlined { font-size: 18px; }
-
-    .roi-modal-overlay {
-        position: fixed; inset: 0; z-index: 1000;
-        display: none; align-items: center; justify-content: center;
-        padding: 24px;
-        background: rgba(15, 23, 42, .55);
-        backdrop-filter: blur(2px);
-        animation: roiFade .18s ease;
-    }
-    .roi-modal-overlay.roi-open { display: flex; }
-    @@keyframes roiFade { from { opacity: 0; } to { opacity: 1; } }
-    .roi-modal {
-        width: 100%; max-width: 920px; max-height: 92vh;
-        display: flex; flex-direction: column;
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.32);
-        overflow: hidden;
-        animation: roiPop .2s cubic-bezier(.2,.8,.25,1);
-    }
-    @@keyframes roiPop { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
-    .roi-modal-head {
-        display: flex; align-items: flex-start; gap: 12px;
-        padding: 16px 18px; border-bottom: 1px solid var(--border);
-    }
-    .roi-modal-titlewrap { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
-    .roi-modal-icon {
-        width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        background: var(--surface-2); border: 1px solid var(--border);
-    }
-    .roi-modal-icon .material-symbols-outlined { font-size: 20px; color: var(--primary); }
-    .roi-modal-close {
-        flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px;
-        display: flex; align-items: center; justify-content: center;
-        background: transparent; border: 1px solid var(--border);
-        color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s;
-    }
-    .roi-modal-close:hover { background: var(--surface-2); color: var(--text); }
-    .roi-modal-body { padding: 16px 18px 18px; overflow: auto; }
-    .roi-chart-title { font-size: 15px; font-weight: 700; color: var(--text); }
-    .roi-chart-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    /* ── ROİ geri dönüş grafiği (tablonun altında gömülü) ───────────── */
+    .roi-chart-body { padding: 14px 18px 18px; }
     .roi-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
     .roi-lg { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
     .roi-sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
@@ -622,6 +767,12 @@
     function resToggleCard(el) {
         var card = el.closest('.fiz-card') || el.closest('.card');
         if (card) card.classList.toggle('collapsed');
+    }
+
+    // PDF olarak indir: tarayıcının yazdırma diyaloğunu açar (hedef: "PDF olarak kaydet").
+    // Yazdırma CSS'i yalnızca sonuç panelini bırakıp katlanmış kartları açar.
+    function resDownloadPdf() {
+        window.print();
     }
 
     function mbSelectYear(sel) {
@@ -844,16 +995,30 @@
             for (var j = 1; j < n; j++) dLine += ' L ' + X(j) + ' ' + Y(pts[j].v);
             svg.appendChild(mk('path', { d: dLine, fill: 'none', stroke: 'url(#roiLine)', 'stroke-width': 2.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
 
-            // Başabaş noktası (ilk v >= 0)
+            // Başabaş (amorti) noktası — ilk v >= 0 olan yıl
             var beIdx = -1;
             for (var b = 0; b < n; b++) { if (pts[b].v >= 0) { beIdx = b; break; } }
             if (beIdx > 0) {
                 var bx = X(beIdx);
+                // Dikey başabaş çizgisi
                 svg.appendChild(mk('line', { x1: bx, y1: padT, x2: bx, y2: H - padB, 'stroke-dasharray': '4 4' }, 'stroke:var(--success);stroke-width:1;opacity:.6'));
-                var anch = bx > W - 72 ? 'end' : (bx < padL + 72 ? 'start' : 'middle');
-                var flag = mk('text', { x: bx, y: padT - 9, 'text-anchor': anch, 'font-size': 11, 'font-weight': 700 }, 'fill:var(--success)');
-                flag.textContent = '★ Başabaş (' + pts[beIdx].l + ')';
+                // Üstte yıl bayrağı (kenara taşmasın diye hizalama kenara göre ayarlanır)
+                var anch = bx > W - 96 ? 'end' : (bx < padL + 96 ? 'start' : 'middle');
+                var flag = mk('text', { x: bx, y: padT - 9, 'text-anchor': anch, 'font-size': 11.5, 'font-weight': 700 }, 'fill:var(--success)');
+                flag.textContent = '★ Amorti yılı: ' + pts[beIdx].l;
                 svg.appendChild(flag);
+                // Başabaş noktasının yanına da yıl etiketini yaz (eğri üzerinde net görünsün)
+                var bpx = X(beIdx), bpy = Y(pts[beIdx].v);
+                var labAnch = bpx > W - 96 ? 'end' : 'start';
+                var labDx   = labAnch === 'end' ? -10 : 10;
+                var be = mk('text', { x: bpx + labDx, y: bpy - 10, 'text-anchor': labAnch, 'font-size': 11, 'font-weight': 700 }, 'fill:var(--success)');
+                be.textContent = pts[beIdx].l + ' · amorti';
+                svg.appendChild(be);
+            } else if (beIdx === -1) {
+                // Sözleşme süresinde başabaşa ulaşılamıyor — bilgilendirici not
+                var note = mk('text', { x: W - padR, y: padT - 9, 'text-anchor': 'end', 'font-size': 11.5, 'font-weight': 700 }, 'fill:var(--danger)');
+                note.textContent = 'Sözleşme süresinde amorti edilemiyor';
+                svg.appendChild(note);
             }
 
             // Noktalar + X etiketleri; ekran koordinatları LAYOUT'a kaydedilir
@@ -931,38 +1096,14 @@
                 .catch(function () { cb(); });
         }
 
-        function roiIsOpen() {
-            var panel = document.getElementById('roiPanel');
-            return panel && panel.classList.contains('roi-open');
-        }
+        // Grafik artık tablonun hemen altında ekranda gömülü; sayfa açılır açılmaz çizilir.
+        ensureRates(draw);
 
-        // "ROİ Grafiğini Göster" → grafiği pop-up modal olarak aç.
-        window.roiToggleChart = function () {
-            var panel = document.getElementById('roiPanel');
-            if (!panel) return;
-            panel.classList.add('roi-open');
-            document.body.style.overflow = 'hidden';   // arka plan kaymasın
-            ensureRates(draw);
-        };
-        window.roiCloseChart = function () {
-            var panel = document.getElementById('roiPanel');
-            if (panel) panel.classList.remove('roi-open');
-            document.body.style.overflow = '';
-        };
-
-        // ESC ile kapat (tek sefer bağla)
-        if (!window.__roiEscBound) {
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && roiIsOpen()) window.roiCloseChart();
-            });
-            window.__roiEscBound = true;
-        }
-
-        // Para birimi değişince, modal açıksa grafiği yeniden çiz.
+        // Para birimi değişince grafiği yeniden çiz.
         var _origCur = window.fizSelectCurrency;
         window.fizSelectCurrency = function (sel) {
             if (typeof _origCur === 'function') _origCur(sel);
-            if (roiIsOpen()) ensureRates(draw);
+            ensureRates(draw);
         };
     })();
     </script>

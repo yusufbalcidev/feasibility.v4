@@ -1,7 +1,8 @@
-@model List<LocationListDto>
+@model PagedResult<LocationListDto>
 @{
     ViewData["Title"] = "Lokasyonlar";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var mapPoints = ViewBag.MapPoints as List<LocationListDto> ?? new List<LocationListDto>();
 }
 
 @section Styles {
@@ -32,7 +33,10 @@
                 <span class="material-symbols-outlined">map</span> Harita
             </button>
         </div>
-        <span class="badge badge-info">@Model.Count kayıt</span>
+        <span class="badge badge-info">@Model.TotalCount kayıt</span>
+    </div>
+    <div class="card-header list-toolbar">
+        @await Html.PartialAsync("_SearchBar", Model.Search, new ViewDataDictionary(ViewData) { { "Placeholder", "Ad, il, ilçe veya tip ara..." } })
     </div>
 
     <div id="tab-list" class="tab-pane active">
@@ -50,11 +54,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!Model.Any())
+                    @if (!Model.Items.Any())
                     {
-                        <tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">pin_drop</span>Henüz lokasyon eklenmemiş.</div></td></tr>
+                        <tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">pin_drop</span>@(string.IsNullOrWhiteSpace(Model.Search) ? "Henüz lokasyon eklenmemiş." : $"\"{Model.Search}\" için sonuç bulunamadı.")</div></td></tr>
                     }
-                    @foreach (var item in Model)
+                    @foreach (var item in Model.Items)
                     {
                         <tr>
                             <td><strong>@item.Name</strong></td>
@@ -107,6 +111,7 @@
                 </tbody>
             </table>
         </div>
+        <partial name="_Pagination" model="@((IPagedResult)Model)" />
     </div>
 
     <div id="tab-map" class="tab-pane">
@@ -115,8 +120,8 @@
 </div>
 
 @{
-    var mapData = Model
-        .Where(l => !l.IsDeleted && l.Latitude != 0 && l.Longitude != 0)
+    var mapData = mapPoints
+        .Where(l => l.Latitude != 0 && l.Longitude != 0)
         .Select(l => new
         {
             id = l.Id,

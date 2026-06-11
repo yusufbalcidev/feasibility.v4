@@ -622,6 +622,47 @@ select.fiz-ctl {
 .fiz-result-sub-row .item { font-size: 11px; color: var(--text-muted); }
 .fiz-result-sub-row .item b { display: block; font-size: 14px; color: var(--primary); font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; margin-top: 2px; }
 
+/* ---- Kredi (basit faiz) aylık döküm tablosu ---- */
+.fiz-loan-formula {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+.fiz-loan-formula b { color: var(--primary); font-weight: 600; }
+.fiz-loan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+.fiz-loan-table th,
+.fiz-loan-table td {
+    padding: 7px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-family: 'Courier New', monospace;
+}
+.fiz-loan-table th:first-child,
+.fiz-loan-table td:first-child { text-align: left; font-family: inherit; }
+.fiz-loan-table thead th {
+    background: var(--primary-50);
+    color: var(--primary);
+    font-weight: 600;
+    font-family: inherit;
+    border-bottom: 1px solid rgba(0,62,122,.2);
+}
+.fiz-loan-table tbody tr:nth-child(even) { background: rgba(0,62,122,.025); }
+.fiz-loan-table tfoot td {
+    font-weight: 700;
+    color: var(--primary);
+    border-top: 2px solid rgba(0,62,122,.25);
+    border-bottom: none;
+    background: var(--primary-50);
+}
+.fiz-loan-table tfoot td:first-child { font-family: inherit; }
+
 /* ---- Bottom form action bar ---- */
 .fiz-form-actions {
     display: flex;

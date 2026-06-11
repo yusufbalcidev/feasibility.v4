@@ -1,6 +1,7 @@
 using feasibility.Business.Abstract;
 using feasibility.Business.Middlewares;
 using feasibility.DataAccess.Seeds;
+using feasibility.Entity.Dtos.Common;
 using feasibility.Entity.Dtos.FeasibilityAmortization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -17,10 +18,34 @@ namespace feasibility.App.Controllers
             _feasibilityAmortizationService = feasibilityAmortizationService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        private const int PageSize = 10;
+
+        public async Task<IActionResult> Index(string? q, int page = 1, CancellationToken ct = default)
         {
-            var list =await _feasibilityAmortizationService.GetListAsync(ct);
-            return View(list);
+            if (page < 1) page = 1;
+
+            var all = await _feasibilityAmortizationService.GetListAsync(ct);
+
+            IEnumerable<FeasibilityAmortizationListDto> filtered = all;
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim();
+                filtered = all.Where(x =>
+                    (x.FeasibilityName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.LocationName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.CreatedByName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    x.DeviceTypes.Any(d => d.Contains(term, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var filteredList = filtered.ToList();
+            var totalCount = filteredList.Count;
+            var items = filteredList
+                .Skip((page - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            var model = PagedResult<FeasibilityAmortizationListDto>.Create(items, totalCount, page, PageSize, q);
+            return View(model);
         }
         public async Task<IActionResult> Create(CancellationToken ct)
         {

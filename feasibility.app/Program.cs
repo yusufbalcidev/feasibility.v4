@@ -21,8 +21,6 @@ builder.Services.AddBusiness(builder.Configuration);
 
 var app = builder.Build();
 
-// Açılışta veritabanını hazırla. LocalDB soğuk başlatmada geç kalkabildiği için
-// (process failed to start / Local Database Runtime error) kısa bir retry döngüsüyle sarmalandı.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

@@ -1,4 +1,4 @@
-@model List<UserListDto>
+@model PagedResult<UserListDto>
 @{
     ViewData["Title"] = "Kullanıcılar";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
@@ -23,7 +23,10 @@
 <div class="card">
     <div class="card-header">
         <h2>Kullanıcı Listesi</h2>
-        <span class="badge badge-info">@Model.Count kayıt</span>
+        <span class="badge badge-info">@Model.TotalCount kayıt</span>
+    </div>
+    <div class="card-header list-toolbar">
+        @await Html.PartialAsync("_SearchBar", Model.Search, new ViewDataDictionary(ViewData) { { "Placeholder", "Ad, kullanıcı adı veya e-posta ara..." } })
     </div>
     <div class="table-wrapper">
         <table class="table">
@@ -40,11 +43,11 @@
                 </tr>
             </thead>
             <tbody>
-                @if (!Model.Any())
+                @if (!Model.Items.Any())
                 {
-                    <tr><td colspan="8"><div class="empty-state"><span class="material-symbols-outlined">group</span>Henüz kullanıcı eklenmemiş.</div></td></tr>
+                    <tr><td colspan="8"><div class="empty-state"><span class="material-symbols-outlined">group</span>@(string.IsNullOrWhiteSpace(Model.Search) ? "Henüz kullanıcı eklenmemiş." : $"\"{Model.Search}\" için sonuç bulunamadı.")</div></td></tr>
                 }
-                @foreach (var item in Model)
+                @foreach (var item in Model.Items)
                 {
                     <tr>
                         <td><strong>@item.FirstName @item.LastName</strong></td>
@@ -88,4 +91,5 @@
             </tbody>
         </table>
     </div>
+    <partial name="_Pagination" model="@((IPagedResult)Model)" />
 </div>

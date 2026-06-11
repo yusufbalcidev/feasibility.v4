@@ -222,18 +222,18 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var annualMaintenance = s.PostWarrantyMaintenanceCostTl;
         var annualAdvertising = s.AdvertisingRevenueTl;
 
+        // BASİT FAİZ (bileşik DEĞİL): Faiz = AnaPara × YıllıkOran × Vade(gün) / 36000
+        // Vade(gün) = ay × 30. BSM payı yalnızca faiz üzerinden alınır (faiz × %5),
+        // anaparaya dokunulmaz. Toplam geri ödeme = anapara + faiz + BSM, aylara eşit bölünür.
         decimal annualLoanPayment = 0;
         if (s.HasLoan && s.LoanAmount > 0 && s.LoanTermMonths > 0)
         {
-            var r = s.LoanAnnualInterestRate / 100m / 12m;
-            if (r == 0)
-                annualLoanPayment = s.LoanAmount / s.LoanTermMonths * 12m;
-            else
-            {
-                var f = (decimal)Math.Pow((double)(1 + r), s.LoanTermMonths);
-                var monthly = s.LoanAmount * r * f / (f - 1);
-                annualLoanPayment = monthly * Math.Min(12, s.LoanTermMonths);
-            }
+            var loanDays      = s.LoanTermMonths * 30m;
+            var totalInterest = s.LoanAmount * s.LoanAnnualInterestRate * loanDays / 36000m;
+            var totalBsm      = totalInterest * 0.05m;
+            var totalRepay    = s.LoanAmount + totalInterest + totalBsm;
+            var monthly       = totalRepay / s.LoanTermMonths;
+            annualLoanPayment = monthly * Math.Min(12, s.LoanTermMonths);
         }
 
         // H1 = Ocak-Mayıs (151 gün), H2 = Haziran-Aralık (214 gün)
@@ -414,7 +414,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var annualFixedCosts = annualRent + annualMaintenance - annualAdvertising + annualLoanPayment;
         var annualNetTl      = totalRevTl - totalElecTl - totalCommTl - annualFixedCosts;
         var annualNetUsd     = s.UsdRate > 0 ? annualNetTl / s.UsdRate : 0m;
-        var payback          = annualNetUsd > 0 ? Math.Round(totalUsd / annualNetUsd, 1) : 0m;
         var roi              = totalUsd > 0 ? Math.Round(annualNetUsd / totalUsd * 100, 1) : 0m;
 
         // Yıllık özet tablosu
@@ -479,6 +478,26 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 NetProfitUsd            = yNetUsd,
                 CumulativeBalanceUsd    = cumUsd,
             });
+        }
+
+        // ── Amortisman süresi (üst KPI) ─────────────────────────────────────────
+        // ROİ tablosuyla birebir aynı mantık: yıl-yıl kümülatif denge sıfırı geçtiği
+        // yıl başabaştır. Böylece USD enflasyonu (ProjectedUsdRate) süreyi etkiler ve
+        // KPI, ROİ tablosu ve amorti tablosu aynı projeksiyona dayanır.
+        decimal payback = 0m;
+        decimal prevCum = -Math.Round(totalUsd, 0);
+        for (int i = 0; i < yearSummaries.Count; i++)
+        {
+            var ys = yearSummaries[i];
+            if (ys.CumulativeBalanceUsd >= 0)
+            {
+                // Yıl içinde sıfırı geçtiği kesri net kârla orantılı bul.
+                var need = -prevCum;                                  // o yıla girerken kalan açık
+                var frac = ys.NetProfitUsd > 0 ? need / ys.NetProfitUsd : 0m;
+                payback = Math.Max(0.1m, Math.Round(i + frac, 1));
+                break;
+            }
+            prevCum = ys.CumulativeBalanceUsd;
         }
 
         // ── İstasyon bedeli hariç (gömülü) yatırımın amorti tablosu ─────────────

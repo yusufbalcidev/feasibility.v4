@@ -19,9 +19,13 @@ public class LocationTypeMaintenanceController : Controller
         _service = service;
     }
 
-    public async Task<IActionResult> Index(CancellationToken ct)
+    private const int PageSize = 10;
+
+    public async Task<IActionResult> Index(string? q, int page = 1, CancellationToken ct = default)
     {
-        var list = await _service.Query(ignoreFilters: true)
+        if (page < 1) page = 1;
+
+        var query = _service.Query(ignoreFilters: true)
             .Select(t => new LocationTypeMaintenanceListDto
             {
                 Id = t.Id,
@@ -31,10 +35,25 @@ public class LocationTypeMaintenanceController : Controller
                 CreatedAt = t.CreatedAt,
                 CreatedByName = t.CreatedByName,
                 LocationCount = t.Locations.Count(l => !l.IsDeleted)
-            })
+            });
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            query = query.Where(t =>
+                t.Name.Contains(term) ||
+                (t.Description != null && t.Description.Contains(term)));
+        }
+
+        var totalCount = await query.CountAsync(ct);
+        var items = await query
             .OrderByDescending(t => t.CreatedAt)
+            .Skip((page - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync(ct);
-        return View(list);
+
+        var model = PagedResult<LocationTypeMaintenanceListDto>.Create(items, totalCount, page, PageSize, q);
+        return View(model);
     }
 
     [HttpGet]

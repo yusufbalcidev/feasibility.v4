@@ -24,11 +24,14 @@ public class LocationController : Controller
         _typeService = typeService;
     }
 
-    public async Task<IActionResult> Index(CancellationToken ct)
+    private const int PageSize = 10;
+
+    public async Task<IActionResult> Index(string? q, int page = 1, CancellationToken ct = default)
     {
-        var locations = await _locationService.Query(ignoreFilters: true)
+        if (page < 1) page = 1;
+
+        var query = _locationService.Query(ignoreFilters: true)
             .Include(l => l.LocationTypeMaintenance)
-            .OrderByDescending(l => l.CreatedAt)
             .Select(l => new LocationListDto
             {
                 Id = l.Id,
@@ -42,9 +45,44 @@ public class LocationController : Controller
                 IsDeleted = l.IsDeleted,
                 CreatedAt = l.CreatedAt,
                 CreatedByName = l.CreatedByName
+            });
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            query = query.Where(l =>
+                l.Name.Contains(term) ||
+                l.City.Contains(term) ||
+                l.District.Contains(term) ||
+                (l.LocationTypeMaintenanceName != null && l.LocationTypeMaintenanceName.Contains(term)) ||
+                (l.CreatedByName != null && l.CreatedByName.Contains(term)));
+        }
+
+        var totalCount = await query.CountAsync(ct);
+        var items = await query
+            .OrderByDescending(l => l.CreatedAt)
+            .Skip((page - 1) * PageSize)
+            .Take(PageSize)
+            .ToListAsync(ct);
+
+        // Harita sekmesi tüm aktif lokasyonları gösterir (sayfalamadan bağımsız).
+        var mapPoints = await _locationService.Query()
+            .Where(l => l.Latitude != 0 && l.Longitude != 0)
+            .Select(l => new LocationListDto
+            {
+                Id = l.Id,
+                Name = l.Name,
+                City = l.City,
+                District = l.District,
+                LocationTypeMaintenanceName = l.LocationTypeMaintenance != null ? l.LocationTypeMaintenance.Name : null,
+                Latitude = l.Latitude,
+                Longitude = l.Longitude
             })
             .ToListAsync(ct);
-        return View(locations);
+        ViewBag.MapPoints = mapPoints;
+
+        var model = PagedResult<LocationListDto>.Create(items, totalCount, page, PageSize, q);
+        return View(model);
     }
 
     [HttpGet]

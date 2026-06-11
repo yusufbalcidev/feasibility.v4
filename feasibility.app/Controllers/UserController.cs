@@ -25,18 +25,39 @@ public class UserController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(CancellationToken ct)
+    private const int PageSize = 10;
+
+    public async Task<IActionResult> Index(string? q, int page = 1, CancellationToken ct = default)
     {
-        var users = await _context.Users
-            .IgnoreQueryFilters()
+        if (page < 1) page = 1;
+
+        var query = _context.Users.IgnoreQueryFilters().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            query = query.Where(u =>
+                u.FirstName.Contains(term) ||
+                u.LastName.Contains(term) ||
+                (u.UserName != null && u.UserName.Contains(term)) ||
+                (u.Email != null && u.Email.Contains(term)));
+        }
+
+        var totalCount = await query.CountAsync(ct);
+        var users = await query
             .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync(ct);
 
         var userIds = users.Select(u => u.Id).ToList();
         var userRoles = await _context.UserRoles
             .Where(ur => userIds.Contains(ur.UserId))
             .ToListAsync(ct);
-        var roles = await _context.Roles.ToDictionaryAsync(r => r.Id, ct);
+        var roleIds = userRoles.Select(ur => ur.RoleId).Distinct().ToList();
+        var roles = await _context.Roles
+            .Where(r => roleIds.Contains(r.Id))
+            .ToDictionaryAsync(r => r.Id, ct);
 
         var list = users.Select(u =>
         {
@@ -56,7 +77,8 @@ public class UserController : Controller
             };
         }).ToList();
 
-        return View(list);
+        var model = PagedResult<UserListDto>.Create(list, totalCount, page, PageSize, q);
+        return View(model);
     }
 
     [HttpGet]

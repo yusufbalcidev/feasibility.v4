@@ -217,7 +217,7 @@
                         <label>Kredi Tutarı</label>
                         <div class="fiz-input-wrap">
                             <span class="fiz-pre">TL</span>
-                            <input class="fiz-ctl" style="padding-left:34px;" type="number" id="krediTutar" min="0" step="100" placeholder="0" oninput="hesaplaFin()">
+                            <input class="fiz-ctl" style="padding-left:34px;" type="text" inputmode="decimal" id="krediTutar" placeholder="0" oninput="hesaplaFin()">
                         </div>
                     </div>
                     <div class="fiz-field">
@@ -241,9 +241,31 @@
                         <span class="val" id="toplamFaiz">TL 0</span>
                     </div>
                     <div class="fiz-result-sub-row">
+                        <div class="item">BSM Payı (%5) <b id="toplamBsm">TL 0</b></div>
                         <div class="item">Aylık Taksit <b id="aylikTaksit">TL 0</b></div>
                         <div class="item">Toplam Geri Ödeme <b id="toplamOdeme">TL 0</b></div>
                     </div>
+                </div>
+
+                <div class="fiz-loan-table-wrap" id="loanTableWrap" style="margin-top:18px;display:none;">
+                    <div class="fiz-loan-formula">
+                        Basit faiz: <b>Ana Para × Yıllık Oran × Vade(gün) ÷ 36000</b> &nbsp;•&nbsp;
+                        BSM Payı: <b>Faiz × %5</b> (yalnızca faiz üzerinden, anaparaya dokunulmaz)
+                    </div>
+                    <table class="fiz-loan-table" id="loanTable">
+                        <thead>
+                            <tr>
+                                <th>Ay</th>
+                                <th>Anapara</th>
+                                <th>Faiz</th>
+                                <th>BSM Payı (%5)</th>
+                                <th>Aylık Taksit</th>
+                                <th>Kalan Anapara</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loanTableBody"></tbody>
+                        <tfoot id="loanTableFoot"></tfoot>
+                    </table>
                 </div>
             </div>
         </div>
@@ -901,7 +923,7 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             if (p.hasLoan) {
                 document.getElementById('krediVar').checked = true;
                 document.getElementById('financePanel').classList.add('open');
-                document.getElementById('krediTutar').value = p.loanAmount;
+                document.getElementById('krediTutar').value = p.loanAmount ? fmt(p.loanAmount, 0) : '';
                 document.getElementById('faizOran').value   = p.loanRate;
                 document.getElementById('vadeAy').value     = p.loanMonths;
                 hesaplaFin();
@@ -965,8 +987,8 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
                 deviceUnitCost:                  0,
                 deviceUnitCostCurrency:          0,
                 hasLoan:                         hasLoan,
-                loanAmount:                      hasLoan ? (parseFloat(document.getElementById('krediTutar').value) || 0) : 0,
-                loanAnnualInterestRate:          hasLoan ? (parseFloat(document.getElementById('faizOran').value) || 0) : 0,
+                loanAmount:                      hasLoan ? parse(document.getElementById('krediTutar').value) : 0,
+                loanAnnualInterestRate:          hasLoan ? (parseFloat(('' + document.getElementById('faizOran').value).replace(',', '.')) || 0) : 0,
                 loanTermMonths:                  hasLoan ? (parseInt(document.getElementById('vadeAy').value) || 0) : 0,
                 deviceLines: stations.map(function(s) {
                     return {
@@ -1109,25 +1131,75 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             if (on) hesaplaFin();
         }
         function hesaplaFin() {
-            var P = parseFloat(document.getElementById('krediTutar').value) || 0;
-            var yillik = parseFloat(document.getElementById('faizOran').value) || 0;
+            var P = parse(document.getElementById('krediTutar').value);
+            var yillik = parseFloat(('' + document.getElementById('faizOran').value).replace(',', '.')) || 0;
             var n = parseInt(document.getElementById('vadeAy').value) || 0;
-            var taksit = 0, toplamOdeme = 0, toplamFaiz = 0;
+
+            // BASİT FAİZ (bileşik DEĞİL): Faiz = AnaPara × YıllıkOran × Vade(gün) / 36000
+            // Vade(gün) = ay × 30. BSM payı yalnızca faiz üzerinden alınır (faiz × %5),
+            // anaparaya dokunulmaz.
+            var vadeGun = n * 30;
+            var toplamFaiz = 0, toplamBsm = 0, toplamOdeme = 0, taksit = 0;
             if (P > 0 && n > 0) {
-                var r = yillik / 100 / 12;
-                if (r === 0) {
-                    taksit = P / n; toplamOdeme = P; toplamFaiz = 0;
-                } else {
-                    var f = Math.pow(1 + r, n);
-                    taksit = P * r * f / (f - 1);
-                    toplamOdeme = taksit * n;
-                    toplamFaiz = toplamOdeme - P;
-                }
+                toplamFaiz  = P * yillik * vadeGun / 36000;
+                toplamBsm   = toplamFaiz * 0.05;
+                toplamOdeme = P + toplamFaiz + toplamBsm;
+                taksit      = toplamOdeme / n;
             }
+
             document.getElementById('toplamFaiz').textContent  = 'TL ' + fmt(toplamFaiz, 0);
+            document.getElementById('toplamBsm').textContent   = 'TL ' + fmt(toplamBsm, 0);
             document.getElementById('aylikTaksit').textContent = 'TL ' + fmt(taksit, 0);
             document.getElementById('toplamOdeme').textContent = 'TL ' + fmt(toplamOdeme, 0);
+
+            // Aylık döküm tablosu — toplam faiz/BSM aylara eşit bölünür (bileşik yok).
+            var body = document.getElementById('loanTableBody');
+            var foot = document.getElementById('loanTableFoot');
+            var wrap = document.getElementById('loanTableWrap');
+            body.innerHTML = '';
+            foot.innerHTML = '';
+            if (P > 0 && n > 0) {
+                var anaparaAy = P / n;
+                var faizAy    = toplamFaiz / n;
+                var bsmAy     = toplamBsm / n;
+                var taksitAy  = anaparaAy + faizAy + bsmAy;
+                var kalan     = P;
+                var rows = '';
+                for (var m = 1; m <= n; m++) {
+                    kalan -= anaparaAy;
+                    if (kalan < 0.005) kalan = 0;
+                    rows += '<tr>'
+                        + '<td>' + m + '. Ay</td>'
+                        + '<td>TL ' + fmt(anaparaAy, 0) + '</td>'
+                        + '<td>TL ' + fmt(faizAy, 0) + '</td>'
+                        + '<td>TL ' + fmt(bsmAy, 0) + '</td>'
+                        + '<td>TL ' + fmt(taksitAy, 0) + '</td>'
+                        + '<td>TL ' + fmt(kalan, 0) + '</td>'
+                        + '</tr>';
+                }
+                body.innerHTML = rows;
+                foot.innerHTML = '<tr>'
+                    + '<td>Toplam</td>'
+                    + '<td>TL ' + fmt(P, 0) + '</td>'
+                    + '<td>TL ' + fmt(toplamFaiz, 0) + '</td>'
+                    + '<td>TL ' + fmt(toplamBsm, 0) + '</td>'
+                    + '<td>TL ' + fmt(toplamOdeme, 0) + '</td>'
+                    + '<td>TL 0</td>'
+                    + '</tr>';
+                wrap.style.display = '';
+            } else {
+                wrap.style.display = 'none';
+            }
         }
+        // Kredi tutarı: diğer finans alanlarıyla tutarlı olacak şekilde binlik ayraçlı (1.234.567) göster.
+        (function () {
+            var el = document.getElementById('krediTutar');
+            if (el) el.addEventListener('blur', function (e) {
+                var n = parse(e.target.value); if (n < 0) n = 0;
+                e.target.value = n ? fmt(n, 0) : '';
+                hesaplaFin();
+            });
+        })();
 
         // Yeni kayıt sonrası (?showResults=1) doğrudan "Fizibilite Sonuçları" sekmesini aç.
         (function () {

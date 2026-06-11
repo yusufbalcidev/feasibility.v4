@@ -25,14 +25,32 @@ public class RoleController : Controller
         _permissionService = permissionService;
     }
 
-    public async Task<IActionResult> Index(CancellationToken ct)
+    private const int PageSize = 10;
+
+    public async Task<IActionResult> Index(string? q, int page = 1, CancellationToken ct = default)
     {
-        var roles = await _context.Roles
-            .IgnoreQueryFilters()
+        if (page < 1) page = 1;
+
+        var query = _context.Roles.IgnoreQueryFilters().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            query = query.Where(r =>
+                (r.Name != null && r.Name.Contains(term)) ||
+                (r.Description != null && r.Description.Contains(term)));
+        }
+
+        var totalCount = await query.CountAsync(ct);
+        var roles = await query
             .OrderByDescending(r => r.CreatedAt)
+            .Skip((page - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync(ct);
 
+        var roleIds = roles.Select(r => r.Id).ToList();
         var counts = await _context.UserRoles
+            .Where(ur => roleIds.Contains(ur.RoleId))
             .GroupBy(ur => ur.RoleId)
             .Select(g => new { RoleId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.RoleId, x => x.Count, ct);
@@ -49,7 +67,8 @@ public class RoleController : Controller
             IsSystem = r.Id == RoleSeed.SuperAdminRoleId
         }).ToList();
 
-        return View(list);
+        var model = PagedResult<RoleListDto>.Create(list, totalCount, page, PageSize, q);
+        return View(model);
     }
 
     [HttpGet]
