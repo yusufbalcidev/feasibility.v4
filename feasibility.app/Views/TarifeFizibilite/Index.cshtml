@@ -1,0 +1,93 @@
+@{
+    ViewData["Title"] = "Tarife Fizibilitesi";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@@24,400,0,0" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #eef1f8;
+        }
+
+        .under-construction-wrapper {
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .under-construction-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(37, 99, 235, 0.08);
+            padding: 3.5rem 3rem;
+            text-align: center;
+            max-width: 520px;
+            width: 100%;
+        }
+
+        .construction-icon {
+            font-size: 72px;
+            color: #f59e0b;
+            margin-bottom: 1.25rem;
+            display: block;
+        }
+
+        .under-construction-card h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #0d1424;
+            margin-bottom: 0.75rem;
+        }
+
+        .under-construction-card p {
+            font-size: 1rem;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .btn-redirect {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.75rem 1.75rem;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-redirect:hover {
+            background: #1d4ed8;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .btn-redirect .material-symbols-outlined {
+            font-size: 20px;
+        }
+    </style>
+}
+
+<div class="under-construction-wrapper">
+    <div class="under-construction-card">
+        <span class="material-symbols-outlined construction-icon">construction</span>
+        <h1>Çalışmalarımız Devam Etmektedir</h1>
+        <p>
+            Tarife Fizibilitesi modülü şu an geliştirme aşamasındadır.<br />
+            Şarj İstasyonu Fizibilitesi modülüne yönlenmek için aşağıdaki butona tıklayabilirsiniz.
+        </p>
+        <a href="/Feasibility/Index" class="btn-redirect">
+            <span class="material-symbols-outlined">arrow_forward</span>
+            Şarj İstasyonu Fizibilitesine Git
+        </a>
+    </div>
+</div>

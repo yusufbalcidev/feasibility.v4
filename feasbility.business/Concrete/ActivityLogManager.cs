@@ -38,7 +38,9 @@ public class ActivityLogManager : GenericManager<ActivityLog>, IActivityLogServi
                 IpAddress = l.IpAddress,
                 ActionType = l.ActionType,
                 Description = l.Description,
-                ErrorMessage = l.ErrorMessage
+                ErrorMessage = l.ErrorMessage,
+                StudyId = l.StudyId,
+                StudyName = l.StudyName
             })
             .ToListAsync(ct);
     }

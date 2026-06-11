@@ -225,15 +225,18 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         // BASİT FAİZ (bileşik DEĞİL): Faiz = AnaPara × YıllıkOran × Vade(gün) / 36000
         // Vade(gün) = ay × 30. BSM payı yalnızca faiz üzerinden alınır (faiz × %5),
         // anaparaya dokunulmaz. Toplam geri ödeme = anapara + faiz + BSM, aylara eşit bölünür.
-        decimal annualLoanPayment = 0;
-        if (s.HasLoan && s.LoanAmount > 0 && s.LoanTermMonths > 0)
+        // monthlyLoanPayment: aylık eşit taksit. annualLoanPayment yalnızca "Yıl 1" gösterimi
+        // içindir; her yıla düşen gerçek ödeme yıl-içi ay sayısına göre ayrıca hesaplanır (bkz. LoanPaymentForYear).
+        bool   hasLoan          = s.HasLoan && s.LoanAmount > 0 && s.LoanTermMonths > 0;
+        decimal monthlyLoanPayment = 0, annualLoanPayment = 0;
+        if (hasLoan)
         {
             var loanDays      = s.LoanTermMonths * 30m;
             var totalInterest = s.LoanAmount * s.LoanAnnualInterestRate * loanDays / 36000m;
             var totalBsm      = totalInterest * 0.05m;
             var totalRepay    = s.LoanAmount + totalInterest + totalBsm;
-            var monthly       = totalRepay / s.LoanTermMonths;
-            annualLoanPayment = monthly * Math.Min(12, s.LoanTermMonths);
+            monthlyLoanPayment = totalRepay / s.LoanTermMonths;
+            annualLoanPayment  = monthlyLoanPayment * Math.Min(12, s.LoanTermMonths);
         }
 
         // H1 = Ocak-Mayıs (151 gün), H2 = Haziran-Aralık (214 gün)
@@ -277,20 +280,10 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             var lineInvestment = d.UnitLocationCostTl * d.DeviceCount;
             var y1 = d.YearProjections.Where(y => !y.IsDeleted).OrderBy(y => y.Year).FirstOrDefault();
 
-            decimal annualRev, annualElec;
-            if (y1 != null && (y1.SalePriceH1 > 0 || y1.SalePriceH2 > 0))
-            {
-                var eH1 = d.SocketCount * y1.DailyChargePerSocket * h1Days * d.AvgKwh * uptimeFactor;
-                var eH2 = d.SocketCount * y1.DailyChargePerSocket * h2Days * d.AvgKwh * uptimeFactor;
-                annualRev  = eH1 * y1.SalePriceH1  + eH2 * y1.SalePriceH2;
-                annualElec = eH1 * y1.PurchasePriceH1 + eH2 * y1.PurchasePriceH2;
-            }
-            else
-            {
-                var annual = d.SocketCount * d.DailyChargesPerSocket * 365m * d.AvgKwh * uptimeFactor;
-                annualRev  = annual * d.SalePriceTl;
-                annualElec = annual * d.PurchasePriceTl;
-            }
+            // KPI/özet "Yıl 1": yıllık tablo (yearSummaries) ile BİREBİR aynı per-alan fallback'i kullan.
+            // Projeksiyon satırındaki herhangi bir alan 0 ise cihaz satırındaki baz değere düşülür;
+            // böylece KPI, ROI, yıllık tablo ve aylık döküm tek ve aynı 1. yıl rakamına dayanır.
+            var (annualRev, annualElec) = ComputeLineYear(d, y1, h1Days, h2Days, uptimeFactor);
 
             var grossMargin = annualRev - annualElec;
             var commission  = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
@@ -306,22 +299,20 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 .OrderBy(y => y.Year)
                 .Select(y =>
                 {
-                    var eH1y = d.SocketCount * y.DailyChargePerSocket * h1Days * d.AvgKwh * uptimeFactor;
-                    var eH2y = d.SocketCount * y.DailyChargePerSocket * h2Days * d.AvgKwh * uptimeFactor;
-                    var revTl  = eH1y * y.SalePriceH1  + eH2y * y.SalePriceH2;
-                    var elecTl = eH1y * y.PurchasePriceH1 + eH2y * y.PurchasePriceH2;
-                    var gm     = revTl - elecTl;
-                    var comm   = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
+                    var (revTl, elecTl) = ComputeLineYear(d, y, h1Days, h2Days, uptimeFactor);
+                    var gm   = revTl - elecTl;
+                    var comm = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
                         ? d.AgreementRate * revTl
                         : d.AgreementRate * gm;
+                    var (eDaily, eSH1, eSH2, ePH1, ePH2) = EffectivePrices(d, y);
                     return new YearProjectionDetailDto
                     {
                         Year                    = y.Year,
-                        DailyChargePerSocket    = y.DailyChargePerSocket,
-                        SalePriceH1             = y.SalePriceH1,
-                        SalePriceH2             = y.SalePriceH2,
-                        PurchasePriceH1         = y.PurchasePriceH1,
-                        PurchasePriceH2         = y.PurchasePriceH2,
+                        DailyChargePerSocket    = eDaily,
+                        SalePriceH1             = eSH1,
+                        SalePriceH2             = eSH2,
+                        PurchasePriceH1         = ePH1,
+                        PurchasePriceH2         = ePH2,
                         UsdRate                 = ProjectedUsdRate(y.Year),
                         AnnualRevenueTl         = revTl,
                         AnnualElectricityCostTl = elecTl,
@@ -337,6 +328,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 .Select(y =>
                 {
                     var yUsd = ProjectedUsdRate(y.Year);
+                    var (mDaily, mSH1, mSH2, mPH1, mPH2) = EffectivePrices(d, y);
                     var rows = new List<MonthlyBreakdownRowDto>();
                     for (int m = 1; m <= 12; m++)
                     {
@@ -344,11 +336,11 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                         var lostDays   = days * Math.Clamp(s.MonthlyLostDaysPercent, 0m, 100m) / 100m;
                         var netOpDays  = days - lostDays;
                         var isH1       = m <= 5;
-                        var salePrice  = isH1 ? y.SalePriceH1 : y.SalePriceH2;
-                        var buyPrice   = isH1 ? y.PurchasePriceH1 : y.PurchasePriceH2;
+                        var salePrice  = isH1 ? mSH1 : mSH2;
+                        var buyPrice   = isH1 ? mPH1 : mPH2;
 
                         // Cihaz başına aylık satış kWh (tek cihazın soketleri).
-                        var saleKwh    = d.SocketCount * y.DailyChargePerSocket * d.AvgKwh * netOpDays;
+                        var saleKwh    = d.SocketCount * mDaily * d.AvgKwh * netOpDays;
                         var revTl      = saleKwh * salePrice;
                         var elecTl     = saleKwh * buyPrice;
                         var gmTl       = revTl - elecTl;
@@ -422,12 +414,26 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             .Distinct().OrderBy(y => y).ToList();
 
         int firstYear    = allYears.Count > 0 ? allYears[0] : 0;
-        int loanEndYear  = s.HasLoan && s.LoanTermMonths > 0
-            ? firstYear + (int)Math.Ceiling(s.LoanTermMonths / 12.0) - 1
-            : 0;
+
+        // Kredi taksitleri yıl-yıl gerçek ay sayısına göre dağıtılır (son kısmi yıl fazla tahsil edilmesin).
+        // 1. projeksiyon yılı sözleşmenin 1. yılı kabul edilir; o yıla LoanTermMonths'tan en fazla 12 ay düşer.
+        decimal LoanPaymentForYear(int year)
+        {
+            if (!hasLoan || firstYear == 0) return 0m;
+            int yearIndex = year - firstYear;                 // 0 = ilk yıl
+            if (yearIndex < 0) return 0m;
+            int monthsBefore = yearIndex * 12;
+            if (monthsBefore >= s.LoanTermMonths) return 0m;  // kredi bu yıldan önce bitti
+            int monthsThisYear = Math.Min(12, s.LoanTermMonths - monthsBefore);
+            return monthlyLoanPayment * monthsThisYear;
+        }
 
         var yearSummaries  = new List<YearSummaryDto>();
-        decimal cumUsd     = -Math.Round(totalUsd, 0);
+        // #1: Kredi anaparası iki kez sayılmasın. Yatırımın yalnızca özkaynakla finanse edilen kısmı
+        // başlangıçta peşin gider; kredi tutarı taksitlerle (LoanPaymentForYear) net kârdan düşülür.
+        decimal loanUsd    = hasLoan && s.UsdRate > 0 ? s.LoanAmount / s.UsdRate : 0m;
+        decimal equityUsd  = Math.Round(totalUsd, 0) - Math.Round(loanUsd, 0);
+        decimal cumUsd     = -equityUsd;
 
         foreach (var year in allYears)
         {
@@ -439,17 +445,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 var y = d.YearProjections.FirstOrDefault(p => p.Year == year && !p.IsDeleted);
                 if (y == null) continue;
 
-                // Projeksiyon fiyatı 0 ise cihaz satırındaki baz fiyatı kullan (annualNetTl ile tutarlı)
-                var daily = y.DailyChargePerSocket > 0 ? y.DailyChargePerSocket : d.DailyChargesPerSocket;
-                var sH1   = y.SalePriceH1     > 0 ? y.SalePriceH1     : d.SalePriceTl;
-                var sH2   = y.SalePriceH2     > 0 ? y.SalePriceH2     : d.SalePriceTl;
-                var pH1   = y.PurchasePriceH1 > 0 ? y.PurchasePriceH1 : d.PurchasePriceTl;
-                var pH2   = y.PurchasePriceH2 > 0 ? y.PurchasePriceH2 : d.PurchasePriceTl;
-
-                var eH1 = d.SocketCount * daily * h1Days * d.AvgKwh * uptimeFactor;
-                var eH2 = d.SocketCount * daily * h2Days * d.AvgKwh * uptimeFactor;
-                var rev  = eH1 * sH1 + eH2 * sH2;
-                var elec = eH1 * pH1 + eH2 * pH2;
+                var (rev, elec) = ComputeLineYear(d, y, h1Days, h2Days, uptimeFactor);
                 var gm   = rev - elec;
                 var comm = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
                     ? d.AgreementRate * rev
@@ -460,7 +456,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 yCommTl += comm;
             }
 
-            var yLoanPmt   = s.HasLoan && annualLoanPayment > 0 && year <= loanEndYear ? annualLoanPayment : 0m;
+            var yLoanPmt   = LoanPaymentForYear(year);
             var yFixed     = annualRent + annualMaintenance - annualAdvertising + yLoanPmt;
             var yNetTl     = yRevTl - yElecTl - yCommTl - yFixed;
             var yNetUsd    = yUsdRate > 0 ? Math.Round(yNetTl / yUsdRate, 0) : 0m;
@@ -485,7 +481,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         // yıl başabaştır. Böylece USD enflasyonu (ProjectedUsdRate) süreyi etkiler ve
         // KPI, ROİ tablosu ve amorti tablosu aynı projeksiyona dayanır.
         decimal payback = 0m;
-        decimal prevCum = -Math.Round(totalUsd, 0);
+        decimal prevCum = -equityUsd;
         for (int i = 0; i < yearSummaries.Count; i++)
         {
             var ys = yearSummaries[i];
@@ -562,6 +558,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             DeviceTotalTl              = deviceTl,
             TotalInvestmentTl          = totalTl,
             TotalInvestmentUsd         = Math.Round(totalUsd, 0),
+            EquityInvestmentUsd        = equityUsd,
             HasRent                    = s.HasRent,
             AnnualRentTl               = annualRent,
             AnnualMaintenanceTl        = annualMaintenance,
@@ -733,4 +730,34 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             Entity.Entities.Enums.CurrencyType.EUR => amount * eurRate,
             _                                       => amount
         };
+
+    /// <summary>
+    /// Bir projeksiyon yılının efektif (fallback uygulanmış) fiyatlarını döndürür.
+    /// Projeksiyon satırındaki herhangi bir alan 0 ise cihaz satırındaki baz değere düşülür.
+    /// Tüm gelir/gider hesapları (KPI, yıllık özet, projeksiyon detay tablosu, aylık döküm)
+    /// bu tek kaynaktan beslenir ki rakamlar birbiriyle çelişmesin.
+    /// </summary>
+    private static (decimal daily, decimal saleH1, decimal saleH2, decimal buyH1, decimal buyH2)
+        EffectivePrices(DeviceLine d, YearProjection? y)
+    {
+        if (y == null)
+            return (d.DailyChargesPerSocket, d.SalePriceTl, d.SalePriceTl, d.PurchasePriceTl, d.PurchasePriceTl);
+
+        return (
+            y.DailyChargePerSocket > 0 ? y.DailyChargePerSocket : d.DailyChargesPerSocket,
+            y.SalePriceH1          > 0 ? y.SalePriceH1          : d.SalePriceTl,
+            y.SalePriceH2          > 0 ? y.SalePriceH2          : d.SalePriceTl,
+            y.PurchasePriceH1      > 0 ? y.PurchasePriceH1      : d.PurchasePriceTl,
+            y.PurchasePriceH2      > 0 ? y.PurchasePriceH2      : d.PurchasePriceTl);
+    }
+
+    /// <summary>Bir cihaz hattının bir projeksiyon yılı için (yıllık ciro, yıllık elektrik) çiftini hesaplar.</summary>
+    private static (decimal rev, decimal elec) ComputeLineYear(
+        DeviceLine d, YearProjection? y, decimal h1Days, decimal h2Days, decimal uptimeFactor)
+    {
+        var (daily, sH1, sH2, pH1, pH2) = EffectivePrices(d, y);
+        var eH1 = d.SocketCount * daily * h1Days * d.AvgKwh * uptimeFactor;
+        var eH2 = d.SocketCount * daily * h2Days * d.AvgKwh * uptimeFactor;
+        return (eH1 * sH1 + eH2 * sH2, eH1 * pH1 + eH2 * pH2);
+    }
 }

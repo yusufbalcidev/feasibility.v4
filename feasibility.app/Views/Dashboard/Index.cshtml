@@ -1,9 +1,9 @@
+@using feasibility.Entity.Dtos.FeasibilityAmortization
 @{
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
-    var recentLocations = ViewBag.RecentLocations as List<LocationListDto> ?? new();
-    int locationCount = ViewBag.LocationCount ?? 0;
-    int locationTypeCount = ViewBag.LocationTypeCount ?? 0;
+    var recentFeasibilities = ViewBag.RecentFeasibilities as List<FeasibilityAmortizationListDto> ?? new();
+    int feasibilityCount = ViewBag.FeasibilityCount ?? 0;
     int userCount = ViewBag.UserCount ?? 0;
 }
 
@@ -19,18 +19,11 @@
 </div>
 
 <div class="dash-stats">
-    <a href="/Location/Index" class="dash-stat">
-        <div class="dash-stat-icon"><span class="material-symbols-outlined">location_on</span></div>
+    <a href="/FeasibilityAmortization/Index" class="dash-stat">
+        <div class="dash-stat-icon"><span class="material-symbols-outlined">calculate</span></div>
         <div>
-            <span class="dash-stat-label">Lokasyon</span>
-            <span class="dash-stat-value">@locationCount</span>
-        </div>
-    </a>
-    <a href="/LocationTypeMaintenance/Index" class="dash-stat">
-        <div class="dash-stat-icon"><span class="material-symbols-outlined">category</span></div>
-        <div>
-            <span class="dash-stat-label">Lokasyon Tipi</span>
-            <span class="dash-stat-value">@locationTypeCount</span>
+            <span class="dash-stat-label">Fizibilite</span>
+            <span class="dash-stat-value">@feasibilityCount</span>
         </div>
     </a>
     <a href="/User/Index" class="dash-stat">
@@ -51,38 +44,53 @@
 
 <div class="card" style="margin-top:24px;">
     <div class="card-header">
-        <h2>Son Eklenen Lokasyonlar</h2>
-        <a href="/Location/Index" class="btn btn-ghost btn-sm">Tümünü Gör</a>
+        <h2>Son Eklenen Fizibiliteler</h2>
+        <a href="/FeasibilityAmortization/Index" class="btn btn-ghost btn-sm">Tümünü Gör</a>
     </div>
     <div class="table-wrapper">
         <table class="table">
             <thead>
                 <tr>
-                    <th>Lokasyon Adı</th>
-                    <th>İl / İlçe</th>
-                    <th>Tip</th>
-                    <th>Ekleyen</th>
-                    <th>Oluşturma Tarihi</th>
-                    <th style="text-align:right;">İşlem</th>
+                    <th>Fizibilite Adı</th>
+                    <th>Versiyon</th>
+                    <th>Lokasyon</th>
+                    <th class="text-right">Toplam Yatırım ($)</th>
+                    <th>Durum</th>
+                    <th>Oluşturan</th>
+                    <th>Tarih</th>
+                    <th style="text-align:right;">İşlemler</th>
                 </tr>
             </thead>
             <tbody>
-                @if (!recentLocations.Any())
+                @if (!recentFeasibilities.Any())
                 {
-                    <tr><td colspan="6"><div class="empty-state"><span class="material-symbols-outlined">pin_drop</span>Henüz lokasyon eklenmemiş.</div></td></tr>
+                    <tr><td colspan="8"><div class="empty-state"><span class="material-symbols-outlined">calculate</span>Henüz fizibilite eklenmemiş.</div></td></tr>
                 }
-                @foreach (var item in recentLocations)
+                @foreach (var item in recentFeasibilities)
                 {
                     <tr>
-                        <td><strong>@item.Name</strong></td>
-                        <td>@item.City / @item.District</td>
-                        <td>@(item.LocationTypeMaintenanceName ?? "-")</td>
+                        <td><strong>@item.FeasibilityName</strong></td>
+                        <td><span class="badge badge-info">v@item.Version</span></td>
+                        <td title="@item.LocationName">@(string.IsNullOrWhiteSpace(item.LocationName) ? "-" : item.LocationName)</td>
+                        <td class="text-right">$ @item.TotalInvestmentUsd.ToString("#,##0", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</td>
+                        <td>
+                            @if (item.IsDeleted)
+                            {
+                                <span class="badge badge-passive">Pasif</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-active">Aktif</span>
+                            }
+                        </td>
                         <td>@(item.CreatedByName ?? "-")</td>
                         <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                        <td style="text-align:right;">
-                            <a href="/Location/Details/@item.Id" class="row-action-btn">
-                                <span class="material-symbols-outlined">visibility</span> Görüntüle
-                            </a>
+                        <td>
+                            <div class="row-actions" style="justify-content:flex-end;">
+                                <a href="/FeasibilityAmortization/View/@item.Id" class="row-action-btn">
+                                    <span class="material-symbols-outlined">visibility</span> Görüntüle
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 }

@@ -16,4 +16,6 @@ public class ActivityLogListDto
     public string ActionType { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? ErrorMessage { get; set; }
+    public Guid? StudyId { get; set; }
+    public string? StudyName { get; set; }
 }

@@ -5,6 +5,7 @@ using feasibility.Entity.Dtos.Common;
 using feasibility.Entity.Dtos.FeasibilityAmortization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Attributes;
 
 namespace feasibility.App.Controllers
 {
@@ -19,6 +20,14 @@ namespace feasibility.App.Controllers
         }
 
         private const int PageSize = 10;
+
+        // ModelState'teki ilk doğrulama mesajını döndürür (istemciye gösterilecek özet).
+        private string FirstError()
+            => ModelState.Values
+                   .SelectMany(v => v.Errors)
+                   .Select(e => e.ErrorMessage)
+                   .FirstOrDefault(m => !string.IsNullOrWhiteSpace(m))
+               ?? "Geçersiz veri.";
 
         public async Task<IActionResult> Index(string? q, int page = 1, CancellationToken ct = default)
         {
@@ -73,10 +82,11 @@ namespace feasibility.App.Controllers
         }
 
         [HttpPost]
+        [AutoValidation]
         public async Task<IActionResult> Calculate([FromBody] FeasibilityAmortizationSaveDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new { message = "Geçersiz veri." });
+                return BadRequest(new { message = FirstError() });
 
             try
             {
@@ -111,6 +121,7 @@ namespace feasibility.App.Controllers
         }
 
         [HttpPost]
+        [AutoValidation]
         public async Task<IActionResult> Save([FromBody] FeasibilityAmortizationSaveDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
@@ -121,7 +132,7 @@ namespace feasibility.App.Controllers
                         x => x.Key,
                         x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
                     );
-                return BadRequest(new { message = "Geçersiz veri.", errors });
+                return BadRequest(new { message = FirstError(), errors });
             }
 
             try
@@ -166,10 +177,11 @@ namespace feasibility.App.Controllers
         }
 
         [HttpPost]
+        [AutoValidation]
         public async Task<IActionResult> Update([FromQuery] Guid id, [FromBody] FeasibilityAmortizationSaveDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new { message = "Geçersiz veri." });
+                return BadRequest(new { message = FirstError() });
 
             // Eski versiyon salt-okunur: güncelleme isteği gelse bile reddedilir.
             if (!await _feasibilityAmortizationService.IsLatestVersionAsync(id, ct))

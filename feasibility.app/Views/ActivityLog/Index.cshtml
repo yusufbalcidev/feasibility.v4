@@ -33,6 +33,7 @@
                     <th>Method</th>
                     <th>Sayfa</th>
                     <th>Aksiyon</th>
+                    <th>Fizibilite</th>
                     <th>Tip</th>
                     <th>Durum</th>
                     <th>Süre</th>
@@ -42,7 +43,7 @@
             <tbody>
                 @if (!Model.Items.Any())
                 {
-                    <tr><td colspan="10"><div class="empty-state"><span class="material-symbols-outlined">history</span>@(string.IsNullOrWhiteSpace(Model.Search) ? "Henüz kayıt bulunmuyor." : $"\"{Model.Search}\" için sonuç bulunamadı.")</div></td></tr>
+                    <tr><td colspan="11"><div class="empty-state"><span class="material-symbols-outlined">history</span>@(string.IsNullOrWhiteSpace(Model.Search) ? "Henüz kayıt bulunmuyor." : $"\"{Model.Search}\" için sonuç bulunamadı.")</div></td></tr>
                 }
                 @foreach (var log in Model.Items)
                 {
@@ -53,7 +54,32 @@
                         <td><span class="badge badge-warning">@log.HttpMethod</span></td>
                         <td>@(log.Controller ?? "-")</td>
                         <td>@(log.Action ?? "-")</td>
-                        <td><span class="badge badge-info">@log.ActionType</span></td>
+                        <td>
+                            @if (log.StudyId.HasValue)
+                            {
+                                <a href="/FeasibilityAmortization/View/@log.StudyId" class="row-action-btn" style="font-size:12px;">
+                                    @(string.IsNullOrEmpty(log.StudyName) ? log.StudyId.Value.ToString()[..8] + "…" : log.StudyName)
+                                </a>
+                            }
+                            else { <span style="color:var(--text-muted);">-</span> }
+                        </td>
+                        <td>
+                            @{
+                                var (actionLabel, actionBadgeClass) = log.ActionType switch
+                                {
+                                    "Create"        => ("Ekledi",      "badge-active"),
+                                    "Update"        => ("Güncelledi",  "badge-info"),
+                                    "Delete"        => ("Sildi",       "badge-passive"),
+                                    "Login"         => ("Giriş Yaptı","badge-active"),
+                                    "Logout"        => ("Çıkış Yaptı","badge-info"),
+                                    "LoginFailed"   => ("Giriş Başarısız","badge-warning"),
+                                    "PasswordReset" => ("Şifre Sıfırladı","badge-info"),
+                                    "Error"         => ("Hata",        "badge-passive"),
+                                    _               => (log.ActionType,"badge-info")
+                                };
+                            }
+                            <span class="badge @actionBadgeClass">@actionLabel</span>
+                        </td>
                         <td>
                             @{
                                 var statusClass = log.StatusCode switch

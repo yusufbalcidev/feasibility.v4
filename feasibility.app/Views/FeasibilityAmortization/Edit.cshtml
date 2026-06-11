@@ -57,8 +57,9 @@
                     <span class="fiz-err">Fizibilite adı zorunludur.</span>
                 </div>
                 <div class="fiz-field" id="f-startdate">
-                    <label>Sözleşme Başlangıç Tarihi</label>
-                    <input class="fiz-ctl" id="sozlesmeBaslangic" type="date" onchange="onContractStartChange()" />
+                    <label>Sözleşme Başlangıç Tarihi <span class="fiz-req">*</span></label>
+                    <input class="fiz-ctl" id="sozlesmeBaslangic" type="date" onchange="onContractStartChange(); this.closest('.fiz-field').classList.remove('bad')" />
+                    <span class="fiz-err">Sözleşme başlangıç tarihi zorunludur.</span>
                 </div>
             </div>
         </div>
@@ -167,14 +168,17 @@
             </label>
             <div class="fiz-kira-block hidden" id="reklamBlock"></div>
             <div style="margin-top:18px; display:grid; grid-template-columns:240px 240px; gap:16px; max-width:496px;">
-                <div class="fiz-field">
-                    <label>Sözleşme Süresi</label>
+                <div class="fiz-field" id="f-sozlesme">
+                    <label>Sözleşme Süresi <span class="fiz-req">*</span></label>
                     <div class="fiz-input-wrap">
-                        <input class="fiz-ctl has-suf" id="sozlesmeAy" type="number" min="0" step="1" placeholder="0" style="padding-left:12px;">
+                        <input class="fiz-ctl has-suf" id="sozlesmeAy" type="number" min="1" max="600" step="1" placeholder="0" style="padding-left:12px;"
+                               oninput="this.closest('.fiz-field').classList.remove('bad'); var v=parseInt(this.value); if(v>600){this.value=600;} if(v<1&&this.value!==''){this.value=1;}"
+                               onblur="var v=parseInt(this.value); if(!isFinite(v)||v<1)this.value=''; else if(v>600)this.value=600;">
                         <span class="fiz-suf">ay</span>
                     </div>
+                    <span class="fiz-err">Geçerli bir sözleşme süresi giriniz.</span>
                 </div>
-                <div class="fiz-field" id="f-kayip">
+                <div class="fiz-field" id="f-kayipgun">
                     <label>Aylık Kayıp Gün</label>
                     <div class="fiz-input-wrap">
                         <input class="fiz-ctl has-suf" id="kayipGunYuzde" type="number" min="0" max="100" step="0.1" placeholder="0" style="padding-left:12px;"
@@ -395,6 +399,9 @@
         </div>
         <div class="fiz-modal-footer">
             <button class="btn btn-secondary" onclick="closeModal()">Vazgeç</button>
+            <button class="btn btn-secondary" onclick="resetProj()">
+                <span class="material-symbols-outlined">restart_alt</span> Sıfırla
+            </button>
             <button class="btn btn-primary" onclick="saveModal()">
                 <span class="material-symbols-outlined">check</span> Değerleri Kaydet
             </button>
@@ -403,6 +410,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/feasibility/validation.js"></script>
     <script>
         var STUDY_ID = '@studyId';
         var _fx   = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.FxJson as string) ? "{\"usdBuy\":0,\"usdSell\":0,\"eurBuy\":0,\"eurSell\":0}" : ViewBag.FxJson);
@@ -455,7 +463,8 @@
         var CONTRACT = ["Kâr", "Ciro"];
         var CCY      = ["TRY", "USD", "EUR"];
 
-        var fmt   = function(n, d) { d = d === undefined ? 2 : d; return isFinite(n) ? n.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '-'; };
+        var fmt     = function(n, d) { d = d === undefined ? 2 : d; return isFinite(n) ? n.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '-'; };
+        var fmtCell = function(v, d) { return fmt(+v || 0, d); };
         var parse = function(v) { v = ('' + v).replace(/\./g, '').replace(',', '.'); var n = parseFloat(v); return isNaN(n) ? 0 : n; };
         var showToast = function(msg, isErr) { alertify[isErr ? 'error' : 'success'](msg); };
         var ccyFromNum = function(n) { return n === 1 ? 'USD' : n === 2 ? 'EUR' : 'TRY'; };
@@ -466,6 +475,62 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             document.querySelectorAll('.fiz-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === t); });
             document.getElementById('pane-form').classList.toggle('active', t === 'form');
             document.getElementById('pane-results').classList.toggle('active', t === 'results');
+        }
+
+        // Sonuç sekmesinde sonuç var mı?
+        function hasResults() {
+            var c = document.getElementById('resultsContent');
+            return c && c.innerHTML.trim().length > 0 &&
+                   !c.querySelector('.fiz-empty');
+        }
+
+        // Arka plan otomatik yeniden hesaplama (debounce).
+        var _autoCalcTimer = null;
+        function scheduleAutoCalc() {
+            if (!hasResults()) return; // henüz hiç hesaplanmadıysa tetikleme
+            clearTimeout(_autoCalcTimer);
+            _autoCalcTimer = setTimeout(function() { calculateSilent(); }, 800);
+            // Sonuç sekmesine "güncelleniyor" işareti koy (tab'a geçmeden)
+            var badge = document.getElementById('results-updating-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.id = 'results-updating-badge';
+                badge.style.cssText = 'font-size:11px;color:var(--text-muted);margin-left:8px;vertical-align:middle;';
+                var tab = document.querySelector('.fiz-tab[data-tab="results"]');
+                if (tab) tab.appendChild(badge);
+            }
+            badge.textContent = '⟳ güncelleniyor…';
+        }
+
+        // Sessiz hesaplama: sekme değiştirmez, sadece resultsContent'i günceller.
+        function calculateSilent() {
+            var payload = collectPayload();
+            var empty   = document.getElementById('resultsEmpty');
+            var content = document.getElementById('resultsContent');
+            fetch('/FeasibilityAmortization/Calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) {
+                if (!r.ok) return r.text().then(function(t) {
+                    var msg = 'Sunucu hatası (' + r.status + ')';
+                    try { msg = JSON.parse(t).message || msg; } catch(e) {}
+                    throw new Error(msg);
+                });
+                return r.text();
+            })
+            .then(function(html) {
+                content.innerHTML = html;
+                runInjectedScripts(content);
+                if (empty) empty.style.display = 'none';
+                var badge = document.getElementById('results-updating-badge');
+                if (badge) badge.textContent = '';
+            })
+            .catch(function() {
+                var badge = document.getElementById('results-updating-badge');
+                if (badge) badge.textContent = '';
+            });
         }
 
         // Kaydetmeden hesaplar; sonucu "Fizibilite Sonuçları" sekmesine yansıtır.
@@ -535,7 +600,7 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             }).join('');
         }
         function setInf(idx, el) {
-            var n = parse(el.value); if (n < 0) n = 0;
+            var n = FizValidation.clamp(parse(el.value), 'enflasyon');
             INF[idx].v = n; el.value = fmt(n, 2); refreshRates();
         }
         function refreshFx() {
@@ -710,7 +775,7 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             stations.push({ type: t, adet: 1, soket: 2, daily: 8, avgkwh: 35, pTL: 14.5, alisKwh: 2.85, ccy: 'TRY', bedel: 15000, contract: 'Kâr', oran: 25, proj: newProj(14.5, 2.85, 8), touched: false });
             renderStations();
         }
-        function delStation(i) { stations.splice(i, 1); renderStations(); }
+        function delStation(i) { stations.splice(i, 1); renderStations(); scheduleAutoCalc(); }
         function syncP(s) {
             return {
                 satisUsd: +s.pTL     / USD(),
@@ -735,26 +800,26 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
                     }).join('');
                     return '<tr>' +
                         '<td><select class="fiz-cell-sel" onchange="setSt(' + i + ',\'type\',this.value)">' + typeOpt + '</select></td>' +
-                        '<td><input class="fiz-cell-in" value="' + s.adet + '" onchange="setNum(' + i + ',\'adet\',this,1,0)"></td>' +
-                        '<td><input class="fiz-cell-in" value="' + s.soket + '" onchange="setNum(' + i + ',\'soket\',this,1,0)"></td>' +
-                        '<td><input class="fiz-cell-in" value="' + fmt(s.daily,1) + '" onchange="setNum(' + i + ',\'daily\',this,0,0)"></td>' +
-                        '<td><input class="fiz-cell-in" value="' + fmt(s.avgkwh,0) + '" onchange="setNum(' + i + ',\'avgkwh\',this,0,0)"></td>' +
-                        '<td class="fiz-price-cell">' +
-                            '<input class="fiz-cell-in" value="' + fmt(s.pTL,2) + '" onchange="setPrice(' + i + ',this)">' +
-                            '<div class="fiz-price-sub"><span>$ ' + fmt(p.satisUsd,4) + '</span><span>€ ' + fmt(p.satisEur,4) + '</span></div>' +
+                        '<td><input class="fiz-cell-in" value="' + (s.adet || 0) + '" onchange="setNum(' + i + ',\'adet\',this,1,0)"></td>' +
+                        '<td><input class="fiz-cell-in" value="' + (s.soket || 0) + '" onchange="setNum(' + i + ',\'soket\',this,1,0)"></td>' +
+                        '<td><input class="fiz-cell-in" value="' + fmtCell(s.daily,1) + '" onchange="setNum(' + i + ',\'daily\',this,0,0)"></td>' +
+                        '<td><input class="fiz-cell-in" value="' + fmtCell(s.avgkwh,0) + '" onchange="setNum(' + i + ',\'avgkwh\',this,0,0)"></td>' +
+                        '<td class="fiz-price-cell text-right">' +
+                            '<input class="fiz-cell-in" value="' + fmtCell(s.pTL,2) + '" onchange="setPrice(' + i + ',this)">' +
+                            (s.pTL ? '<div class="fiz-price-sub"><span>$ ' + fmt(p.satisUsd,2) + '</span><span>€ ' + fmt(p.satisEur,2) + '</span></div>' : '') +
                         '</td>' +
-                        '<td class="fiz-price-cell">' +
-                            '<input class="fiz-cell-in" value="' + fmt(s.alisKwh,2) + '" onchange="setNum(' + i + ',\'alisKwh\',this,0,0)">' +
-                            '<div class="fiz-price-sub"><span>$ ' + fmt(p.alisUsd,4) + '</span><span>€ ' + fmt(p.alisEur,4) + '</span></div>' +
+                        '<td class="fiz-price-cell text-right">' +
+                            '<input class="fiz-cell-in" value="' + fmtCell(s.alisKwh,2) + '" onchange="setNum(' + i + ',\'alisKwh\',this,0,0)">' +
+                            (s.alisKwh ? '<div class="fiz-price-sub"><span>$ ' + fmt(p.alisUsd,2) + '</span><span>€ ' + fmt(p.alisEur,2) + '</span></div>' : '') +
                         '</td>' +
-                        '<td><input class="fiz-cell-in" value="' + fmt(s.bedel,0) + '" onchange="setNum(' + i + ',\'bedel\',this,0,0)"></td>' +
+                        '<td><input class="fiz-cell-in" value="' + fmtCell(s.bedel,0) + '" onchange="setNum(' + i + ',\'bedel\',this,0,0)"></td>' +
                         '<td><select class="fiz-cell-sel fiz-cell-sel-ccy" onchange="setSt(' + i + ',\'ccy\',this.value)">' + opt(CCY,s.ccy) + '</select></td>' +
                         '<td><select class="fiz-cell-sel" onchange="setSt(' + i + ',\'contract\',this.value)">' + opt(CONTRACT,s.contract) + '</select></td>' +
-                        '<td><input class="fiz-cell-in" value="' + s.oran + '" onchange="setNum(' + i + ',\'oran\',this,0,100)"></td>' +
-                        '<td class="text-center">' +
-                            '<button class="fiz-icon-btn ' + (s.touched ? 'done' : '') + '" title="Yıllık değerler" onclick="openModal(' + i + ')"><span class="material-symbols-outlined">show_chart</span></button> ' +
+                        '<td><input class="fiz-cell-in" value="' + (s.oran || 0) + '" onchange="setNum(' + i + ',\'oran\',this,0,100)"></td>' +
+                        '<td class="text-center"><div style="display:flex;gap:4px;justify-content:center;">' +
+                            '<button class="fiz-icon-btn ' + (s.touched ? 'done' : '') + '" title="Yıllık değerler" onclick="openModal(' + i + ')"><span class="material-symbols-outlined">show_chart</span></button>' +
                             '<button class="fiz-icon-btn del" title="Satırı sil" onclick="delStation(' + i + ')"><span class="material-symbols-outlined">delete</span></button>' +
-                        '</td></tr>';
+                        '</div></td></tr>';
                 }).join('');
                 wrap.innerHTML = '<table class="table"><thead><tr>' +
                     '<th>İstasyon Türü</th><th class="text-right">İstasyon Adeti</th><th class="text-right">Soket Adeti</th>' +
@@ -767,21 +832,31 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             document.getElementById('stCount').textContent = stations.length;
             recalcDeviceTotal(); // istasyon bedeli/adedi değiştikçe "Toplam Cihaz Yatırımı" güncellensin
         }
-        function setSt(i, k, v) { stations[i][k] = v; renderStations(); }
+        function setSt(i, k, v) { stations[i][k] = v; renderStations(); scheduleAutoCalc(); }
+        // İstasyon alanı -> validasyon sınırı eşlemesi (canlı clamp için)
+        var ST_BOUND = { adet:'adet', soket:'soket', daily:'gunlukSarj', avgkwh:'ortKwh', alisKwh:'fiyat', bedel:'tutar', oran:'komisyonOran' };
         function setNum(i, k, el, min, max) {
             var n = parse(el.value);
-            if (n < min) n = min;
-            if (max > 0 && n > max) n = max;
-            if ((k === 'adet' || k === 'soket') && n < 1) n = 1;
+            if (ST_BOUND[k]) n = FizValidation.clamp(n, ST_BOUND[k]);
+            else {
+                if (n < min) n = min;
+                if (max > 0 && n > max) n = max;
+            }
             stations[i][k] = n;
             if (k === 'daily') stations[i].proj.forEach(function(p) { p.daily = n; });
             if (k === 'alisKwh' && !stations[i].touched) stations[i].proj.forEach(function(p) { p.pH1 = n; p.pH2 = n; });
+            if (k === 'alisKwh') {
+                var msg = FizValidation.checkAlisVsSatis(stations[i].pTL, n);
+                if (msg) showToast(msg, true);
+            }
             renderStations();
         }
         function setPrice(i, el) {
-            var n = parse(el.value); if (n < 0) n = 0;
+            var n = FizValidation.clamp(parse(el.value), 'fiyat');
             stations[i].pTL = n;
             if (!stations[i].touched) stations[i].proj.forEach(function(p) { p.sH1 = n; p.sH2 = n; });
+            var msg = FizValidation.checkAlisVsSatis(n, stations[i].alisKwh);
+            if (msg) showToast(msg, true);
             renderStations();
         }
 
@@ -802,11 +877,16 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             document.getElementById('fiz-overlay').classList.add('show');
         }
         function closeModal() { document.getElementById('fiz-overlay').classList.remove('show'); modalIdx = -1; }
+        function resetProj() {
+            modalDraft.forEach(function(p) { p.sH1 = 0; p.sH2 = 0; p.pH1 = 0; p.pH2 = 0; });
+            renderProj();
+            showToast('Projeksiyon değerleri sıfırlandı.');
+        }
         function saveModal() {
             if (modalIdx < 0) return;
             stations[modalIdx].proj    = modalDraft.map(function(p) { return { year: p.year, daily: p.daily, sH1: p.sH1||0, sH2: p.sH2||0, pH1: p.pH1||0, pH2: p.pH2||0, usd: p.usd||USD() }; });
             stations[modalIdx].touched = true;
-            closeModal(); renderStations(); showToast('Yıllık değerler kaydedildi.');
+            closeModal(); renderStations(); showToast('Yıllık değerler kaydedildi.'); scheduleAutoCalc();
         }
         function renderProj() {
             document.getElementById('projBody').innerHTML = modalDraft.map(function(p, i) {
@@ -833,6 +913,8 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
                 if (pctEl) pctEl.focus();
                 return;
             }
+            var pctMsg = FizValidation.check(pct, 'zam');
+            if (pctMsg) { showToast(pctMsg, true); if (pctEl) { pct = FizValidation.clamp(pct, 'zam'); pctEl.value = pct; } return; }
             var r = 1 + pct / 100;
             var baseSale = modalDraft[0].sH1 || 0;
             var basePurchase = modalDraft[0].pH1 || 0;
@@ -1014,25 +1096,15 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
         // Düzenlenen kaydın versiyonu — "yeni versiyon olarak ekle" bunun bir fazlasını alır.
         var BASE_VERSION = (_preload && _preload.version) ? _preload.version : 1;
 
-        // Formu doğrular; geçerliyse true döner, değilse alanları işaretler.
+        // Formu doğrular; tüm ihlalleri toplayıp alanların altında inline gösterir.
+        // Ortak validasyon katmanına (FizValidation) delege eder.
+        // Edit'te sözleşme süresi zorunlu değildir (mevcut kayıt boş olabilir).
         function validateEditForm() {
-            var ok = true;
-            if (!document.getElementById('loc').value)          { document.getElementById('f-loc').classList.add('bad');  ok = false; }
-            if (!document.getElementById('fname').value.trim()) { document.getElementById('f-name').classList.add('bad'); ok = false; }
-            var kayip = document.getElementById('kayipGunYuzde').value.trim();
-            if (kayip !== '') {
-                var kayipNum = parseFloat(kayip);
-                if (isNaN(kayipNum) || kayipNum < 0 || kayipNum > 100) {
-                    document.getElementById('f-kayip').classList.add('bad'); ok = false;
-                }
+            var res = FizValidation.validate({ stations: stations, requireContractMonths: true });
+            if (!res.ok) {
+                showToast('Lütfen kırmızı ile işaretlenen alanları düzeltiniz (' + res.count + ' hata).', true);
             }
-            if (stations.length === 0) {
-                showToast('En az bir istasyon türü ekleyiniz.', true);
-                document.getElementById('card-03').classList.remove('collapsed');
-                return false;
-            }
-            if (!ok) { showToast('Zorunlu alanları doldurunuz.', true); return false; }
-            return true;
+            return res.ok;
         }
 
         // "Değişiklikleri Kaydet" → önce doğrula, sonra kaydetme yöntemi modalını aç.
@@ -1125,6 +1197,14 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             if (e.target.id === 'save-overlay') closeSaveModal();
         });
 
+        // Veri giriş sekmesindeki herhangi bir değişiklik sonuçları otomatik günceller.
+        (function() {
+            var pane = document.getElementById('pane-form');
+            if (!pane) return;
+            pane.addEventListener('input',  function(e) { if (!e.target.closest('#fiz-overlay')) scheduleAutoCalc(); });
+            pane.addEventListener('change', function(e) { if (!e.target.closest('#fiz-overlay')) scheduleAutoCalc(); });
+        })();
+
         function toggleFinance() {
             var on = document.getElementById('krediVar').checked;
             document.getElementById('financePanel').classList.toggle('open', on);
@@ -1134,6 +1214,9 @@ function toggleCard(id) { document.getElementById(id).classList.toggle('collapse
             var P = parse(document.getElementById('krediTutar').value);
             var yillik = parseFloat(('' + document.getElementById('faizOran').value).replace(',', '.')) || 0;
             var n = parseInt(document.getElementById('vadeAy').value) || 0;
+            // Sınır dışı faiz/vade hesabı patlatmasın — canlı clamp.
+            if (yillik > FizValidation.bounds.faizOran.max) { yillik = FizValidation.bounds.faizOran.max; document.getElementById('faizOran').value = yillik; }
+            if (n > FizValidation.bounds.vadeAy.max) { n = FizValidation.bounds.vadeAy.max; document.getElementById('vadeAy').value = n; }
 
             // BASİT FAİZ (bileşik DEĞİL): Faiz = AnaPara × YıllıkOran × Vade(gün) / 36000
             // Vade(gün) = ay × 30. BSM payı yalnızca faiz üzerinden alınır (faiz × %5),

@@ -24,6 +24,8 @@ public class ActivityLogConfiguration : IEntityTypeConfiguration<ActivityLog>
         builder.Property(l => l.ActionType).IsRequired().HasMaxLength(50);
         builder.Property(l => l.Description).HasMaxLength(1000);
         builder.Property(l => l.ErrorMessage).HasMaxLength(2000);
+        builder.Property(l => l.StudyName).HasMaxLength(300);
+
         builder.Property(l => l.RequestContentType).HasMaxLength(150);
         builder.Property(l => l.ResponseContentType).HasMaxLength(150);
         builder.Property(l => l.RequestBody).HasColumnType("nvarchar(max)");

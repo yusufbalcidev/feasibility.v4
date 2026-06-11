@@ -16,9 +16,12 @@
     Func<decimal, string> RAW = v => v.ToString("0.########", inv);
 }
 
-<!-- Para birimi seçici (varsayılan: USD) -->
+<!-- Üst araç çubuğu: para birimi seçici + PDF butonu -->
 <div class="res-cur-bar">
-    <div class="fiz-cur-wrap">
+    <button type="button" class="btn btn-primary res-pdf-btn" onclick="resDownloadPdf()">
+        <span class="material-symbols-outlined">picture_as_pdf</span> PDF olarak indir
+    </button>
+    <div class="fiz-cur-wrap" style="margin-left:auto;">
         <label>Para Birimi</label>
         <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
             <option value="USD" selected>$ USD</option>
@@ -161,87 +164,9 @@
     </div>
 </div>
 
-<!-- ROİ (Yatırım Geri Dönüş) Tablosu — Nakit Akışı Projeksiyonunun üzerinde -->
+<!-- ROİ Geri Dönüş Eğrisi -->
 @if (Model.YearSummaries.Any())
 {
-    <div class="card fiz-card res-section">
-        <div class="card-header">
-            <div class="fiz-card-header">
-                <div class="fiz-ix">
-                    <span class="material-symbols-outlined" style="font-size:18px;">show_chart</span>
-                </div>
-                <div>
-                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Geri Dönüş (ROİ) Tablosu</h2>
-                    <div class="fiz-sub">Kümülatif nakit akışı — yatırımla negatiften başlar, başabaş (amorti) noktasında sıfırı geçerek kâra döner.</div>
-                </div>
-                <div class="fiz-card-tools">
-                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
-                        <span class="material-symbols-outlined">expand_more</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="table-wrapper collapse-body">
-            @{
-                // ROİ eğrisinin tablo karşılığı: "Başlangıç" satırı yatırımı (negatif) gösterir,
-                // ardından her yıl net kâr eklenir ve kümülatif denge ile ROI % izlenir.
-                var roiInvestUsd = Model.TotalInvestmentUsd;
-                var roiBeIdx = -1;
-                for (int i = 0; i < Model.YearSummaries.Count; i++)
-                {
-                    if (Model.YearSummaries[i].CumulativeBalanceUsd >= 0) { roiBeIdx = i; break; }
-                }
-            }
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Dönem</th>
-                        <th class="text-right">Yıllık Net Kâr</th>
-                        <th class="text-right">Kümülatif Denge</th>
-                        <th class="text-right">Kümülatif ROİ</th>
-                        <th class="text-center">Durum</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Başlangıç</strong></td>
-                        <td class="text-right c-neg"><span class="js-money" data-usd="@RAW(-roiInvestUsd)" data-dec="0">-@USD(roiInvestUsd)</span></td>
-                        <td class="text-right c-neg"><span class="js-money" data-usd="@RAW(-roiInvestUsd)" data-dec="0">-@USD(roiInvestUsd)</span></td>
-                        <td class="text-right c-neg">@PCT(-100)</td>
-                        <td class="text-center"><span class="c-neu">Yatırım</span></td>
-                    </tr>
-                    @for (int i = 0; i < Model.YearSummaries.Count; i++)
-                    {
-                        var r = Model.YearSummaries[i];
-                        var roiPct = roiInvestUsd > 0 ? Math.Round(r.CumulativeBalanceUsd / roiInvestUsd * 100, 1) : 0m;
-                        var isBe = i == roiBeIdx;
-                        <tr class="@(isBe ? "tfoot-row" : "")">
-                            <td><strong>@r.Year</strong></td>
-                            <td class="text-right @(pos(r.NetProfitUsd) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(r.NetProfitUsd)" data-dec="0">@sign(r.NetProfitUsd)@USD(r.NetProfitUsd)</span></td>
-                            <td class="text-right @(pos(r.CumulativeBalanceUsd) ? "c-pos" : "c-neg")"><span class="js-money" data-usd="@RAW(r.CumulativeBalanceUsd)" data-dec="0">@sign(r.CumulativeBalanceUsd)@USD(r.CumulativeBalanceUsd)</span></td>
-                            <td class="text-right @(pos(roiPct) ? "c-pos" : "c-neg")">@sign(roiPct)@PCT(roiPct)</td>
-                            <td class="text-center">
-                                @if (isBe)
-                                {
-                                    <span class="hat-badge" style="background:var(--success-50);color:var(--success);">★ Başabaş</span>
-                                }
-                                else if (pos(r.CumulativeBalanceUsd))
-                                {
-                                    <span class="c-pos">Kârda</span>
-                                }
-                                else
-                                {
-                                    <span class="c-neg">Zararda</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- ROİ Geri Dönüş Eğrisi — tablonun hemen altında, ekranda gömülü gösterilir -->
     <div class="card fiz-card res-section">
         <div class="card-header">
             <div class="fiz-card-header">
@@ -358,7 +283,13 @@
                 </div>
                 <div>
                     <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım Geri Kazanım (Amorti) Süresi</h2>
-                    <div class="fiz-sub">Şarj istasyonu donanımı taşınabilir olduğundan amortismana dahil edilmez; yalnızca geri kazanılamayan masraflar dikkate alınır.</div>
+                    <div class="fiz-sub">
+                        Şarj istasyonu donanımı taşınabilir olduğundan amortismana dahil edilmez; yalnızca geri kazanılamayan masraflar dikkate alınır.
+                        @if (Model.SunkPaybackYears > 0)
+                        {
+                            <span style="font-weight:600;color:var(--success);margin-left:6px;">· Gömülü yatırım amorti süresi: @Model.SunkPaybackYears.ToString("0.0", tr) Yıl</span>
+                        }
+                    </div>
                 </div>
                 <div class="fiz-card-tools">
                     <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
@@ -370,14 +301,25 @@
         <div class="card-body collapse-body">
             <div class="res-row">
                 <span class="rl">Taşınabilir Yatırım (Şarj İstasyonu) — amortismana dahil değil</span>
-                <span class="rv"><span class="js-money" data-usd="@RAW(Model.RecoverableInvestmentUsd)" data-dec="0">@USD(Model.RecoverableInvestmentUsd)</span></span>
+                <span class="rv" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                    @if (Model.RecoverableInvestmentUsd > 0)
+                    {
+                        <span><span class="js-money" data-usd="@RAW(Model.RecoverableInvestmentUsd)" data-dec="0">@USD(Model.RecoverableInvestmentUsd)</span></span>
+                        <span style="font-size:11px;color:var(--text-muted);">Amorti gerekmez — donanım taşınabilir</span>
+                    }
+                    else
+                    {
+                        <span style="color:var(--text-muted);">—</span>
+                        <span style="font-size:11px;color:var(--text-muted);">İstasyon bedeli girilmedi</span>
+                    }
+                </span>
             </div>
             <div class="res-row">
                 <span class="rl">Geri Kazanılacak (Gömülü) Yatırım</span>
                 <span class="rv neg"><span class="js-money" data-usd="@RAW(Model.SunkInvestmentUsd)" data-dec="0">@USD(Model.SunkInvestmentUsd)</span></span>
             </div>
             <div class="res-row total">
-                <span class="rl">Amorti Süresi</span>
+                <span class="rl">Amorti Süresi (Gömülü Yatırım)</span>
                 <span class="rv @(Model.SunkPaybackYears > 0 ? "pos" : "neg")">
                     @(Model.SunkPaybackYears > 0 ? Model.SunkPaybackYears.ToString("0.0", tr) + " Yıl" : "Sözleşme süresinde amorti edilemiyor")
                 </span>
@@ -478,134 +420,14 @@
             </div>
         }
 
-        @if (line.MonthlyBreakdownYears.Any())
-        {
-            var mbId = "mb-" + lineNo;
-            var monthNames = new[] { "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık" };
-            <details class="mb-block collapse-body" style="border-top:1px solid var(--border);padding:14px 16px;">
-                <summary style="display:flex;align-items:center;gap:12px;margin-bottom:0;flex-wrap:wrap;cursor:pointer;list-style:none;">
-                    <span class="material-symbols-outlined mb-chevron" style="font-size:20px;color:var(--text-muted);transition:transform .15s;">chevron_right</span>
-                    <h3 style="font-size:13px;font-weight:600;margin:0;">Aylık Gelir / Gider Dökümü <span style="font-weight:400;color:var(--text-muted);">(cihaz başına)</span></h3>
-                    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">
-                        <label style="font-size:12px;color:var(--text-muted);">Yıl</label>
-                        <select class="fiz-ctl mb-year-select" data-target="@mbId" style="width:auto;min-width:90px;padding:4px 8px;height:auto;"
-                                onclick="event.stopPropagation();" onchange="mbSelectYear(this)">
-                            @foreach (var yb in line.MonthlyBreakdownYears)
-                            {
-                                <option value="@yb.Year">@yb.Year</option>
-                            }
-                        </select>
-                    </div>
-                </summary>
-
-                <div style="margin-top:12px;"></div>
-
-                @foreach (var yb in line.MonthlyBreakdownYears)
-                {
-                    <div class="mb-year" id="@(mbId)-@yb.Year" style="@(yb.Year == line.MonthlyBreakdownYears.First().Year ? "" : "display:none;")">
-                        <div class="table-wrapper">
-                            <table class="table mb-table" style="font-size:12px;">
-                                <thead>
-                                    <tr>
-                                        <th style="text-align:left;min-width:180px;">Aylar</th>
-                                        @foreach (var mn in monthNames)
-                                        {
-                                            <th class="text-right">@mn</th>
-                                        }
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Gün Sayıları</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right">@r.DaysInMonth</td> }
-                                    </tr>
-                                    <tr>
-                                        <td>Kayıp Gün Sayısı</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right">@N2(r.LostDays)</td> }
-                                    </tr>
-                                    <tr>
-                                        <td>Net Operasyonel Gün</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right">@N2(r.NetOperatingDays)</td> }
-                                    </tr>
-                                    <tr>
-                                        <td>Aylık Cihaz Başına Satış kWh</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right">@N0(r.SaleKwhPerDevice)</td> }
-                                    </tr>
-                                    <tr class="mb-sep">
-                                        <td>Satış Fiyatı (/kWh)</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right"><span class="js-money" data-tl="@RAW(r.SalePriceTlPerKwh)" data-rate="@RAW(yb.UsdRate)" data-dec="2">@N2(r.SalePriceTlPerKwh) ₺</span></td> }
-                                    </tr>
-                                    <tr>
-                                        <td>Aylık İstasyon Satış Geliri</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right c-pos"><span class="js-money" data-tl="@RAW(r.RevenueTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(r.RevenueTl) ₺</span></td> }
-                                    </tr>
-                                    <tr class="mb-sep">
-                                        <td>Yer Sağlayıcı Komisyonu</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.CommissionTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(r.CommissionTl) ₺</span></td> }
-                                    </tr>
-                                    @if (yb.Months.Any(r => r.RentTl > 0))
-                                    {
-                                        <tr>
-                                            <td>Aylık Kira Bedeli</td>
-                                            @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.RentTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(r.RentTl) ₺</span></td> }
-                                        </tr>
-                                    }
-                                    <tr class="mb-sep">
-                                        <td>Aylık İstasyon Elektrik Maliyeti</td>
-                                        @foreach (var r in yb.Months) { <td class="text-right c-neg"><span class="js-money" data-tl="@RAW(-r.ElectricityCostTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(r.ElectricityCostTl) ₺</span></td> }
-                                    </tr>
-                                    <tr class="tfoot-row mb-sep">
-                                        <td><strong>Cihaz Başına Aylık Brüt Kâr</strong></td>
-                                        @foreach (var r in yb.Months) { <td class="text-right @(r.GrossProfitTl >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(r.GrossProfitTl)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(r.GrossProfitTl) ₺</span></td> }
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    @{
-                                        var yRev   = yb.Months.Sum(r => r.RevenueTl);
-                                        var yComm  = yb.Months.Sum(r => r.CommissionTl);
-                                        var yRent  = yb.Months.Sum(r => r.RentTl);
-                                        var yElec  = yb.Months.Sum(r => r.ElectricityCostTl);
-                                        var yGross = yb.Months.Sum(r => r.GrossProfitTl);
-                                    }
-                                    <tr class="tfoot-row">
-                                        <td>Yıl Toplamı (cihaz başına)</td>
-                                        <td class="text-right" colspan="12">
-                                            Ciro: <strong class="c-pos"><span class="js-money" data-tl="@RAW(yRev)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(yRev) ₺</span></strong> ·
-                                            Komisyon: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yComm)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(yComm) ₺</span></strong> ·
-                                            @if (yRent > 0) { <text>Kira: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yRent)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(yRent) ₺</span></strong> · </text> }
-                                            Elektrik: <strong class="c-neg"><span class="js-money" data-tl="@RAW(-yElec)" data-rate="@RAW(yb.UsdRate)" data-dec="0">-@N0(yElec) ₺</span></strong> ·
-                                            Brüt Kâr: <strong class="@(yGross >= 0 ? "c-pos" : "c-neg")"><span class="js-money" data-tl="@RAW(yGross)" data-rate="@RAW(yb.UsdRate)" data-dec="0">@N0(yGross) ₺</span></strong>
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-                }
-            </details>
-        }
     </div>
     lineNo++;
 }
 
-<!-- PDF / Yazdır indirme butonu — sonucun en altında -->
-<div class="res-pdf-bar">
-    <button type="button" class="btn btn-primary res-pdf-btn" onclick="resDownloadPdf()">
-        <span class="material-symbols-outlined">picture_as_pdf</span> PDF olarak indir
-    </button>
-    <span class="res-pdf-hint">Tarayıcının yazdırma penceresi açılır; hedef olarak <strong>"PDF olarak kaydet"</strong> seçin.</span>
-</div>
 
 <style>
-    /* ── PDF / Yazdır butonu ──────────────────────────────────────────── */
-    .res-pdf-bar {
-        display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 22px; padding: 18px;
-        border-top: 1px dashed var(--border);
-    }
+    /* ── PDF butonu ──────────────────────────────────────────────────── */
     .res-pdf-btn .material-symbols-outlined { font-size: 18px; }
-    .res-pdf-hint { font-size: 12px; color: var(--text-muted); }
 
     /* ── Yazdırma (PDF) düzeni — A4 dikey ──────────────────────────────
        Yalnızca sonuç paneli yazdırılır; sayfa başlığı, sekmeler, butonlar
@@ -639,7 +461,7 @@
             width: 100% !important;
         }
         /* Yazdırmada gereksiz öğeleri tamamen kaldır */
-        .res-cur-bar, .res-pdf-bar, .fiz-collapse-btn,
+        .res-cur-bar, .fiz-collapse-btn,
         .fiz-results-actions, .fiz-results-hint,
         .fiz-card-tools {
             display: none !important;
@@ -881,7 +703,7 @@
 @if (Model.YearSummaries.Any())
 {
     var roiParts = new List<string>();
-    roiParts.Add("{l:\"Başlangıç\",v:" + RAW(-Model.TotalInvestmentUsd) + "}");
+    roiParts.Add("{l:\"Başlangıç\",v:" + RAW(-Model.EquityInvestmentUsd) + "}");
     foreach (var r in Model.YearSummaries)
     {
         roiParts.Add("{l:\"" + r.Year + "\",v:" + RAW(r.CumulativeBalanceUsd) + "}");
@@ -1007,13 +829,6 @@
                 var flag = mk('text', { x: bx, y: padT - 9, 'text-anchor': anch, 'font-size': 11.5, 'font-weight': 700 }, 'fill:var(--success)');
                 flag.textContent = '★ Amorti yılı: ' + pts[beIdx].l;
                 svg.appendChild(flag);
-                // Başabaş noktasının yanına da yıl etiketini yaz (eğri üzerinde net görünsün)
-                var bpx = X(beIdx), bpy = Y(pts[beIdx].v);
-                var labAnch = bpx > W - 96 ? 'end' : 'start';
-                var labDx   = labAnch === 'end' ? -10 : 10;
-                var be = mk('text', { x: bpx + labDx, y: bpy - 10, 'text-anchor': labAnch, 'font-size': 11, 'font-weight': 700 }, 'fill:var(--success)');
-                be.textContent = pts[beIdx].l + ' · amorti';
-                svg.appendChild(be);
             } else if (beIdx === -1) {
                 // Sözleşme süresinde başabaşa ulaşılamıyor — bilgilendirici not
                 var note = mk('text', { x: W - padR, y: padT - 9, 'text-anchor': 'end', 'font-size': 11.5, 'font-weight': 700 }, 'fill:var(--danger)');

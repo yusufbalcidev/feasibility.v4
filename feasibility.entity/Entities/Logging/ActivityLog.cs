@@ -24,6 +24,9 @@ public class ActivityLog : BaseEntity
     public string? Description { get; set; }
     public string? ErrorMessage { get; set; }
 
+    public Guid? StudyId { get; set; }
+    public string? StudyName { get; set; }
+
     public string? RequestContentType { get; set; }
     public string? RequestBody { get; set; }
     public string? ResponseContentType { get; set; }

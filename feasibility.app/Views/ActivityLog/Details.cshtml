@@ -52,9 +52,37 @@
             <span class="detail-label">Sayfa / Aksiyon</span>
             <span class="detail-value">@(Model.Controller ?? "-") / @(Model.Action ?? "-")</span>
         </div>
+        @if (Model.StudyId.HasValue)
+        {
+            <div class="detail-item">
+                <span class="detail-label">Fizibilite</span>
+                <span class="detail-value">
+                    <a href="/FeasibilityAmortization/View/@Model.StudyId" class="row-action-btn">
+                        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">calculate</span>
+                        @(string.IsNullOrEmpty(Model.StudyName) ? Model.StudyId.Value.ToString() : Model.StudyName)
+                    </a>
+                </span>
+            </div>
+        }
         <div class="detail-item">
-            <span class="detail-label">Tip</span>
-            <span class="detail-value"><span class="badge badge-info">@Model.ActionType</span></span>
+            <span class="detail-label">İşlem</span>
+            <span class="detail-value">
+                @{
+                    var (detailLabel, detailBadgeClass) = Model.ActionType switch
+                    {
+                        "Create"        => ("Ekledi",             "badge-active"),
+                        "Update"        => ("Güncelledi",         "badge-info"),
+                        "Delete"        => ("Sildi",              "badge-passive"),
+                        "Login"         => ("Giriş Yaptı",        "badge-active"),
+                        "Logout"        => ("Çıkış Yaptı",        "badge-info"),
+                        "LoginFailed"   => ("Giriş Başarısız",    "badge-warning"),
+                        "PasswordReset" => ("Şifre Sıfırladı",    "badge-info"),
+                        "Error"         => ("Hata",               "badge-passive"),
+                        _               => (Model.ActionType,     "badge-info")
+                    };
+                }
+                <span class="badge @detailBadgeClass">@detailLabel</span>
+            </span>
         </div>
         <div class="detail-item">
             <span class="detail-label">Durum Kodu</span>

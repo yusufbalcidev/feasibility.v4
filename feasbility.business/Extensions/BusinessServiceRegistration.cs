@@ -44,7 +44,12 @@ public static class BusinessServiceRegistration
         // JSON/API action'ları otomatik doğrulanır; view controller'ları kendi
         // ModelState kontrolüyle (if (!ModelState.IsValid) return View(dto)) çalışır.
         services.AddFluentValidationAutoValidation(config =>
-            config.ValidationStrategy = ValidationStrategy.Annotations);
+        {
+            config.ValidationStrategy = ValidationStrategy.Annotations;
+            // Doğrulama hatasında varsayılan ProblemDetails yerine { message, errors }
+            // döndür — istemci fetch katmanı message alanını okuyup Türkçe uyarı gösteriyor.
+            config.OverrideDefaultResultFactoryWith<Validators.AutoValidationResultFactory>();
+        });
 
         services.AddJwtAuthentication(configuration);
         return services;

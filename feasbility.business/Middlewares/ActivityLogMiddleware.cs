@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using feasibility.Business.Abstract;
 using feasibility.Entity.Entities.Logging;
 using Microsoft.AspNetCore.Http;
@@ -238,6 +239,41 @@ public class ActivityLogMiddleware
         if (exception != null || statusCode >= 500)
             actionType = ActivityActionType.Error;
 
+        Guid? studyId = null;
+        string? studyName = null;
+        if (controller?.Equals("FeasibilityAmortization", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            // Route'dan id parametresi (Edit, Update, Delete, Restore, View)
+            if (routeData?.Values["id"]?.ToString() is { } routeIdStr &&
+                Guid.TryParse(routeIdStr, out var routeGuid))
+            {
+                studyId = routeGuid;
+            }
+            // Update POST: id query string'de gelir (?id=...)
+            if (studyId is null &&
+                context.Request.Query.TryGetValue("id", out var qId) &&
+                Guid.TryParse(qId, out var queryGuid))
+            {
+                studyId = queryGuid;
+            }
+
+            // FeasibilityName: Save/Update'te request body JSON'dan oku
+            studyName = ExtractFeasibilityName(requestBody);
+
+            // Save başarılı olduysa response body'deki id'yi de deneyelim
+            if (studyId is null && !string.IsNullOrEmpty(responseBody))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(responseBody);
+                    if (doc.RootElement.TryGetProperty("id", out var idEl) &&
+                        idEl.TryGetGuid(out var respGuid))
+                        studyId = respGuid;
+                }
+                catch { /* JSON parse başarısız — yoksay */ }
+            }
+        }
+
         return new ActivityLog
         {
             UserId = userId,
@@ -255,11 +291,30 @@ public class ActivityLogMiddleware
             ActionType = actionType,
             Description = BuildDescription(controller, action, method),
             ErrorMessage = exception?.Message,
+            StudyId = studyId,
+            StudyName = studyName,
             RequestContentType = context.Request.ContentType,
             RequestBody = requestBody,
             ResponseContentType = context.Response?.ContentType,
             ResponseBody = responseBody
         };
+    }
+
+    private static string? ExtractFeasibilityName(string? requestBody)
+    {
+        if (string.IsNullOrEmpty(requestBody)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(requestBody);
+            foreach (var candidate in new[] { "feasibilityName", "FeasibilityName" })
+            {
+                if (doc.RootElement.TryGetProperty(candidate, out var el) &&
+                    el.ValueKind == JsonValueKind.String)
+                    return el.GetString();
+            }
+        }
+        catch { /* form-urlencoded veya geçersiz JSON — yoksay */ }
+        return null;
     }
 
     private static string BuildDescription(string? controller, string? action, string method)

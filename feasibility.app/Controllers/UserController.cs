@@ -106,7 +106,8 @@ public class UserController : Controller
             Email = dto.Email,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            LockoutEnabled = true
         };
 
         var createResult = await _userManager.CreateAsync(user, dto.Password);

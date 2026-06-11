@@ -26,6 +26,13 @@ public class FeasibilityAmortizationDetailDto
     public decimal TotalInvestmentTl { get; set; }
     public decimal TotalInvestmentUsd { get; set; }
 
+    /// <summary>
+    /// Yatırımın özkaynakla finanse edilen (peşin çıkan) kısmı = Toplam − Kredi tutarı (USD).
+    /// Kümülatif nakit akışı (ROİ eğrisi/tablosu) bu negatif değerden başlar; kredi anaparası
+    /// taksitlerle yıllara dağıtıldığından başlangıçta iki kez sayılmaz.
+    /// </summary>
+    public decimal EquityInvestmentUsd { get; set; }
+
     public bool HasRent { get; set; }
     public decimal AnnualRentTl { get; set; }
     public decimal AnnualMaintenanceTl { get; set; }
