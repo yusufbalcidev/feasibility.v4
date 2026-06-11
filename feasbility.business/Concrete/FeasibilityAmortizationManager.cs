@@ -80,7 +80,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
     public async Task<(decimal? tl, decimal? usd, decimal? eur)> GetSonEnflasyonlarAsync(CancellationToken ct = default)
     {
-        // TL: önce TCMB EVDS (güncel aylık TÜFE yıllık değişim); boşsa World Bank'a düş.
         var tlEvdsTask = _evds.GetLatestTufeAnnualAsync(ct);
         var tlWbTask   = _worldBank.GetLatestInflationAsync("TR",  ct);
         var usdTask    = _worldBank.GetLatestInflationAsync("US",  ct);
@@ -96,7 +95,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var study = _mapper.Map<Study>(dto);
         ApplyTlShadows(study, dto);
 
-        // Versiyon: normal yeni kayıt 1; "yeni versiyon olarak ekle" ise kaynak kaydın versiyonu + 1.
         study.Version = dto.SaveAsNewVersion ? dto.BaseVersion + 1 : 1;
 
         foreach (var lineDto in dto.DeviceLines)
@@ -114,7 +112,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
     public async Task<List<FeasibilityAmortizationListDto>> GetListAsync(CancellationToken ct = default)
     {
-        // ignoreFilters: silinen (soft-delete) kayıtlar da listede "Pasif" olarak görünsün
         var studies = await _studyService.Query(ignoreFilters: true)
             .Where(s => s.Kind == FeasibilityKind.Amortization)
             .Include(s => s.Location)
@@ -122,8 +119,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync(ct);
 
-        // Aynı ada sahip aktif kayıtlar arasındaki en yüksek versiyon — sadece bu "en güncel" sayılır,
-        // daha eski versiyonlar salt-okunur olur (Düzenle gizlenir).
         var latestByName = studies
             .Where(s => !s.IsDeleted)
             .GroupBy(s => s.FeasibilityName)
@@ -131,7 +126,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
         return studies.Select(s =>
         {
-            // Toplam yatırım (TL): study geneli tek seferlik kalemler + cihaz/lokasyon bedelleri
             var oneTimeTl = s.StationUnitCostTl
                           + s.ProviderEntryFeeTl
                           + s.InfrastructureCostTl;
@@ -178,10 +172,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         return BuildDetail(s);
     }
 
-    /// <summary>
-    /// Kaydetmeden, gönderilen form verisiyle aynı hesaplama mantığını çalıştırıp
-    /// sonuç (önizleme) DTO'su üretir. Para birimi seçimleri kura göre TL'ye çevrilir.
-    /// </summary>
     public async Task<FeasibilityAmortizationDetailDto> CalculatePreviewAsync(FeasibilityAmortizationSaveDto dto, CancellationToken ct = default)
     {
         var study = _mapper.Map<Study>(dto);
@@ -196,7 +186,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             study.DeviceLines.Add(line);
         }
 
-        // Lokasyon adı (varsa) — sadece başlıkta gösterim için
         if (dto.LocationId != Guid.Empty)
             study.Location = await _locationService.GetByIdAsync(dto.LocationId, ignoreFilters: true, ct: ct);
 
@@ -204,16 +193,9 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         return BuildDetail(study);
     }
 
-    /// <summary>
-    /// DB'den okunmuş ya da bellekte oluşturulmuş bir Study üzerinden tüm fizibilite
-    /// sonuçlarını (yatırım, yıllık projeksiyon, amortisman, ROI) hesaplar.
-    /// </summary>
     private FeasibilityAmortizationDetailDto BuildDetail(Study s)
     {
         var oneTimeTl = s.StationUnitCostTl + s.ProviderEntryFeeTl + s.InfrastructureCostTl;
-        // Yalnızca aktif (silinmemiş) hatlar yatırıma dahil — ciro hesabıyla (activeLines) simetrik olmalı.
-        // İstasyon bedeli cihaz BAŞINA olduğundan adetle çarpılır. DeviceUnitCostTl artık ayrı kalem değil
-        // (UI'da "Toplam Cihaz Yatırımı" sadece gösterim), bu yüzden toplama girmez.
         var deviceTl  = s.DeviceLines.Where(d => !d.IsDeleted).Sum(d => d.UnitLocationCostTl * d.DeviceCount);
         var totalTl   = oneTimeTl + deviceTl;
         var totalUsd  = s.UsdRate > 0 ? totalTl / s.UsdRate : 0m;
@@ -222,11 +204,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var annualMaintenance = s.PostWarrantyMaintenanceCostTl;
         var annualAdvertising = s.AdvertisingRevenueTl;
 
-        // BASİT FAİZ (bileşik DEĞİL): Faiz = AnaPara × YıllıkOran × Vade(gün) / 36000
-        // Vade(gün) = ay × 30. BSM payı yalnızca faiz üzerinden alınır (faiz × %5),
-        // anaparaya dokunulmaz. Toplam geri ödeme = anapara + faiz + BSM, aylara eşit bölünür.
-        // monthlyLoanPayment: aylık eşit taksit. annualLoanPayment yalnızca "Yıl 1" gösterimi
-        // içindir; her yıla düşen gerçek ödeme yıl-içi ay sayısına göre ayrıca hesaplanır (bkz. LoanPaymentForYear).
         bool   hasLoan          = s.HasLoan && s.LoanAmount > 0 && s.LoanTermMonths > 0;
         decimal monthlyLoanPayment = 0, annualLoanPayment = 0;
         if (hasLoan)
@@ -239,20 +216,13 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             annualLoanPayment  = monthlyLoanPayment * Math.Min(12, s.LoanTermMonths);
         }
 
-        // H1 = Ocak-Mayıs (151 gün), H2 = Haziran-Aralık (214 gün)
         const decimal h1Days = 151m;
         const decimal h2Days = 214m;
 
-        // Aylık kayıp gün oranı: istasyonun çalışmadığı (şarj olmayan) gün payı.
-        // Hem geliri hem de elektrik alış maliyetini oranla düşürür → net marj kayıp% kadar azalır.
         var uptimeFactor = 1m - Math.Clamp(s.MonthlyLostDaysPercent, 0m, 100m) / 100m;
 
         var activeLines = s.DeviceLines.Where(d => !d.IsDeleted).OrderBy(d => d.DeviceType).ToList();
 
-        // ── Yıllık USD/TRY projeksiyonu ─────────────────────────────────────────
-        // USD enflasyonu bu yılki değerde sabit kabul edilip her yıl bileşik uygulanır.
-        // TL enflasyonu KULLANILMAZ; kur yalnızca USD enflasyonu kadar yükselir:
-        //   kur(n) = baz × (1 + usdEnf)^n   (n = yıl − ilk projeksiyon yılı)
         int baseProjYear = activeLines
             .SelectMany(d => d.YearProjections.Where(y => !y.IsDeleted).Select(y => y.Year))
             .DefaultIfEmpty(0)
@@ -269,10 +239,8 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var linesDtos   = new List<DeviceLineDetailDto>();
         decimal totalRevTl = 0, totalElecTl = 0, totalCommTl = 0;
 
-        // Aylık döküm için kira cihaz başına paylaştırılır (Excel'de hat başına sabit aylık kira gösterimi).
         var totalDeviceCount = activeLines.Sum(d => d.DeviceCount);
         var monthlyRentPerDevice = s.HasRent && totalDeviceCount > 0 ? s.MonthlyRentTl / totalDeviceCount : 0m;
-        // Ocak=1 ... Aralık=12 için takvim gün sayıları (artık yıl hariç).
         int[] daysPerMonth = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
         foreach (var d in activeLines)
@@ -280,9 +248,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             var lineInvestment = d.UnitLocationCostTl * d.DeviceCount;
             var y1 = d.YearProjections.Where(y => !y.IsDeleted).OrderBy(y => y.Year).FirstOrDefault();
 
-            // KPI/özet "Yıl 1": yıllık tablo (yearSummaries) ile BİREBİR aynı per-alan fallback'i kullan.
-            // Projeksiyon satırındaki herhangi bir alan 0 ise cihaz satırındaki baz değere düşülür;
-            // böylece KPI, ROI, yıllık tablo ve aylık döküm tek ve aynı 1. yıl rakamına dayanır.
             var (annualRev, annualElec) = ComputeLineYear(d, y1, h1Days, h2Days, uptimeFactor);
 
             var grossMargin = annualRev - annualElec;
@@ -320,8 +285,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                     };
                 }).ToList();
 
-            // Cihaz başına, yıl + ay bazında gelir/gider dökümü.
-            // Ocak-Mayıs (1-5) → H1 fiyatı, Haziran-Aralık (6-12) → H2 fiyatı.
             var monthlyYears = d.YearProjections
                 .Where(y => !y.IsDeleted)
                 .OrderBy(y => y.Year)
@@ -339,7 +302,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                         var salePrice  = isH1 ? mSH1 : mSH2;
                         var buyPrice   = isH1 ? mPH1 : mPH2;
 
-                        // Cihaz başına aylık satış kWh (tek cihazın soketleri).
                         var saleKwh    = d.SocketCount * mDaily * d.AvgKwh * netOpDays;
                         var revTl      = saleKwh * salePrice;
                         var elecTl     = saleKwh * buyPrice;
@@ -408,29 +370,24 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var annualNetUsd     = s.UsdRate > 0 ? annualNetTl / s.UsdRate : 0m;
         var roi              = totalUsd > 0 ? Math.Round(annualNetUsd / totalUsd * 100, 1) : 0m;
 
-        // Yıllık özet tablosu
         var allYears = activeLines
             .SelectMany(d => d.YearProjections.Where(y => !y.IsDeleted).Select(y => y.Year))
             .Distinct().OrderBy(y => y).ToList();
 
         int firstYear    = allYears.Count > 0 ? allYears[0] : 0;
 
-        // Kredi taksitleri yıl-yıl gerçek ay sayısına göre dağıtılır (son kısmi yıl fazla tahsil edilmesin).
-        // 1. projeksiyon yılı sözleşmenin 1. yılı kabul edilir; o yıla LoanTermMonths'tan en fazla 12 ay düşer.
         decimal LoanPaymentForYear(int year)
         {
             if (!hasLoan || firstYear == 0) return 0m;
-            int yearIndex = year - firstYear;                 // 0 = ilk yıl
+            int yearIndex = year - firstYear;
             if (yearIndex < 0) return 0m;
             int monthsBefore = yearIndex * 12;
-            if (monthsBefore >= s.LoanTermMonths) return 0m;  // kredi bu yıldan önce bitti
+            if (monthsBefore >= s.LoanTermMonths) return 0m;
             int monthsThisYear = Math.Min(12, s.LoanTermMonths - monthsBefore);
             return monthlyLoanPayment * monthsThisYear;
         }
 
         var yearSummaries  = new List<YearSummaryDto>();
-        // #1: Kredi anaparası iki kez sayılmasın. Yatırımın yalnızca özkaynakla finanse edilen kısmı
-        // başlangıçta peşin gider; kredi tutarı taksitlerle (LoanPaymentForYear) net kârdan düşülür.
         decimal loanUsd    = hasLoan && s.UsdRate > 0 ? s.LoanAmount / s.UsdRate : 0m;
         decimal equityUsd  = Math.Round(totalUsd, 0) - Math.Round(loanUsd, 0);
         decimal cumUsd     = -equityUsd;
@@ -476,10 +433,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             });
         }
 
-        // ── Amortisman süresi (üst KPI) ─────────────────────────────────────────
-        // ROİ tablosuyla birebir aynı mantık: yıl-yıl kümülatif denge sıfırı geçtiği
-        // yıl başabaştır. Böylece USD enflasyonu (ProjectedUsdRate) süreyi etkiler ve
-        // KPI, ROİ tablosu ve amorti tablosu aynı projeksiyona dayanır.
         decimal payback = 0m;
         decimal prevCum = -equityUsd;
         for (int i = 0; i < yearSummaries.Count; i++)
@@ -487,8 +440,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             var ys = yearSummaries[i];
             if (ys.CumulativeBalanceUsd >= 0)
             {
-                // Yıl içinde sıfırı geçtiği kesri net kârla orantılı bul.
-                var need = -prevCum;                                  // o yıla girerken kalan açık
+                var need = -prevCum;
                 var frac = ys.NetProfitUsd > 0 ? need / ys.NetProfitUsd : 0m;
                 payback = Math.Max(0.1m, Math.Round(i + frac, 1));
                 break;
@@ -496,10 +448,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             prevCum = ys.CumulativeBalanceUsd;
         }
 
-        // ── İstasyon bedeli hariç (gömülü) yatırımın amorti tablosu ─────────────
-        // Şarj istasyonu donanımı taşınabilir olduğundan amortismana dahil edilmez;
-        // yalnızca geri kazanılamayan masrafların (giriş bedeli, altyapı, cihaz+lokasyon)
-        // net kâr ile kaç yılda karşılandığını gösterir.
         var stationUsd      = s.UsdRate > 0 ? Math.Round(s.StationUnitCostTl / s.UsdRate, 0) : 0m;
         var sunkUsd         = Math.Round(totalUsd, 0) - stationUsd;
         if (sunkUsd < 0) sunkUsd = 0m;
@@ -522,7 +470,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 sunkPaid = true;
                 var need = sunkUsd - prevRecovered;
                 var frac = ys.NetProfitUsd > 0 ? need / ys.NetProfitUsd : 0m;
-                // 0.05'in altındaki kesirler yuvarlamayla 0.0 olur; en az 0.1 yıl göster.
                 sunkPayback = Math.Max(0.1m, Math.Round(sunkRows.Count + frac, 1));
             }
 
@@ -703,7 +650,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
         if (study is null) return false;
 
-        // Aynı ada sahip aktif (silinmemiş) kayıtlar arasındaki en yüksek versiyon
         var maxVersion = await _studyService.Query()
             .Where(s => s.Kind == FeasibilityKind.Amortization && s.FeasibilityName == study.FeasibilityName)
             .Select(s => (int?)s.Version)
@@ -731,12 +677,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             _                                       => amount
         };
 
-    /// <summary>
-    /// Bir projeksiyon yılının efektif (fallback uygulanmış) fiyatlarını döndürür.
-    /// Projeksiyon satırındaki herhangi bir alan 0 ise cihaz satırındaki baz değere düşülür.
-    /// Tüm gelir/gider hesapları (KPI, yıllık özet, projeksiyon detay tablosu, aylık döküm)
-    /// bu tek kaynaktan beslenir ki rakamlar birbiriyle çelişmesin.
-    /// </summary>
     private static (decimal daily, decimal saleH1, decimal saleH2, decimal buyH1, decimal buyH2)
         EffectivePrices(DeviceLine d, YearProjection? y)
     {
@@ -751,7 +691,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             y.PurchasePriceH2      > 0 ? y.PurchasePriceH2      : d.PurchasePriceTl);
     }
 
-    /// <summary>Bir cihaz hattının bir projeksiyon yılı için (yıllık ciro, yıllık elektrik) çiftini hesaplar.</summary>
     private static (decimal rev, decimal elec) ComputeLineYear(
         DeviceLine d, YearProjection? y, decimal h1Days, decimal h2Days, decimal uptimeFactor)
     {

@@ -369,13 +369,11 @@
             { id: "bakim",    label: "Garanti Sonrası Bakım (Yıllık)",   ccy: "TRY", val: 0 },
             { id: "giris",    label: "Yer Sağlayıcı Proje Giriş Bedeli", ccy: "TRY", val: 0 },
             { id: "altyapi",  label: "Altyapı Yatırım Bedeli",           ccy: "TRY", val: 0 },
-            // Otomatik: Giriş + Altyapı + Σ(istasyon bedeli × adet). Sadece gösterim — toplam yatırıma ayrıca girmez.
             { id: "cihaz",    label: "Toplam Cihaz Yatırımı",            ccy: "TRY", val: 0, disabled: true }
         ];
         var REKLAM = [
             { id: "reklam",   label: "Reklam Geliri",                    ccy: "TRY", val: 0 }
         ];
-        // Projeksiyon, "Sözleşme Başlangıç Tarihi"nin yılından itibaren 15 yıl boyunca istenir.
         var PROJ_YEARS = 15;
         function projStartYear() {
             var el = document.getElementById('sozlesmeBaslangic');
@@ -401,10 +399,8 @@
 
         var fmt   = function(n, d) { d = d === undefined ? 2 : d; return isFinite(n) ? n.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '-'; };
         var parse = function(v) { v = ('' + v).replace(/\./g, '').replace(',', '.'); var n = parseFloat(v); return isNaN(n) ? 0 : n; };
-        // Hücre gösterimi: değer boş/null/geçersiz ise boş bırak (kullanıcı boş bıraktığını görsün)
         var isEmptyVal = function(v) { return v === '' || v === null || v === undefined || (typeof v === 'number' && isNaN(v)); };
         var fmtCell = function(v, d) { return isEmptyVal(v) ? '' : fmt(+v, d); };
-        // Boş girişi koru: boşsa '' döndür, doluysa sayıya çevir (negatifi 0'a çek)
         var parseCell = function(v) { if (('' + v).trim() === '') return ''; var n = parse(v); return n < 0 ? 0 : n; };
         var showToast = function(msg, isErr) { alertify[isErr ? 'error' : 'success'](msg); };
 
@@ -529,13 +525,11 @@
             }
         }
 
-        // Seçili para birimindeki tutarı TL'ye çevirir (backend ToTl ile aynı mantık).
         function toTl(v, ccy) {
             if (ccy === 'USD') return v * USD();
             if (ccy === 'EUR') return v * EUR();
             return v;
         }
-        // "Toplam Cihaz Yatırımı" = Giriş + Altyapı + Σ(istasyon bedeli × adet) — hepsi TL'ye çevrilir.
         function recalcDeviceTotal() {
             var f = FIN.find(function(x) { return x.id === 'cihaz'; });
             if (!f) return;
@@ -568,7 +562,7 @@
             }
             var all = KIRA.concat(FIN).concat(REKLAM);
             all.forEach(function(f) {
-                if (f.id === 'cihaz') return; // otomatik alan recalcDeviceTotal ile yönetilir
+                if (f.id === 'cihaz') return;
                 var el = document.getElementById(f.id); if (!el) return;
                 var v = parse(el.value);
                 var convEl = document.getElementById(f.id + '_conv');
@@ -583,8 +577,6 @@
             return buildProjYears().map(function(year) { return { year: year, daily: daily, sH1: satis, sH2: satis, pH1: alis, pH2: alis, usd: USD() }; });
         };
 
-        // Projeksiyon satırlarını sözleşme başlangıç yılından itibaren 15 yıla hizalar;
-        // girilmiş değerleri satır sırasına göre korur, eksik yılları boş ekler.
         function resyncProjYears() {
             var years = buildProjYears();
             stations.forEach(function(s) {
@@ -597,7 +589,6 @@
                 });
             });
         }
-        // Sözleşme başlangıç tarihi değişince projeksiyon yıllarını yeniden hizala.
         function onContractStartChange() {
             resyncProjYears();
             if (modalIdx >= 0 && document.getElementById('fiz-overlay').classList.contains('show')) {
@@ -673,13 +664,12 @@
             }
             document.getElementById('addSt').disabled = stations.length >= ST_TYPES.length;
             document.getElementById('stCount').textContent = stations.length;
-            recalcDeviceTotal(); // istasyon bedeli/adedi değiştikçe "Toplam Cihaz Yatırımı" güncellensin
+            recalcDeviceTotal();
         }
         function setSt(i, k, v) { stations[i][k] = v; renderStations(); }
-        // İstasyon alanı -> validasyon sınırı eşlemesi (canlı clamp için)
         var ST_BOUND = { adet:'adet', soket:'soket', daily:'gunlukSarj', avgkwh:'ortKwh', alisKwh:'fiyat', bedel:'tutar', oran:'komisyonOran' };
         function setNum(i, k, el, min, max) {
-            var raw = parseCell(el.value);   // boşsa '' döner, boş bırakma korunur
+            var raw = parseCell(el.value);
             if (raw !== '' && ST_BOUND[k]) raw = FizValidation.clamp(raw, ST_BOUND[k]);
             else if (raw !== '' && max > 0 && raw > max) raw = max;
             stations[i][k] = raw;
@@ -745,8 +735,6 @@
         }
         function setProjField(i, k, el) { var n = parse(el.value); if (n < 0) n = 0; modalDraft[i][k] = n; renderProj(); }
 
-        // Her dönem (6 ay) bir önceki döneme göre %pct katlanan zam uygular.
-        // Baz: 1. yılın Ocak (H1) satış ve alış değeri. Dönem sırası: Y1-H1, Y1-H2, Y2-H1, Y2-H2, ...
         function applyEscalation() {
             if (!modalDraft.length) return;
             var pctEl = document.getElementById('escalatePct');
@@ -818,8 +806,6 @@
                 providerEntryFeeCurrency:        finCcy('giris'),
                 infrastructureCost:              finVal('altyapi'),
                 infrastructureCostCurrency:      finCcy('altyapi'),
-                // "Toplam Cihaz Yatırımı" otomatik/salt-okunur gösterim alanı; bileşenleri (giriş, altyapı,
-                // istasyon bedeli) zaten ayrı gönderiliyor. Çift sayımı önlemek için 0 gönderilir.
                 deviceUnitCost:                  0,
                 deviceUnitCostCurrency:          0,
                 hasLoan:                         hasLoan,
@@ -847,8 +833,6 @@
             };
         }
 
-        // Formu doğrular; tüm ihlalleri toplayıp ilgili alanların altında inline
-        // gösterir. Ortak validasyon katmanına (FizValidation) delege eder.
         function validateForm() {
             var res = FizValidation.validate({ stations: stations, requireContractMonths: true });
             if (!res.ok) {
@@ -857,7 +841,6 @@
             return res.ok;
         }
 
-        // Kaydetmeden hesaplar, sonucu "Fizibilite Sonuçları" sekmesine yansıtır.
         function calculate() {
             if (!validateForm()) { switchTab('form'); return; }
 
@@ -892,9 +875,6 @@
             });
         }
 
-        // innerHTML ile enjekte edilen <script> blokları tarayıcı tarafından çalıştırılmaz.
-        // Sonuç partial'ındaki yıl seçici / kart toggle / para birimi fonksiyonlarının
-        // tanımlanması için script düğümlerini klonlayıp yeniden ekleyerek çalıştırıyoruz.
         function runInjectedScripts(container) {
             container.querySelectorAll('script').forEach(function(old) {
                 var s = document.createElement('script');
@@ -940,7 +920,6 @@
                 return r.json();
             })
             .then(function(data) {
-                // Kayıt sonrası düzenlenebilir sayfaya git ve doğrudan sonuç sekmesini aç.
                 window.location.href = '/FeasibilityAmortization/Edit/' + data.id + '?showResults=1';
             })
             .catch(function(err) {
@@ -959,7 +938,6 @@
             var P = parseFloat(document.getElementById('krediTutar').value) || 0;
             var yillik = parseFloat(document.getElementById('faizOran').value) || 0;
             var n = parseInt(document.getElementById('vadeAy').value) || 0;
-            // Sınır dışı faiz/vade hesabı patlatmasın — canlı clamp.
             if (yillik > FizValidation.bounds.faizOran.max) { yillik = FizValidation.bounds.faizOran.max; document.getElementById('faizOran').value = yillik; }
             if (n > FizValidation.bounds.vadeAy.max) { n = FizValidation.bounds.vadeAy.max; document.getElementById('vadeAy').value = n; }
             var taksit = 0, toplamOdeme = 0, toplamFaiz = 0;

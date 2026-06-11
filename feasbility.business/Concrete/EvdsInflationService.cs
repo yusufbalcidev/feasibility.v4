@@ -8,10 +8,7 @@ namespace feasibility.Business.Concrete;
 
 public class EvdsInflationService : IEvdsInflationService
 {
-    // TP.FG.J0 = TÜFE (genel endeks, 2003=100). formulas=3 => yıllık yüzde değişim.
     private const string SeriesCode  = "TP.FG.J0";
-    // EVDS yanıtında nokta yerine alt çizgi gelir; formül uygulanınca sona "-3" eklenir
-    // (ör. "TP_FG_J0-3"). Bu yüzden tam ad yerine ön ek ile eşleştiriyoruz.
     private const string SeriesField = "TP_FG_J0";
     private const string CacheKey    = "evds_tufe_tr_annual";
     private static readonly TimeSpan CacheSuresi = TimeSpan.FromHours(24);
@@ -35,11 +32,10 @@ public class EvdsInflationService : IEvdsInflationService
             return cached;
 
         if (string.IsNullOrWhiteSpace(_apiKey))
-            return null; // key yoksa çağrı yapma — manager World Bank'a fallback eder
+            return null;
 
         try
         {
-            // Son 14 ayı iste; yıllık değişim için en güncel dolu kayıt yeterli.
             var end   = DateTime.Now;
             var start = end.AddMonths(-14);
             var url =
@@ -61,13 +57,11 @@ public class EvdsInflationService : IEvdsInflationService
                 items.ValueKind != JsonValueKind.Array)
                 return null;
 
-            // En güncel dolu (null olmayan) değeri al. Yanıt kronolojik sıralı geldiği
-            // için diziyi baştan sona tarayıp son geçerli değeri tutuyoruz.
             decimal? result = null;
             foreach (var item in items.EnumerateArray())
             {
                 if (!TryReadSeriesValue(item, out var value)) continue;
-                result = Math.Round(value, 2); // sonuncusu en güncel kalır
+                result = Math.Round(value, 2);
             }
 
             if (result.HasValue)
@@ -81,8 +75,6 @@ public class EvdsInflationService : IEvdsInflationService
         }
     }
 
-    // Bir kayıttaki seri değerini bulur. Alan adı formüle göre "TP_FG_J0" ya da
-    // "TP_FG_J0-3" olabildiğinden ön ek ile eşleştirir; Tarih/UNIXTIME'ı atlar.
     private static bool TryReadSeriesValue(JsonElement item, out decimal value)
     {
         value = 0m;

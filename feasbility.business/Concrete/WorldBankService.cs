@@ -6,7 +6,6 @@ namespace feasibility.Business.Concrete;
 
 public class WorldBankService : IWorldBankService
 {
-    // mrv=3: son 3 yıl — null değerler atlanınca en güncel veri alınır
     private const string UrlTemplate = "https://api.worldbank.org/v2/country/{0}/indicator/FP.CPI.TOTL.ZG?format=json&mrv=3";
     private static readonly TimeSpan CacheSuresi = TimeSpan.FromHours(48);
     private const string CachePrefix = "wb_inf_";
@@ -34,7 +33,6 @@ public class WorldBankService : IWorldBankService
             using var doc  = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            // Yanıt: [ {metadata}, [ {datapoint}, ... ] ]
             if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() < 2)
                 return null;
 

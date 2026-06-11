@@ -10,13 +10,9 @@
     bool pos(decimal v) => v >= 0;
     string sign(decimal v) => v >= 0 ? "+" : "";
 
-    // Para birimi dönüşümü: tüm tutarlar TL tabanında saklanır; data-tl ham TL değerini taşır,
-    // JS sayfadaki para birimi seçimine göre (TRY/USD/EUR) güncel TCMB kuruyla yeniden biçimler.
-    // raw: ham TL değeri (InvariantCulture, JS parse edebilsin). dec: ondalık basamak.
     Func<decimal, string> RAW = v => v.ToString("0.########", inv);
 }
 
-<!-- Üst araç çubuğu: para birimi seçici + PDF butonu -->
 <div class="res-cur-bar">
     <button type="button" class="btn btn-primary res-pdf-btn" onclick="resDownloadPdf()">
         <span class="material-symbols-outlined">picture_as_pdf</span> PDF olarak indir
@@ -31,7 +27,6 @@
     </div>
 </div>
 
-<!-- KPI Kartları -->
 <div class="res-kpi-row">
     <div class="res-kpi">
         <div class="res-kpi-header">
@@ -81,7 +76,6 @@
     </div>
 </div>
 
-<!-- Yatırım + Sabit Giderler özeti -->
 <div class="summary-grid">
     <div class="card fiz-card res-section">
         <div class="card-header">
@@ -164,7 +158,6 @@
     </div>
 </div>
 
-<!-- ROİ Geri Dönüş Eğrisi -->
 @if (Model.YearSummaries.Any())
 {
     <div class="card fiz-card res-section">
@@ -198,7 +191,6 @@
     </div>
 }
 
-<!-- 10 Yıllık Projeksiyon Tablosu -->
 @if (Model.YearSummaries.Any())
 {
     <div class="card fiz-card res-section">
@@ -247,8 +239,6 @@
                 </tbody>
                 <tfoot>
                     @{
-                        // Yıllar arası nominal TL toplamı tek kura çevrilemediğinden (her yılın kuru farklı),
-                        // toplamlar her yılın kendi projeksiyon kuruyla USD'ye çevrilip toplanır → data-usd.
                         var tRevU  = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.TotalRevenueTl         / r.UsdRate : 0m);
                         var tElecU = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.TotalElectricityCostTl / r.UsdRate : 0m);
                         var tCommU = Model.YearSummaries.Sum(r => r.UsdRate > 0 ? r.TotalCommissionTl      / r.UsdRate : 0m);
@@ -272,7 +262,6 @@
     </div>
 }
 
-<!-- İstasyon Bedeli Hariç (Gömülü) Yatırımın Amorti Tablosu -->
 @if (Model.SunkAmortization.Any())
 {
     <div class="card fiz-card res-section">
@@ -366,7 +355,6 @@
     </div>
 }
 
-<!-- İstasyon Hattı Detayları -->
 @{ int lineNo = 4; }
 @foreach (var line in Model.DeviceLines)
 {
@@ -426,18 +414,13 @@
 
 
 <style>
-    /* ── PDF butonu ──────────────────────────────────────────────────── */
     .res-pdf-btn .material-symbols-outlined { font-size: 18px; }
 
-    /* ── Yazdırma (PDF) düzeni — A4 dikey ──────────────────────────────
-       Yalnızca sonuç paneli yazdırılır; sayfa başlığı, sekmeler, butonlar
-       ve form paneli gizlenir. İçerik A4 genişliğine sığacak şekilde küçültülür. */
     @@page {
         size: A4 portrait;
         margin: 12mm 10mm;
     }
     @@media print {
-        /* Tarayıcının arka plan rengini/gradyanını basması (kartlar, rozetler) */
         html, body {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -450,7 +433,7 @@
             width: 100% !important; max-width: 100% !important;
             padding: 0 !important; margin: 0 !important;
             display: block !important;
-            font-size: 9pt;            /* A4 için kompakt taban yazı boyutu */
+            font-size: 9pt;
         }
         #pane-results .card,
         #pane-results .res-section {
@@ -460,19 +443,16 @@
             border-radius: 6px !important;
             width: 100% !important;
         }
-        /* Yazdırmada gereksiz öğeleri tamamen kaldır */
         .res-cur-bar, .fiz-collapse-btn,
         .fiz-results-actions, .fiz-results-hint,
         .fiz-card-tools {
             display: none !important;
         }
-        /* Katlanmış kartlar yazdırmada açık görünsün */
         .card.collapsed > .collapse-body { display: block !important; }
         .mb-block { display: block !important; }
         .mb-block > summary .mb-chevron { display: none !important; }
         .mb-block > :not(summary) { display: revert !important; }
 
-        /* KPI kartları: A4'te 4'ü yan yana sığsın, küçült */
         .res-kpi-row {
             display: grid !important;
             grid-template-columns: repeat(4, 1fr) !important;
@@ -481,14 +461,12 @@
         .res-kpi { padding: 8px !important; }
         .res-kpi-value { font-size: 12pt !important; }
         .res-kpi-label { font-size: 7.5pt !important; }
-        /* Özet grid: iki kart yan yana */
         .summary-grid {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
             gap: 8px !important;
         }
 
-        /* Tablolar A4 genişliğine sığsın; sabit yerleşim + kelime kırma */
         #pane-results table {
             width: 100% !important;
             table-layout: fixed !important;
@@ -501,7 +479,6 @@
             text-overflow: ellipsis;
             word-break: break-word;
         }
-        /* 12 aylık döküm tablosu çok geniş — daha da küçült */
         #pane-results .mb-table { font-size: 6.5pt !important; }
         #pane-results .mb-table th,
         #pane-results .mb-table td { padding: 2px !important; }
@@ -509,22 +486,17 @@
         h2 { font-size: 11pt !important; }
         .fiz-sub { font-size: 7.5pt !important; }
 
-        /* Kartlar ve tablo satırları sayfa ortasından bölünmesin */
         .res-section, .card, .res-kpi-row, table, thead, tr {
             page-break-inside: avoid;
             break-inside: avoid;
         }
-        thead { display: table-header-group; }   /* uzun tablo bölünürse başlık tekrar etsin */
+        thead { display: table-header-group; }
     }
 
-    /* Özet grid: her iki kart da açıkken eşit yükseklikte dursun.
-       Ama bir kart kapanınca o kart içeriğine göre küçülsün (boşluk bırakmasın). */
     .summary-grid { align-items: stretch; }
     .summary-grid:has(.card.collapsed) { align-items: start; }
-    /* Açık kalan kart kapanan komşusu yüzünden küçülmesin, tam yüksekliğini korusun */
     .summary-grid:has(.card.collapsed) .card.collapsible:not(.collapsed) { align-self: stretch; }
 
-    /* Açılır / kapanır kart başlıkları */
     .card.collapsible > .card-header {
         cursor: pointer;
         display: flex;
@@ -543,7 +515,6 @@
     .card.collapsed > .card-header .collapse-chevron { transform: rotate(-90deg); }
     .card.collapsed > .collapse-body { display: none !important; }
 
-    /* Para birimi seçici */
     .res-cur-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
     .fiz-cur-wrap {
         display: flex; align-items: center; gap: 6px;
@@ -559,10 +530,8 @@
         border: 1px solid var(--border); border-radius: 8px;
         background: var(--surface); color: var(--text); cursor: pointer;
     }
-    /* Başlıkta seçici varken chevron'dan önce gelsin, tıklama kart toggle'ını tetiklemesin */
     .res-card-header { display: flex; align-items: center; gap: 10px; }
 
-    /* ── ROİ geri dönüş grafiği (tablonun altında gömülü) ───────────── */
     .roi-chart-body { padding: 14px 18px 18px; }
     .roi-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
     .roi-lg { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
@@ -585,14 +554,11 @@
 </style>
 
 <script>
-    // Benzersiz ad: Edit/Create sayfasındaki toggleCard(id) ile çakışmasın.
     function resToggleCard(el) {
         var card = el.closest('.fiz-card') || el.closest('.card');
         if (card) card.classList.toggle('collapsed');
     }
 
-    // PDF olarak indir: tarayıcının yazdırma diyaloğunu açar (hedef: "PDF olarak kaydet").
-    // Yazdırma CSS'i yalnızca sonuç panelini bırakıp katlanmış kartları açar.
     function resDownloadPdf() {
         window.print();
     }
@@ -605,19 +571,13 @@
         if (show) show.style.display = '';
     }
 
-    /* ===== Para birimi dönüşümü (canlı TCMB kuru) =====================
-       Tüm tutarlar .js-money span'lerinde TL tabanında (data-tl) saklanır.
-       Seçilen para birimine göre güncel kura bölünüp yeniden biçimlenir.   */
     (function () {
-        var FXR = { TRY: 1, USD: 0, EUR: 0 };   // 1 birim para = kaç TL (canlı TCMB; EUR çaprazı için)
+        var FXR = { TRY: 1, USD: 0, EUR: 0 };
         var SYM = { TRY: '₺', USD: '$', EUR: '€' };
-        var CUR = 'USD';                         // varsayılan görünüm: dolar
-        // Çalışmanın baz USD/TL kuru (projeksiyonun 1. yılı). Sonraki yılların hücreleri
-        // kendi enflasyon-farkı kuruyla data-rate üzerinden gelir; bu, baz/şimdiki değerler içindir.
+        var CUR = 'USD';
         var BASE_USD_RATE = @RAW(Model.UsdRate);
 
         function fmt(n, dec) {
-            // tr-TR biçimi: binlik nokta, ondalık virgül
             return new Intl.NumberFormat('tr-TR', {
                 minimumFractionDigits: dec, maximumFractionDigits: dec
             }).format(n);
@@ -626,8 +586,6 @@
         function renderMoney() {
             var cur = CUR;
             var sym = SYM[cur];
-            // USD/TL tabanı: çalışmanın baz kuru (yoksa canlı kura düş). USD görünümü buna yeter;
-            // EUR ayrıca canlı USD/EUR çaprazına ihtiyaç duyar.
             var baseUsd = BASE_USD_RATE > 0 ? BASE_USD_RATE : (FXR.USD || 0);
             if (cur === 'USD' && baseUsd <= 0) return;
             if (cur === 'EUR' && (baseUsd <= 0 || (FXR.USD || 0) <= 0 || (FXR.EUR || 0) <= 0)) return;
@@ -638,22 +596,19 @@
                 if (aTl !== null) {
                     tl = parseFloat(aTl);
                     if (isNaN(tl)) return;
-                    // Yıla özel projeksiyon kuru (data-rate) varsa onunla, yoksa baz kurla USD'ye çevir.
                     var pr = parseFloat(el.getAttribute('data-rate'));
                     var rate = (!isNaN(pr) && pr > 0) ? pr : baseUsd;
                     usd = rate > 0 ? tl / rate : 0;
                 } else {
                     usd = parseFloat(el.getAttribute('data-usd'));
                     if (isNaN(usd)) return;
-                    tl = usd * baseUsd;   // USD tabanlı (kümülatif/amorti) hücrelerin TL karşılığı
+                    tl = usd * baseUsd;
                 }
                 var val;
                 if (cur === 'TRY')      val = tl;
                 else if (cur === 'USD') val = usd;
                 else                    val = (FXR.USD > 0 && FXR.EUR > 0) ? usd * FXR.USD / FXR.EUR : 0;
                 var neg = val < 0, abs = Math.abs(val);
-                // TL tutarları çoğunlukla data-dec="0" ile saklanır; USD/EUR'a çevirince küçük
-                // değerler "0"a yuvarlanmasın diye ondalık basamağı artır (en az 2).
                 if (cur !== 'TRY') {
                     if (dec < 2) dec = 2;
                     if (abs > 0) {
@@ -661,35 +616,30 @@
                         if (needed > dec) dec = Math.min(needed, 6);
                     }
                 }
-                // Sembol konumu: ₺ sonda, $/€ başta
                 var body = (cur === 'TRY') ? (fmt(abs, dec) + ' ' + sym) : (sym + ' ' + fmt(abs, dec));
                 el.textContent = (neg ? '-' : '') + body;
             });
         }
 
         function applyRates(d) {
-            // Create ekranındaki ile aynı kaynak: TCMB satış kuru
             if (d && d.usdSell > 0) FXR.USD = d.usdSell;
             if (d && d.eurSell > 0) FXR.EUR = d.eurSell;
         }
 
         window.fizSelectCurrency = function (sel) {
             CUR = sel.value;
-            // Tüm para birimi seçicilerini eşitle
             document.querySelectorAll('.fiz-cur-select').forEach(function (s) { s.value = CUR; });
             renderMoney();
         };
 
-        // Sayfa açılışında canlı kuru çek, sonra mevcut seçime göre biçimle.
         document.addEventListener('DOMContentLoaded', function () {
-            renderMoney(); // TL varsayılanıyla ilk boyama
+            renderMoney();
             fetch('/FeasibilityAmortization/GetRates')
                 .then(function (r) { return r.json(); })
                 .then(function (d) { applyRates(d); renderMoney(); })
-                .catch(function () { /* kur çekilemezse TL gösterimi kalır */ });
+                .catch(function () { });
         });
 
-        // Partial preview (Calculate) DOMContentLoaded sonrası enjekte edilirse:
         if (document.readyState !== 'loading') {
             renderMoney();
             fetch('/FeasibilityAmortization/GetRates')
@@ -711,13 +661,8 @@
     var roiJson = "[" + string.Join(",", roiParts) + "]";
 
     <script>
-    /* ===== ROİ geri dönüş eğrisi =======================================
-       USD tabanlı kümülatif nakit akışı; negatif yatırımdan başlar, yıllık
-       net kâr eklenir, sıfırı geçtiği yıl "başabaş" olarak işaretlenir.
-       Tablo .js-money mantığıyla aynı: USD tabanı seçili para birimine
-       güncel TCMB kuruyla çevrilir. Tema (açık/koyu) CSS değişkenleriyle. */
     (function () {
-        var ROI_BASE = @Html.Raw(roiJson);            // [{l, v(USD)}]
+        var ROI_BASE = @Html.Raw(roiJson);
         if (!ROI_BASE || !ROI_BASE.length) return;
 
         var NS  = 'http://www.w3.org/2000/svg';
@@ -735,7 +680,6 @@
             var s = document.querySelector('.fiz-cur-select');
             return s ? s.value : 'USD';
         }
-        // USD tabanlı değeri seçili para birimine çevirir (kur yoksa USD'de kalır).
         function conv(usd) {
             var c = curNow();
             if (c === 'TRY') return FXR.USD > 0 ? usd * FXR.USD : usd;
@@ -778,7 +722,6 @@
             function Y(v) { return padT + (maxV - v) / (maxV - minV) * plotH; }
             var yZero = Y(0);
 
-            // Gradyan: sıfır çizgisinin üstü yeşil (kâr), altı kırmızı (zarar).
             var zeroOff = Math.max(0, Math.min(1, (yZero - padT) / plotH));
             var defs = mk('defs', {});
             function grad(id, aTop, aBot) {
@@ -793,7 +736,6 @@
             defs.appendChild(grad('roiLine', 1, 1));
             svg.appendChild(defs);
 
-            // Yatay ızgara + Y eksen etiketleri
             var ticks = 4;
             for (var t = 0; t <= ticks; t++) {
                 var gv = minV + (maxV - minV) * t / ticks, gy = Y(gv);
@@ -803,40 +745,32 @@
                 svg.appendChild(yl);
             }
 
-            // Sıfır (başabaş) ekseni
             svg.appendChild(mk('line', { x1: padL, y1: yZero, x2: W - padR, y2: yZero, 'stroke-dasharray': '5 4' }, 'stroke:var(--text-muted);stroke-width:1.4;opacity:.85'));
 
-            // Alan (eğri ile sıfır arası) — gradyanla kâr/zarar boyanır
             var dArea = 'M ' + X(0) + ' ' + Y(pts[0].v);
             for (var i = 1; i < n; i++) dArea += ' L ' + X(i) + ' ' + Y(pts[i].v);
             dArea += ' L ' + X(n - 1) + ' ' + yZero + ' L ' + X(0) + ' ' + yZero + ' Z';
             svg.appendChild(mk('path', { d: dArea, fill: 'url(#roiFill)' }, 'stroke:none'));
 
-            // Çizgi
             var dLine = 'M ' + X(0) + ' ' + Y(pts[0].v);
             for (var j = 1; j < n; j++) dLine += ' L ' + X(j) + ' ' + Y(pts[j].v);
             svg.appendChild(mk('path', { d: dLine, fill: 'none', stroke: 'url(#roiLine)', 'stroke-width': 2.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
 
-            // Başabaş (amorti) noktası — ilk v >= 0 olan yıl
             var beIdx = -1;
             for (var b = 0; b < n; b++) { if (pts[b].v >= 0) { beIdx = b; break; } }
             if (beIdx > 0) {
                 var bx = X(beIdx);
-                // Dikey başabaş çizgisi
                 svg.appendChild(mk('line', { x1: bx, y1: padT, x2: bx, y2: H - padB, 'stroke-dasharray': '4 4' }, 'stroke:var(--success);stroke-width:1;opacity:.6'));
-                // Üstte yıl bayrağı (kenara taşmasın diye hizalama kenara göre ayarlanır)
                 var anch = bx > W - 96 ? 'end' : (bx < padL + 96 ? 'start' : 'middle');
                 var flag = mk('text', { x: bx, y: padT - 9, 'text-anchor': anch, 'font-size': 11.5, 'font-weight': 700 }, 'fill:var(--success)');
                 flag.textContent = '★ Amorti yılı: ' + pts[beIdx].l;
                 svg.appendChild(flag);
             } else if (beIdx === -1) {
-                // Sözleşme süresinde başabaşa ulaşılamıyor — bilgilendirici not
                 var note = mk('text', { x: W - padR, y: padT - 9, 'text-anchor': 'end', 'font-size': 11.5, 'font-weight': 700 }, 'fill:var(--danger)');
                 note.textContent = 'Sözleşme süresinde amorti edilemiyor';
                 svg.appendChild(note);
             }
 
-            // Noktalar + X etiketleri; ekran koordinatları LAYOUT'a kaydedilir
             var layoutPts = [];
             for (var k = 0; k < n; k++) {
                 var px = X(k), py = Y(pts[k].v);
@@ -852,7 +786,6 @@
                 layoutPts.push({ x: px, y: py, l: pts[k].l, v: pts[k].v });
             }
 
-            // Hover göstergeleri (üstte)
             svg.appendChild(mk('line', { id: 'roiHL', y1: padT, y2: H - padB, opacity: 0, 'stroke-dasharray': '4 3', 'pointer-events': 'none' }, 'stroke:var(--primary);stroke-width:1'));
             svg.appendChild(mk('circle', { id: 'roiHD', r: 5.5, opacity: 0, 'pointer-events': 'none' }, 'fill:var(--primary);stroke:var(--surface);stroke-width:2'));
 
@@ -911,10 +844,8 @@
                 .catch(function () { cb(); });
         }
 
-        // Grafik artık tablonun hemen altında ekranda gömülü; sayfa açılır açılmaz çizilir.
         ensureRates(draw);
 
-        // Para birimi değişince grafiği yeniden çiz.
         var _origCur = window.fizSelectCurrency;
         window.fizSelectCurrency = function (sel) {
             if (typeof _origCur === 'function') _origCur(sel);

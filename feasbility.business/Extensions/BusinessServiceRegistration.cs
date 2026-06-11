@@ -37,17 +37,9 @@ public static class BusinessServiceRegistration
         });
 
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-        // AutoValidation opt-in moduna alındı. Varsayılan (All) modda global filtre,
-        // view controller'larında doğrulama hatasında View yerine 400 JSON ProblemDetails
-        // döndürdüğü için Login gibi sayfalarda Türkçe uyarı yerine ham JSON görünüyordu.
-        // Annotations stratejisiyle yalnızca [AutoValidation] attribute'u taşıyan
-        // JSON/API action'ları otomatik doğrulanır; view controller'ları kendi
-        // ModelState kontrolüyle (if (!ModelState.IsValid) return View(dto)) çalışır.
         services.AddFluentValidationAutoValidation(config =>
         {
             config.ValidationStrategy = ValidationStrategy.Annotations;
-            // Doğrulama hatasında varsayılan ProblemDetails yerine { message, errors }
-            // döndür — istemci fetch katmanı message alanını okuyup Türkçe uyarı gösteriyor.
             config.OverrideDefaultResultFactoryWith<Validators.AutoValidationResultFactory>();
         });
 

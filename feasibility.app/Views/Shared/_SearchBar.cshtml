@@ -1,11 +1,3 @@
-@*
-    Yeniden kullanılabilir arama çubuğu. GET form ile Index'e q parametresi gönderir.
-    Kullanım:
-        @await Html.PartialAsync("_SearchBar", new ViewDataDictionary(ViewData) {
-            { "Search", Model.Search }, { "Placeholder", "Ara..." } })
-    veya basitçe:
-        <partial name="_SearchBar" model="Model.Search" />
-*@
 @model string
 @{
     var search = Model;

@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     L.marker([lat, lng]).addTo(map);
 
-    // Tıklayınca scroll-zoom aktifleşsin (sayfa kaydırmayı engellememek için)
     map.on('focus', function () { map.scrollWheelZoom.enable(); });
     map.on('blur', function () { map.scrollWheelZoom.disable(); });
 });

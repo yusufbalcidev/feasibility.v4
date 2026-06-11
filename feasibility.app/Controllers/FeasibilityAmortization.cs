@@ -21,7 +21,6 @@ namespace feasibility.App.Controllers
 
         private const int PageSize = 10;
 
-        // ModelState'teki ilk doğrulama mesajını döndürür (istemciye gösterilecek özet).
         private string FirstError()
             => ModelState.Values
                    .SelectMany(v => v.Errors)
@@ -99,7 +98,6 @@ namespace feasibility.App.Controllers
             }
         }
 
-        // GEÇİCİ TEST UCU — hesap doğrulaması için. Doğrulama sonrası kaldırılacak.
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         [HttpPost("FeasibilityAmortization/CalcTest")]
         public async Task<IActionResult> CalcTest([FromBody] FeasibilityAmortizationSaveDto dto, CancellationToken ct)
@@ -149,7 +147,6 @@ namespace feasibility.App.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
         {
-            // Eski versiyon salt-okunur: doğrudan URL ile gelinse bile düzenleme açılmaz, görüntülemeye yönlendirilir.
             if (!await _feasibilityAmortizationService.IsLatestVersionAsync(id, ct))
                 return RedirectToAction(nameof(View), new { id });
 
@@ -172,7 +169,6 @@ namespace feasibility.App.Controllers
             ViewBag.EurInfJson = eur is not null ? eur.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
             ViewBag.StudyId       = id;
             ViewBag.PreloadJson   = preloadJson;
-            // Düzenleme sayfasındaki "Fizibilite Sonuçları" sekmesini ilk açılışta dolu getir.
             return View(detailTask.Result);
         }
 
@@ -183,7 +179,6 @@ namespace feasibility.App.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(new { message = FirstError() });
 
-            // Eski versiyon salt-okunur: güncelleme isteği gelse bile reddedilir.
             if (!await _feasibilityAmortizationService.IsLatestVersionAsync(id, ct))
                 return BadRequest(new { message = "Bu fizibilitenin daha güncel bir versiyonu var; eski versiyon düzenlenemez." });
 
@@ -198,7 +193,6 @@ namespace feasibility.App.Controllers
             }
         }
 
-        // Salt-okunur görüntüleme: veri girişleri (düzenlenemez) + sonuçlar sekmeli.
         [HttpGet]
         public async Task<IActionResult> View(Guid id, CancellationToken ct)
         {

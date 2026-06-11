@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Confirm-on-delete handler (used by tables)
     document.querySelectorAll('form[data-confirm]').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             e.preventDefault();

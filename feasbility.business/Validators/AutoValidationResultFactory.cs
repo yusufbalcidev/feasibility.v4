@@ -4,11 +4,6 @@ using SharpGrip.FluentValidation.AutoValidation.Mvc.Results;
 
 namespace feasibility.Business.Validators;
 
-/// <summary>
-/// AutoValidation doğrulama hatasında dönecek 400 yanıtını biçimlendirir.
-/// İstemci (fetch) tarafı <c>JSON.parse(t).message</c> okuduğu için yanıtı
-/// { message, errors } şeklinde döndürürüz; ilk hata mesajı kullanıcıya gösterilir.
-/// </summary>
 public class AutoValidationResultFactory : IFluentValidationAutoValidationResultFactory
 {
     public IActionResult CreateActionResult(

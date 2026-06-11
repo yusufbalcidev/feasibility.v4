@@ -12,7 +12,6 @@ public class Study : BaseEntity
 
     public string FeasibilityName { get; set; } = string.Empty;
 
-    /// <summary>Fizibilite versiyon numarası. Yeni kayıt 1; "yeni versiyon olarak ekle" ile türetilen kayıt, kaynak kaydın versiyonu + 1.</summary>
     public int Version { get; set; } = 1;
 
     public FeasibilityKind Kind { get; set; } = FeasibilityKind.Amortization;
@@ -40,10 +39,8 @@ public class Study : BaseEntity
 
     public int ContractMonths { get; set; }
 
-    /// <summary>Sözleşme başlangıç tarihi (opsiyonel).</summary>
     public DateTime? ContractStartDate { get; set; }
 
-    /// <summary>Aylık kayıp gün oranı (% — örn. 10 = ayda günlerin %10'unda şarj olmaz). Geliri ve elektrik maliyetini oranla düşürür.</summary>
     public decimal MonthlyLostDaysPercent { get; set; }
 
     public decimal PostWarrantyMaintenanceCost { get; set; }

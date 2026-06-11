@@ -1,4 +1,4 @@
-/* ── Başarı banner ──────────────────────────────────────── */
+
 .result-success-banner {
     display: flex; align-items: center; gap: 10px;
     padding: 11px 16px; margin-bottom: 20px;
@@ -11,7 +11,6 @@
 .result-success-banner.hide { opacity:0; max-height:0; margin-bottom:0; padding-top:0; padding-bottom:0; }
 .result-success-banner .material-symbols-outlined { font-size: 18px; font-variation-settings: 'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24; }
 
-/* ── KPI kartları ───────────────────────────────────────── */
 .res-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
 @media(max-width:900px){ .res-kpi-row { grid-template-columns: repeat(2,1fr); } }
 @media(max-width:500px){ .res-kpi-row { grid-template-columns: 1fr; } }
@@ -25,14 +24,14 @@
     display: flex; flex-direction: column; gap: 12px;
     position: relative;
 }
-/* Kurumsal vurgu: sol kenarda ince marka şeridi */
+
 .res-kpi::before {
     content: ""; position: absolute; left: 0; top: 14px; bottom: 14px;
     width: 3px; border-radius: 0 3px 3px 0;
     background: var(--primary);
 }
 .res-kpi-header { display: flex; align-items: center; justify-content: space-between; }
-/* Sade & nötr: tüm KPI ikonları aynı yumuşak gri zeminde, ince outline */
+
 .res-kpi-icon {
     width: 40px; height: 40px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -45,7 +44,7 @@
     color: var(--primary) !important;
     font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
 }
-/* Rozetler: renk kakofonisi yerine nötr gri */
+
 .res-kpi-badge {
     font-size: 10px; font-weight: 700; text-transform: uppercase;
     letter-spacing: .5px; padding: 3px 8px; border-radius: 20px;
@@ -54,16 +53,13 @@
     border: 1px solid var(--border);
 }
 .res-kpi-value { font-size: 1.5rem; font-weight: 800; color: var(--text); line-height: 1.1; }
-/* Finansal anlam korunur ama daha sakin tonda */
+
 .res-kpi-value.pos { color: var(--success); }
 .res-kpi-value.neg { color: var(--danger); }
 .res-kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .03em; }
 
-/* ── Bölüm kartları ──────────────────────────────────────── */
 .res-section { margin-bottom: 16px; }
 
-/* Veri girişleri (fiz-card) ile aynı kurumsal başlık + collapse davranışı.
-   Sonuç kartlarının gövdeleri .collapse-body taşır; kart kapanınca gizlenir. */
 .res-section.fiz-card.collapsed .collapse-body { display: none !important; }
 .res-section.fiz-card.collapsed .card-header { border-bottom: none; }
 .res-section.fiz-card > .card-header { cursor: default; }
@@ -95,10 +91,8 @@
 .card.collapsed .res-sec-chevron { transform: rotate(-90deg); }
 .card.collapsed > .collapse-body { display: none !important; }
 
-/* Sonuçların en üstündeki araç çubuğu (para birimi seçici sağda) */
 .res-toolbar { display:flex; align-items:center; justify-content:flex-end; margin-bottom:16px; }
 
-/* Para birimi seçici */
 .res-cur-wrap { display:flex; align-items:center; gap:6px; margin-left:auto; margin-right:12px; }
 .res-cur-wrap label { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
 .res-cur-select {
@@ -108,7 +102,6 @@
     background:var(--surface); color:var(--text); cursor:pointer;
 }
 
-/* Tablo içinde ikon — sade & nötr: tek gri ton, ince outline */
 .tbl-icon { display:inline-flex; align-items:center; gap:8px; }
 .tbl-icon .material-symbols-outlined {
     font-size:18px;
@@ -116,12 +109,9 @@
     font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
 }
 
-/* Özet grid */
 .res-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 @media(max-width:700px){ .res-summary-grid { grid-template-columns: 1fr; } }
 
-/* ── _ResultContent partial: numaralı/ikon kutucukları sade & nötr ──── */
-/* Renkli (success/primary) inline arka planlar yerine yumuşak gri zemin */
 .res-section .fiz-ix {
     background: var(--surface-2) !important;
     color: var(--primary) !important;
@@ -132,7 +122,7 @@
     color: var(--primary) !important;
     font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
 }
-/* İstasyon türü rozeti (AC/DC) nötr kurumsal ton */
+
 .hat-badge {
     background: var(--surface-2);
     color: var(--text-muted);
@@ -140,7 +130,6 @@
     font-weight: 600;
 }
 
-/* Mono numbers */
 .mono { font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; }
 .text-right { text-align: right !important; }
 .text-center { text-align: center !important; }

@@ -118,7 +118,6 @@ public class ActivityLogMiddleware
 
     private static bool ShouldLog(HttpContext context)
     {
-        // GET istekleri loglanmıyor — sadece veri değiştiren işlemler tutulur.
         return !HttpMethods.IsGet(context.Request.Method) &&
                !HttpMethods.IsHead(context.Request.Method) &&
                !HttpMethods.IsOptions(context.Request.Method);
@@ -243,13 +242,11 @@ public class ActivityLogMiddleware
         string? studyName = null;
         if (controller?.Equals("FeasibilityAmortization", StringComparison.OrdinalIgnoreCase) == true)
         {
-            // Route'dan id parametresi (Edit, Update, Delete, Restore, View)
             if (routeData?.Values["id"]?.ToString() is { } routeIdStr &&
                 Guid.TryParse(routeIdStr, out var routeGuid))
             {
                 studyId = routeGuid;
             }
-            // Update POST: id query string'de gelir (?id=...)
             if (studyId is null &&
                 context.Request.Query.TryGetValue("id", out var qId) &&
                 Guid.TryParse(qId, out var queryGuid))
@@ -257,10 +254,8 @@ public class ActivityLogMiddleware
                 studyId = queryGuid;
             }
 
-            // FeasibilityName: Save/Update'te request body JSON'dan oku
             studyName = ExtractFeasibilityName(requestBody);
 
-            // Save başarılı olduysa response body'deki id'yi de deneyelim
             if (studyId is null && !string.IsNullOrEmpty(responseBody))
             {
                 try
@@ -270,7 +265,7 @@ public class ActivityLogMiddleware
                         idEl.TryGetGuid(out var respGuid))
                         studyId = respGuid;
                 }
-                catch { /* JSON parse başarısız — yoksay */ }
+                catch { }
             }
         }
 
@@ -313,7 +308,7 @@ public class ActivityLogMiddleware
                     return el.GetString();
             }
         }
-        catch { /* form-urlencoded veya geçersiz JSON — yoksay */ }
+        catch { }
         return null;
     }
 

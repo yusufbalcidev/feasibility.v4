@@ -31,7 +31,6 @@
     </button>
 </div>
 
-<!-- ════════════ VERİ GİRİŞLERİ (salt-okunur) ════════════ -->
 <div class="fiz-pane active" id="pane-form">
 
     <div class="card fiz-card" id="card-01">
@@ -266,7 +265,6 @@
 
 </div>
 
-<!-- ════════════ FİZİBİLİTE SONUÇLARI ════════════ -->
 <div class="fiz-pane" id="pane-results">
     @if (hasData)
     {
@@ -438,9 +436,6 @@
             var yillik = parseFloat(document.getElementById('faizOran').value) || 0;
             var n = parseInt(document.getElementById('vadeAy').value) || 0;
 
-            // BASİT FAİZ (bileşik DEĞİL): Faiz = AnaPara × YıllıkOran × Vade(gün) / 36000
-            // Vade(gün) = ay × 30. BSM payı yalnızca faiz üzerinden alınır (faiz × %5),
-            // anaparaya dokunulmaz.
             var vadeGun = n * 30;
             var toplamFaiz = 0, toplamBsm = 0, toplamOdeme = 0, taksit = 0;
             if (P > 0 && n > 0) {
@@ -455,7 +450,6 @@
             document.getElementById('aylikTaksit').textContent = 'TL ' + fmt(taksit, 0);
             document.getElementById('toplamOdeme').textContent = 'TL ' + fmt(toplamOdeme, 0);
 
-            // Aylık döküm tablosu — toplam faiz/BSM aylara eşit bölünür (bileşik yok).
             var body = document.getElementById('loanTableBody');
             var foot = document.getElementById('loanTableFoot');
             var wrap = document.getElementById('loanTableWrap');
@@ -495,7 +489,6 @@
             }
         }
 
-        // ── Salt-okunur ön yükleme ──────────────────────────────────────────
         function applyPreload(p) {
             document.getElementById('loc').value   = p.locationId;
             document.getElementById('fname').value = p.feasibilityName;
@@ -566,7 +559,6 @@
             recalcFin();
         }
 
-        // Form panelindeki tüm girişleri salt-okunur yap.
         function lockForm() {
             document.querySelectorAll('#pane-form input, #pane-form select, #pane-form textarea')
                 .forEach(function(el) { el.disabled = true; });

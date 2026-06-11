@@ -10,8 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var savedCity = citySelect.dataset.selected || citySelect.value || '';
     var savedDistrict = districtSelect.dataset.selected || districtSelect.value || '';
 
-    // ---- Harita kurulumu ----
-    var defaultCenter = [39.0, 35.0]; // Türkiye merkezi
+    var defaultCenter = [39.0, 35.0];
     var defaultZoom = 6;
     var savedLat = parseFloat(latInput.value);
     var savedLng = parseFloat(lngInput.value);
@@ -60,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
         updateInputs(e.latlng.lat, e.latlng.lng);
     });
 
-    // Manuel input değişince marker güncelle
     function syncFromInputs() {
         var lat = parseFloat(latInput.value);
         var lng = parseFloat(lngInput.value);
@@ -69,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function () {
     latInput.addEventListener('change', syncFromInputs);
     lngInput.addEventListener('change', syncFromInputs);
 
-    // ---- Nominatim geocoding ----
     var geocodeAbort = null;
     function geocode(query) {
         if (geocodeAbort) geocodeAbort.abort();
@@ -91,7 +88,6 @@ document.addEventListener('DOMContentLoaded', function () {
             var lat = parseFloat(result.lat);
             var lng = parseFloat(result.lon);
             if (isNaN(lat) || isNaN(lng)) return;
-            // Marker'ı sadece kullanıcı manuel koymadıysa veya force true ise taşı
             if (force || !marker) {
                 placeMarker(lat, lng, district ? 13 : 10);
                 updateInputs(lat, lng);
@@ -101,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ---- İl/ilçe verisini yükle ----
     fetch('/data/il-ilce.json')
         .then(function (r) { return r.json(); })
         .then(function (data) {

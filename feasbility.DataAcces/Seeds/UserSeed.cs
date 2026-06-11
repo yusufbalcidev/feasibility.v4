@@ -11,7 +11,6 @@ public static class UserSeed
     public const string SuperAdminEmail = "superadmin@ekaenerji.com.tr";
     public const string SuperAdminFirstName = "Süper";
     public const string SuperAdminLastName = "Admin";
-    // Deterministik seed için sabit hash. Açık metin: "Admin123!"
     public const string DefaultPasswordHash = "AQAAAAIAAYagAAAAEJwrDW1EJCJokjzrCgBRMjaGO3HyGBoCCyg1+2EvfRNQINRgEQYjEx00955bnhvU2g==";
 
 

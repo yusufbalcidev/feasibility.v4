@@ -14,8 +14,6 @@ public static class ServiceRegistration
 {
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
     {
-        // Bağlantı dizesi hassas bilgidir; kaynak kodda/appsettings.json'da tutulmaz.
-        // Local'de User Secrets'tan, ortamda environment değişkeninden okunur.
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException(

@@ -11,8 +11,6 @@ public class DeviceLineConfiguration : IEntityTypeConfiguration<DeviceLine>
         builder.ToTable("DeviceLines");
 
         builder.HasKey(d => d.Id);
-        // PK uygulama tarafında üretilir (Guid.NewGuid). ValueGeneratedOnAdd olursa,
-        // dolu Guid ile eklenen yeni satırlar EF tarafından Modified sanılıp "0 row affected" hatası verir.
         builder.Property(d => d.Id).ValueGeneratedNever();
 
         builder.Property(d => d.DeviceType).IsRequired();

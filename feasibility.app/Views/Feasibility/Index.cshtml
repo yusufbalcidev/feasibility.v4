@@ -44,7 +44,6 @@
                 line-height: 1;
             }
 
-        /* page atmosphere */
         .fz-bg {
             position: relative;
             background: radial-gradient(1200px 520px at 50% -8%, rgba(37,99,235,.10), transparent 60%), radial-gradient(900px 480px at 92% 10%, rgba(15,157,107,.08), transparent 55%), linear-gradient(180deg, #f7f9fd 0%, var(--canvas) 100%);
@@ -69,7 +68,6 @@
             z-index: 1;
         }
 
-        /* ---------- Header ---------- */
         .page-header {
             display: block;
             text-align: center;
@@ -136,14 +134,12 @@
             font-weight: 500;
         }
 
-        /* ---------- Grid ---------- */
         .card-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
         }
 
-        /* ---------- Card ---------- */
         .fiz-card {
             position: relative;
             display: flex;
@@ -196,7 +192,6 @@
             background: linear-gradient(90deg, var(--emerald), #34d399);
         }
 
-        /* big ghost number */
         .ghost-num {
             position: absolute;
             top: .6rem;
@@ -265,7 +260,6 @@
             margin: 0 0 1.4rem;
         }
 
-        /* feature chips */
         .chips {
             display: flex;
             flex-wrap: wrap;
@@ -338,7 +332,6 @@
             box-shadow: 0 8px 18px -8px var(--emerald);
         }
 
-        /* ---------- Selected state ---------- */
         .check-badge {
             position: absolute;
             top: 1.25rem;
@@ -383,7 +376,6 @@
             opacity: 0;
         }
 
-        /* footer note */
         .foot-note {
             text-align: center;
             margin-top: 2.25rem;
@@ -414,10 +406,6 @@
             }
         }
 
-        /* ---------- Dark mode ----------
-           Bu sayfa yukarıda kendi :root değişkenlerini sabit açık renklerle tanımlıyor;
-           bu yüzden site temasının dark değerleri eziliyordu. Burada aynı değişkenleri
-           ve sabit-renkli birkaç öğeyi koyu temaya göre eziyoruz. Açık mod değişmez. */
         [data-theme="dark"] {
             --ink: #e7ebf3;
             --ink-soft: #aab4c6;
@@ -443,7 +431,6 @@
             background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
         }
 
-        /* başlık gradyanı açık tonlu metin yapsın (koyu metin koyu zeminde görünmüyordu) */
         [data-theme="dark"] .page-header h1 {
             background: linear-gradient(180deg, #f1f4fa 0%, #aeb9cd 100%);
             -webkit-background-clip: text;
@@ -486,7 +473,6 @@
 
         <div class="card-grid">
 
-            <!-- Tarife -->
             <a href="/TarifeFizibilite/Index" class="fiz-card" id="card-tarife" onclick="sel(event,'tarife')">
                 <div class="card-bar bar-blue"></div>
                 <div class="card-head">
@@ -515,7 +501,6 @@
                 <div class="check-badge"><span class="material-symbols-outlined">check</span></div>
             </a>
 
-            <!-- Amortisman -->
             <a href="/FeasibilityAmortization/Index" class="fiz-card" id="card-amort" onclick="sel(event,'amort')">
                 <div class="card-bar bar-green"></div>
                 <div class="card-head">
@@ -554,7 +539,6 @@
     </div>
 </div>
 
-<!-- Yükleniyor overlay -->
 <div id="fz-loading" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
     <div style="width:48px;height:48px;border:4px solid #e5e7eb;border-top-color:var(--blue);border-radius:50%;animation:fz-spin .7s linear infinite;"></div>
     <span style="font-size:14px;font-weight:600;color:#475569;">Yükleniyor…</span>

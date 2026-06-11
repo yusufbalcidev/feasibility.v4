@@ -6,7 +6,6 @@ public class FeasibilityAmortizationListDto
     public string FeasibilityName { get; set; } = string.Empty;
     public int Version { get; set; } = 1;
 
-    /// <summary>Aynı ada sahip daha yüksek versiyon yoksa true. False ise kayıt salt-okunur (düzenlenemez).</summary>
     public bool IsLatest { get; set; } = true;
     public string LocationName { get; set; } = string.Empty;
     public List<string> DeviceTypes { get; set; } = new();

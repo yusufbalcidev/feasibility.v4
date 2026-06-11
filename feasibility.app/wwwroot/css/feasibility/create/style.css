@@ -1,9 +1,5 @@
-/* ============================================================
-   Feasibility Amortization – Create / Index page styles
-   Uses project CSS variables from /css/layout/site.css
-   ============================================================ */
 
-/* ---- Tab bar ---- */
+
 .fiz-tabbar {
     display: flex;
     align-items: center;
@@ -14,7 +10,7 @@
     border-radius: var(--radius) var(--radius) 0 0;
     padding: 0 12px 0 4px;
 }
-/* Para birimi seçici — sekme barının sağında */
+
 .fiz-tabbar-cur { margin-left: auto; }
 .fiz-tab {
     position: relative;
@@ -43,11 +39,9 @@
     border-radius: 3px;
 }
 
-/* ---- Panes ---- */
 .fiz-pane { display: none; }
 .fiz-pane.active { display: block; }
 
-/* ---- Card chrome ---- */
 .fiz-card { margin-bottom: 18px; }
 .fiz-card.collapsed .card-header { border-bottom: none; }
 .fiz-card.collapsed .fiz-card-body { display: none; }
@@ -90,7 +84,6 @@
 .fiz-collapse-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-50); }
 .fiz-card.collapsed .fiz-collapse-btn .material-symbols-outlined { transform: rotate(-90deg); }
 
-/* ---- Layout helpers ---- */
 .fiz-two {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -117,7 +110,6 @@
     .fiz-fin-grid { grid-template-columns: 1fr; }
 }
 
-/* ---- Field ---- */
 .fiz-field { display: flex; flex-direction: column; gap: 6px; }
 .fiz-field label {
     font-size: 12px;
@@ -169,7 +161,6 @@ select.fiz-ctl {
 .fiz-err { font-size: 10px; color: var(--danger); font-weight: 600; display: none; }
 .fiz-field.bad .fiz-err { display: block; }
 
-/* ---- Input with prefix / suffix ---- */
 .fiz-input-wrap { position: relative; display: flex; align-items: center; }
 .fiz-pre {
     position: absolute; left: 12px;
@@ -190,20 +181,16 @@ select.fiz-ctl {
 }
 .fiz-input-wrap input.has-suf { padding-right: 38px; }
 
-/* Native sayı input spinner okları (▲▼) özel tasarımla çakışıyor; gizle.
-   Değer yine elle yazılabilir, alan daha temiz görünür. */
 .fiz-ctl[type="number"]::-webkit-outer-spin-button,
 .fiz-ctl[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .fiz-ctl[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
-/* ---- Input + currency selector row ---- */
 .fiz-input-row {
     display: flex;
     align-items: stretch;
     gap: 6px;
 }
 
-/* Currency dropdown next to amount input */
 .fiz-ccy-sel {
     font-family: 'Courier New', monospace;
     font-size: 11px;
@@ -233,11 +220,9 @@ select.fiz-ctl {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2393c5fd' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
-/* ---- Conversion line ---- */
 .fiz-conv { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; min-height: 14px; }
 .fiz-conv .calc { color: var(--primary); font-weight: 700; }
 
-/* ---- Hint chip in card header ---- */
 .fiz-hint {
     font-size: 10.5px;
     color: var(--text-muted);
@@ -253,7 +238,6 @@ select.fiz-ctl {
     flex-shrink: 0;
 }
 
-/* ---- Checkbox (kira toggle) ---- */
 .fiz-chk {
     display: flex;
     align-items: center;
@@ -287,7 +271,6 @@ select.fiz-ctl {
 }
 .fiz-chk input:checked + .fiz-chk-box .material-symbols-outlined { opacity: 1; }
 
-/* ---- Kira block ---- */
 .fiz-kira-block {
     margin-top: 18px;
     padding-top: 18px;
@@ -298,7 +281,6 @@ select.fiz-ctl {
 }
 .fiz-kira-block.hidden { display: none; }
 
-/* ---- Table cells (editable inline) ---- */
 .fiz-cell-in {
     font-family: 'Courier New', monospace;
     font-size: 12px;
@@ -318,10 +300,8 @@ select.fiz-ctl {
 .fiz-cell-in.bad { border-color: var(--danger); background: var(--danger-50); }
 .fiz-cell-in.bad:focus { box-shadow: 0 0 0 2px var(--danger-50); }
 
-/* invalid station-table row highlight */
 .fiz-row-bad td { background: var(--danger-50); }
 
-/* inline error summary inserted directly under an invalid station row */
 .fiz-row-err-cell {
     background: var(--danger-50);
     color: var(--danger);
@@ -335,10 +315,9 @@ select.fiz-ctl {
     vertical-align: -2px;
     margin-right: 2px;
 }
-/* dynamically injected inline error under inputs without a static .fiz-err */
+
 .fiz-err.fiz-cell-errbox { display: block; margin-top: 4px; }
 
-/* empty station list in error state (no station added but tried to save) */
 .fiz-empty.bad {
     border: 1.5px dashed var(--danger);
     border-radius: 10px;
@@ -379,17 +358,11 @@ select.fiz-ctl {
     font-variant-numeric: tabular-nums;
 }
 
-/* ---- İstasyon Bilgileri tablosu (card-03): kompakt & taşma-güvenli ----
-   Varsayılan .table boşluğu (12px 18px) 12 sütun için çok geniş; sütunlar
-   sıkışınca sağa hizalı input'larda "30.000" gibi değerler soldan kırpılıyor.
-   Boşluğu daraltıp sayısal hücrelere min genişlik veriyoruz. Toplam sığmazsa
-   sarmalayıcı (#stWrap = .table-wrapper) yatay kayar; değer kırpılmaz. */
 #stWrap table.table { min-width: 1040px; }
 #stWrap .table th { padding: 8px 10px; line-height: 1.3; vertical-align: bottom; }
 #stWrap .table td { padding: 8px 10px; vertical-align: top; }
 #stWrap .fiz-cell-in { min-width: 72px; }
 
-/* Satış/Alış fiyat hücresi: dönüşüm bilgisi daha kompakt */
 #stWrap .fiz-price-cell .fiz-price-sub {
     justify-content: flex-end;
     font-size: 8.5px;
@@ -399,13 +372,11 @@ select.fiz-ctl {
     letter-spacing: 0;
 }
 
-/* table utility classes used by JS */
 .table .text-right { text-align: right; }
 .table .text-center { text-align: center; }
 .mono { font-family: 'Courier New', monospace; }
 .calc { color: var(--primary); font-weight: 700; }
 
-/* foot row highlight */
 .fiz-foot-row td {
     background: var(--primary-50);
     font-weight: 600;
@@ -413,7 +384,6 @@ select.fiz-ctl {
     border-top: 1px solid var(--border);
 }
 
-/* ---- Add-row button ---- */
 .fiz-add-row {
     margin-top: 14px;
     display: inline-flex;
@@ -440,7 +410,6 @@ select.fiz-ctl {
     border-color: var(--border);
 }
 
-/* ---- Icon action buttons inside table ---- */
 .fiz-icon-btn {
     width: 28px; height: 28px;
     border-radius: 7px;
@@ -457,7 +426,7 @@ select.fiz-ctl {
 .fiz-icon-btn .material-symbols-outlined { font-size: 16px; }
 .fiz-icon-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-50); }
 .fiz-icon-btn.del:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-50); }
-/* green dot when yearly values have been set */
+
 .fiz-icon-btn.done { position: relative; }
 .fiz-icon-btn.done::after {
     content: "";
@@ -468,7 +437,6 @@ select.fiz-ctl {
     border: 1.5px solid var(--surface);
 }
 
-/* ---- Empty state inside table area ---- */
 .fiz-empty {
     padding: 36px 20px;
     text-align: center;
@@ -477,7 +445,6 @@ select.fiz-ctl {
 .fiz-empty .material-symbols-outlined { font-size: 38px; opacity: .35; display: block; margin: 0 auto 8px; }
 .fiz-empty p { font-size: 13px; font-weight: 500; }
 
-/* ---- Results pane empty state ---- */
 .fiz-results-empty {
     min-height: 400px;
     display: flex;
@@ -535,7 +502,6 @@ select.fiz-ctl {
     40%           { opacity: 1;  transform: translateY(-4px); }
 }
 
-/* ---- Modal overlay ---- */
 .fiz-overlay {
     position: fixed; inset: 0;
     background: rgba(15, 23, 42, .55);
@@ -610,7 +576,6 @@ select.fiz-ctl {
     background: var(--surface-2);
 }
 
-/* ---- Info note inside modal ---- */
 .fiz-proj-note {
     display: flex;
     align-items: center;
@@ -625,7 +590,6 @@ select.fiz-ctl {
 }
 .fiz-proj-note .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
 
-/* ---- Finance panel (card-05) ---- */
 .fiz-finance-panel { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--border); }
 .fiz-finance-panel.open { display: block; }
 
@@ -649,7 +613,6 @@ select.fiz-ctl {
 .fiz-result-sub-row .item { font-size: 11px; color: var(--text-muted); }
 .fiz-result-sub-row .item b { display: block; font-size: 14px; color: var(--primary); font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; margin-top: 2px; }
 
-/* ---- Kredi (basit faiz) aylık döküm tablosu ---- */
 .fiz-loan-formula {
     font-size: 11px;
     color: var(--text-muted);
@@ -690,7 +653,6 @@ select.fiz-ctl {
 }
 .fiz-loan-table tfoot td:first-child { font-family: inherit; }
 
-/* ---- Bottom form action bar ---- */
 .fiz-form-actions {
     display: flex;
     justify-content: flex-end;
@@ -701,16 +663,11 @@ select.fiz-ctl {
     border-top: 1px solid var(--border);
 }
 
-/* ---- Dark-mode overrides ---- */
 [data-theme="dark"] .fiz-cell-in:focus,
 [data-theme="dark"] .fiz-cell-sel:focus {
     background: var(--surface);
 }
-/* Yalnızca aktif (disabled olmayan) select'lerde chevron göster.
-   Not: .fiz-ctl:disabled "background" kısa-yazımı background-repeat/position'ı
-   sıfırlar; disabled select'leri kapsamına alırsak chevron tüm kutuya döşenir
-   (dark temada "v v v v" görüntüsü). :not(:disabled) ile bunu engelliyoruz ve
-   repeat/position'ı burada tekrar tanımlayarak konumu garanti altına alıyoruz. */
+
 [data-theme="dark"] select.fiz-ctl:not(:disabled) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2398a4ba' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -724,9 +681,6 @@ select.fiz-ctl {
     background: var(--warning-50);
 }
 
-/* ============================================================
-   Results pane — hesaplama sonuç raporu (Result.cshtml ile aynı)
-   ============================================================ */
 .fiz-results-actions {
     display: flex;
     align-items: center;
@@ -736,12 +690,10 @@ select.fiz-ctl {
 }
 .fiz-results-hint { font-size: 12px; color: var(--text-muted); }
 
-/* Buton yüklenme spinner'ı */
 .fiz-spin { animation: fiz-rotate 0.8s linear infinite; }
 @keyframes fiz-rotate { to { transform: rotate(360deg); } }
 .btn.is-loading { opacity: .8; cursor: progress; pointer-events: none; }
 
-/* KPI kartları */
 .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
 @media(max-width:900px){ .kpi-row{grid-template-columns:repeat(2,1fr);} }
 @media(max-width:500px){ .kpi-row{grid-template-columns:1fr;} }
@@ -760,7 +712,6 @@ select.fiz-ctl {
 .kpi-v.pos { color: var(--success); }
 .kpi-v.neg { color: var(--danger); }
 
-/* Bölüm kartları */
 .res-section { margin-bottom: 20px; }
 .res-card-header { display: flex; align-items: center; gap: 10px; }
 .res-card-header .fiz-ix { background: var(--primary); }
@@ -776,7 +727,6 @@ select.fiz-ctl {
 .res-row .rv.pos { color: var(--success); }
 .res-row .rv.neg { color: var(--danger); }
 
-/* ── Kaydetme yöntemi / versiyon seçim modalı ───────────────────────── */
 .fiz-save-opts { display: flex; flex-direction: column; gap: 10px; }
 .fiz-save-opt {
     display: flex; align-items: flex-start; gap: 12px;
@@ -806,7 +756,6 @@ select.fiz-ctl {
 
 .hat-badge { background: var(--primary-50); color: var(--primary); font-size: .75rem; font-weight: 800; padding: .2rem .65rem; border-radius: 999px; }
 
-/* Aylık gelir/gider dökümü tablosu */
 .mb-table td:first-child,
 .mb-table th:first-child {
     position: sticky;
@@ -822,7 +771,6 @@ select.fiz-ctl {
 .mb-table td, .mb-table th { white-space: nowrap; }
 .mb-year-select { cursor: pointer; }
 
-/* Katlanabilir aylık döküm bloğu */
 details.mb-block > summary { list-style: none; }
 details.mb-block > summary::-webkit-details-marker { display: none; }
 details.mb-block[open] > summary .mb-chevron { transform: rotate(90deg); }

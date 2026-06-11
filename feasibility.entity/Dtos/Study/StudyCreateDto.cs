@@ -14,24 +14,20 @@ public class StudyCreateDto
 
     public FeasibilityKind Kind { get; set; } = FeasibilityKind.Amortization;
 
-    // Kur snapshot
     [Required]
     public decimal UsdRate { get; set; }
 
     [Required]
     public decimal EurRate { get; set; }
 
-    // Enflasyon
     public decimal InflationTl { get; set; }
     public decimal InflationUsd { get; set; }
     public decimal InflationEur { get; set; }
 
-    // Kira
     public bool HasRent { get; set; }
     public decimal MonthlyRent { get; set; }
     public CurrencyType RentCurrency { get; set; } = CurrencyType.TL;
 
-    // İşletme giderleri
     public decimal PostWarrantyMaintenanceCost { get; set; }
     public CurrencyType PostWarrantyMaintenanceCurrency { get; set; } = CurrencyType.TL;
 
@@ -50,7 +46,6 @@ public class StudyCreateDto
     public decimal DeviceUnitCost { get; set; }
     public CurrencyType DeviceUnitCostCurrency { get; set; } = CurrencyType.TL;
 
-    // Kredi
     public bool HasLoan { get; set; }
     public decimal LoanAmount { get; set; }
     public decimal LoanAnnualInterestRate { get; set; }

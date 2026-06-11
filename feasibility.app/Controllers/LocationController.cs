@@ -65,7 +65,6 @@ public class LocationController : Controller
             .Take(PageSize)
             .ToListAsync(ct);
 
-        // Harita sekmesi tüm aktif lokasyonları gösterir (sayfalamadan bağımsız).
         var mapPoints = await _locationService.Query()
             .Where(l => l.Latitude != 0 && l.Longitude != 0)
             .Select(l => new LocationListDto

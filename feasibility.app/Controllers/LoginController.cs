@@ -34,8 +34,6 @@ public class LoginController : Controller
         var result = await _authService.LoginAsync(dto);
         if (!result.Succeeded)
         {
-            // Diğer doğrulama hataları gibi ModelState üzerinden göster: asp-validation-summary
-            // mesajı sayfada kalıcı render eder (alertify toast'una bağımlı kalmaz).
             ModelState.AddModelError(string.Empty, result.Message ?? "Giriş başarısız.");
             TempData["Error"] = result.Message;
             return View(dto);

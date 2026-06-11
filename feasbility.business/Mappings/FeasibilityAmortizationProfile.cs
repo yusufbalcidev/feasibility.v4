@@ -8,7 +8,6 @@ public class FeasibilityAmortizationProfile : Profile
 {
     public FeasibilityAmortizationProfile()
     {
-        // SaveDto → Study (TL shadow fields and navigation ignored; set after map)
         CreateMap<FeasibilityAmortizationSaveDto, Study>()
             .ForMember(d => d.Id,                            o => o.Ignore())
             .ForMember(d => d.Version,                       o => o.Ignore())
@@ -32,7 +31,6 @@ public class FeasibilityAmortizationProfile : Profile
             .ForMember(d => d.DeletedBy,                     o => o.Ignore())
             .ForMember(d => d.DeletedByName,                 o => o.Ignore());
 
-        // SaveDto → DeviceLine (TL shadow field and navigation ignored; set after map)
         CreateMap<DeviceLineSaveDto, DeviceLine>()
             .ForMember(d => d.Id,                    o => o.Ignore())
             .ForMember(d => d.StudyId,               o => o.Ignore())
@@ -50,7 +48,6 @@ public class FeasibilityAmortizationProfile : Profile
             .ForMember(d => d.DeletedBy,             o => o.Ignore())
             .ForMember(d => d.DeletedByName,         o => o.Ignore());
 
-        // SaveDto → YearProjection (all fields 1:1)
         CreateMap<YearProjectionSaveDto, YearProjection>()
             .ForMember(d => d.Id,             o => o.Ignore())
             .ForMember(d => d.DeviceLineId,   o => o.Ignore())

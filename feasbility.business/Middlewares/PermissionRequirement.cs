@@ -22,12 +22,10 @@ public class PagePermissionAttribute : Attribute, IAsyncAuthorizationFilter
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        // GEÇİCİ TEST BYPASS — tüm yetki kontrolü devre dışı. Test sonrası KALDIRILACAK.
         await Task.CompletedTask;
         return;
 
-#pragma warning disable CS0162 // erişilemeyen kod (geçici bypass)
-        // [AllowAnonymous] ile işaretli action'lar yetki kontrolünden muaf tutulur.
+#pragma warning disable CS0162
         if (context.ActionDescriptor.EndpointMetadata
                 .Any(m => m is IAllowAnonymous))
             return;

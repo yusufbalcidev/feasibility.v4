@@ -26,11 +26,6 @@ public class FeasibilityAmortizationDetailDto
     public decimal TotalInvestmentTl { get; set; }
     public decimal TotalInvestmentUsd { get; set; }
 
-    /// <summary>
-    /// Yatırımın özkaynakla finanse edilen (peşin çıkan) kısmı = Toplam − Kredi tutarı (USD).
-    /// Kümülatif nakit akışı (ROİ eğrisi/tablosu) bu negatif değerden başlar; kredi anaparası
-    /// taksitlerle yıllara dağıtıldığından başlangıçta iki kez sayılmaz.
-    /// </summary>
     public decimal EquityInvestmentUsd { get; set; }
 
     public bool HasRent { get; set; }
@@ -52,24 +47,19 @@ public class FeasibilityAmortizationDetailDto
     public decimal PaybackYears { get; set; }
     public decimal RoiPercent { get; set; }
 
-    /// <summary>
-    /// Şarj istasyonu donanımı taşınabilir/tekrar kullanılabilir olduğundan amortismana dahil edilmez.
-    /// Aşağıdaki alanlar yalnızca geri kazanılamayan (lokasyona gömülü) yatırımın amorti süresini özetler.
-    /// </summary>
-    public decimal RecoverableInvestmentUsd { get; set; }   // Şarj istasyonu bedeli (USD) — taşınabilir
-    public decimal SunkInvestmentUsd { get; set; }          // Geri kazanılamayan yatırım (USD) = Toplam − İstasyon
-    public decimal SunkPaybackYears { get; set; }           // Gömülü yatırımın amorti süresi (yıl)
+    public decimal RecoverableInvestmentUsd { get; set; }
+    public decimal SunkInvestmentUsd { get; set; }
+    public decimal SunkPaybackYears { get; set; }
     public List<SunkAmortizationRowDto> SunkAmortization { get; set; } = new();
 }
 
-/// <summary>İstasyon bedeli hariç (gömülü) yatırımın yıl yıl amorti ilerlemesi.</summary>
 public class SunkAmortizationRowDto
 {
     public int Year { get; set; }
-    public decimal NetProfitUsd { get; set; }          // O yıl üretilen net kâr (USD)
-    public decimal RecoveredCumulativeUsd { get; set; } // O yıla kadar toplam geri kazanılan (USD)
-    public decimal RemainingUsd { get; set; }          // Kalan gömülü maliyet (USD), 0'ın altına inmez
-    public bool IsPaybackYear { get; set; }            // Bakiyenin 0'ı geçtiği (amorti olduğu) yıl mı
+    public decimal NetProfitUsd { get; set; }
+    public decimal RecoveredCumulativeUsd { get; set; }
+    public decimal RemainingUsd { get; set; }
+    public bool IsPaybackYear { get; set; }
 }
 
 public class DeviceLineDetailDto
@@ -91,11 +81,9 @@ public class DeviceLineDetailDto
     public decimal AnnualNetMarginTl { get; set; }
     public List<YearProjectionDetailDto> YearProjections { get; set; } = new();
 
-    /// <summary>Cihaz başına, yıl + ay bazında gelir/gider dökümü (Excel benzeri).</summary>
     public List<MonthlyBreakdownYearDto> MonthlyBreakdownYears { get; set; } = new();
 }
 
-/// <summary>Bir istasyon hattının belirli bir yıl için 12 aylık (cihaz başına) gelir/gider dökümü.</summary>
 public class MonthlyBreakdownYearDto
 {
     public int Year { get; set; }
@@ -103,14 +91,13 @@ public class MonthlyBreakdownYearDto
     public List<MonthlyBreakdownRowDto> Months { get; set; } = new();
 }
 
-/// <summary>Cihaz başına tek bir ayın gelir/gider satırı.</summary>
 public class MonthlyBreakdownRowDto
 {
-    public int Month { get; set; }                  // 1-12
+    public int Month { get; set; }
     public int DaysInMonth { get; set; }
     public decimal LostDays { get; set; }
     public decimal NetOperatingDays { get; set; }
-    public decimal SaleKwhPerDevice { get; set; }   // cihaz başına aylık satış kWh
+    public decimal SaleKwhPerDevice { get; set; }
 
     public decimal SalePriceTlPerKwh { get; set; }
     public decimal PurchasePriceTlPerKwh { get; set; }

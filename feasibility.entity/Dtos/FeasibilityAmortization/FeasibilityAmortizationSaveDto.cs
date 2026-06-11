@@ -8,13 +8,8 @@ public class FeasibilityAmortizationSaveDto
     public string FeasibilityName { get; set; } = string.Empty;
     public FeasibilityKind Kind { get; set; } = FeasibilityKind.Amortization;
 
-    /// <summary>
-    /// True ise bu kayıt "yeni versiyon olarak ekle" akışıyla oluşturulur:
-    /// yeni kaydın versiyonu = <see cref="BaseVersion"/> + 1. False ise versiyon 1'dir.
-    /// </summary>
     public bool SaveAsNewVersion { get; set; }
 
-    /// <summary>Yeni versiyon türetilirken kaynak (düzenlenen) kaydın versiyon numarası.</summary>
     public int BaseVersion { get; set; }
 
     public decimal UsdRate { get; set; }
