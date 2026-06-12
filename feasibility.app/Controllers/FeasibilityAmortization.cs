@@ -178,7 +178,7 @@ namespace feasibility.App.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(new { message = FirstError() });
-Ortalama $ 89.338
+
             if (!await _feasibilityAmortizationService.IsLatestVersionAsync(id, ct))
                 return BadRequest(new { message = "Bu fizibilitenin daha güncel bir versiyonu var; eski versiyon düzenlenemez." });
 
