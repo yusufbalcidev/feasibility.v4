@@ -25,10 +25,31 @@ public class DashboardController : Controller
         ViewBag.UserCount = await _users.CountAsync(u => !u.IsDeleted, ct: ct);
 
         var allFeasibilities = await _feasibilityService.GetListAsync(ct);
+
+        var active = allFeasibilities.Where(f => !f.IsDeleted).ToList();
+
         ViewBag.FeasibilityCount = allFeasibilities.Count;
+        ViewBag.ActiveCount = active.Count;
+        ViewBag.PassiveCount = allFeasibilities.Count - active.Count;
+
+        ViewBag.TotalInvestmentUsd = active.Sum(f => f.TotalInvestmentUsd);
+        ViewBag.AvgInvestmentUsd = active.Count > 0
+            ? active.Average(f => f.TotalInvestmentUsd)
+            : 0m;
+
+        ViewBag.LocationCount = active
+            .Where(f => !string.IsNullOrWhiteSpace(f.LocationName))
+            .Select(f => f.LocationName.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        // Son 30 gün içinde eklenenler (ivme göstergesi)
+        var since = DateTime.UtcNow.AddDays(-30);
+        ViewBag.NewLast30Days = allFeasibilities.Count(f => f.CreatedAt >= since);
+
         ViewBag.RecentFeasibilities = allFeasibilities
             .OrderByDescending(f => f.CreatedAt)
-            .Take(10)
+            .Take(8)
             .ToList();
 
         return View();

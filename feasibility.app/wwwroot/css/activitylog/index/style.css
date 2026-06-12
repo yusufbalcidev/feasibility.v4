@@ -1,1 +1,108 @@
+/* ─── Aktivite Logları · Liste ─────────────────────────────── */
 
+.activity-table {
+    font-size: 13px;
+}
+
+.activity-table th.th-center,
+.activity-table td.th-center { text-align: center; }
+
+.activity-table th.th-right,
+.activity-table td.th-right { text-align: right; }
+
+/* İki satırlı hücre düzeni: birincil değer + soluk meta */
+.activity-table .cell-primary {
+    display: block;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+}
+
+.activity-table .cell-meta {
+    display: block;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.3;
+    margin-top: 2px;
+}
+
+.activity-table .cell-date .cell-primary { font-variant-numeric: tabular-nums; }
+.activity-table .cell-date .cell-meta,
+.activity-table .cell-user .cell-meta {
+    font-family: 'Cascadia Mono', Consolas, monospace;
+    letter-spacing: -.2px;
+}
+
+.activity-table .cell-empty { color: var(--text-muted); }
+
+/* HTTP method etiketi */
+.http-tag {
+    display: inline-block;
+    min-width: 42px;
+    padding: 1px 6px;
+    margin-right: 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-align: center;
+    vertical-align: 1px;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+}
+
+.http-get    { background: var(--primary-50);  color: var(--primary); border-color: rgba(0, 62, 122, .18); }
+.http-post   { background: var(--success-50);  color: var(--success); border-color: rgba(15, 157, 88, .22); }
+.http-put,
+.http-patch  { background: var(--warning-50);  color: #a36306;        border-color: rgba(242, 153, 0, .25); }
+.http-delete { background: var(--danger-50);   color: var(--danger);  border-color: rgba(217, 38, 38, .2); }
+
+/* Fizibilite bağlantısı */
+.study-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 180px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-50);
+    border: 1px solid rgba(0, 62, 122, .14);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.study-link:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.study-link .material-symbols-outlined {
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+/* Süre hücresi */
+.cell-duration {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.cell-duration .unit {
+    margin-left: 2px;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+/* Toolbar'daki kayıt rozeti sağa yaslansın */
+.list-toolbar { align-items: center; }
+.list-toolbar .badge { margin-left: auto; white-space: nowrap; }

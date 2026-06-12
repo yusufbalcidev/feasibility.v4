@@ -2,6 +2,42 @@
 @{
     ViewData["Title"] = "Log Detayı";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
+
+    string SayfaAdi(string? controller) => controller switch
+    {
+        "FeasibilityAmortization" => "Fizibilite",
+        "Feasibility"             => "Fizibilite",
+        "Study"                   => "Çalışma",
+        "Location"                => "Lokasyon",
+        "LocationTypeMaintenance" => "Lokasyon Tipi",
+        "User"                    => "Kullanıcı",
+        "Role"                    => "Rol",
+        "Login"                   => "Oturum",
+        "Dashboard"               => "Panel",
+        "ActivityLog"             => "Aktivite Logları",
+        null or ""                => "-",
+        _                         => controller
+    };
+
+    string AksiyonAdi(string? action) => action switch
+    {
+        "Index"          => "Listeleme",
+        "Details" or "View" => "Görüntüleme",
+        "Create"         => "Ekleme",
+        "Edit" or "Update" => "Güncelleme",
+        "Save"           => "Kaydetme",
+        "Delete"         => "Silme",
+        "Restore"        => "Geri Alma",
+        "Calculate" or "CalcTest" => "Hesaplama",
+        "Logout"         => "Çıkış",
+        "ForgotPassword" => "Şifremi Unuttum",
+        "ResetPassword"  => "Şifre Sıfırlama",
+        "VerifyCode"     => "Kod Doğrulama",
+        "ResendCode"     => "Kod Tekrar Gönderme",
+        "AccessDenied"   => "Erişim Reddi",
+        null or ""       => "-",
+        _                => action
+    };
 }
 
 @section Styles {
@@ -12,7 +48,7 @@
 <div class="page-header">
     <div>
         <h1>Log Detayı</h1>
-        <p>@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") · @Model.Controller / @Model.Action</p>
+        <p>@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") · @SayfaAdi(Model.Controller) — @AksiyonAdi(Model.Action)</p>
     </div>
     <div class="header-actions">
         <a asp-action="Index" class="btn btn-secondary">
@@ -49,8 +85,12 @@
             <span class="detail-value">@Model.HttpMethod @Model.Path@Model.QueryString</span>
         </div>
         <div class="detail-item">
-            <span class="detail-label">Sayfa / Aksiyon</span>
-            <span class="detail-value">@(Model.Controller ?? "-") / @(Model.Action ?? "-")</span>
+            <span class="detail-label">Sayfa</span>
+            <span class="detail-value">@SayfaAdi(Model.Controller)</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Aksiyon</span>
+            <span class="detail-value">@AksiyonAdi(Model.Action)</span>
         </div>
         @if (Model.StudyId.HasValue)
         {

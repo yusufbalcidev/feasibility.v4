@@ -263,6 +263,11 @@ body.sidebar-collapsed .layout-main { margin-left: var(--sidebar-mini-width); }
 .table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); background: var(--surface-2); }
 .table tbody tr:hover { background: var(--surface-2); }
 .table .row-actions { display: flex; gap: 12px; align-items: center; }
+.table .text-right, th.text-right, td.text-right { text-align: right; }
+.table .text-center, th.text-center, td.text-center { text-align: center; }
+.mono { font-variant-numeric: tabular-nums; font-family: 'Courier New', monospace; }
+.perm-yes { color: var(--success); font-weight: 700; }
+.perm-no { color: var(--text-muted); }
 .row-action-btn {
     background: transparent;
     border: 0;
@@ -310,6 +315,17 @@ body.sidebar-collapsed .layout-main { margin-left: var(--sidebar-mini-width); }
 .empty-state { text-align: center; padding: 56px 16px; color: var(--text-muted); font-size: 14px; }
 .empty-state .material-symbols-outlined { font-size: 48px; opacity: .35; display: block; margin: 0 auto 8px; }
 
+/* Detay görünümü ortak deseni (Location / User / Role detayları paylaşır) */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+}
+.detail-item { display: flex; flex-direction: column; gap: 4px; }
+.detail-item-full { grid-column: 1 / -1; }
+.detail-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+.detail-value { font-size: 14px; color: var(--text); font-weight: 500; }
+
 .permission-grid { display: grid; gap: 8px; }
 .permission-row {
     display: grid;
@@ -330,6 +346,9 @@ body.sidebar-collapsed .layout-main { margin-left: var(--sidebar-mini-width); }
     letter-spacing: .04em;
     color: var(--text-muted);
 }
+/* Başlıkların ilk kolonu (Sayfa) sola, izin kolonları altındaki ortalı checkbox'larla hizalı kalsın */
+.permission-row.permission-row-head strong { text-align: center; }
+.permission-row.permission-row-head strong:first-child { text-align: left; }
 .permission-row strong { font-size: 13px; font-weight: 600; }
 .permission-label { display: flex; flex-direction: column; gap: 2px; }
 .permission-key { font-size: 11px; color: var(--text-muted); }

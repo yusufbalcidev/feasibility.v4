@@ -58,7 +58,7 @@ namespace feasibility.App.Controllers
         public async Task<IActionResult> Create(CancellationToken ct)
         {
             var formDataTask = _feasibilityAmortizationService.GetCreateFormDataAsync(ct);
-            var infTask      = _feasibilityAmortizationService.GetSonEnflasyonlarAsync(ct);
+            var infTask = _feasibilityAmortizationService.GetSonEnflasyonlarAsync(ct);
 
             await Task.WhenAll(formDataTask, infTask);
 
@@ -68,7 +68,7 @@ namespace feasibility.App.Controllers
                 .ToList();
             ViewBag.FxJson = formData.FxJson;
             var (tl, usd, eur) = infTask.Result;
-            ViewBag.TlInfJson  = tl  is not null ? tl .Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
+            ViewBag.TlInfJson = tl is not null ? tl.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
             ViewBag.UsdInfJson = usd is not null ? usd.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
             ViewBag.EurInfJson = eur is not null ? eur.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
             return View();
@@ -156,7 +156,7 @@ namespace feasibility.App.Controllers
             var formDataTask = _feasibilityAmortizationService.GetCreateFormDataAsync(ct);
             var infTask      = _feasibilityAmortizationService.GetSonEnflasyonlarAsync(ct);
             var detailTask   = _feasibilityAmortizationService.GetDetailAsync(id, ct);
-            await Task.WhenAll(formDataTask, infTask, detailTask);
+            await Task.WhenAll(formDataTask, infTask, detailTask);                      
 
             var formData = formDataTask.Result;
             ViewBag.Locations = formData.Locations

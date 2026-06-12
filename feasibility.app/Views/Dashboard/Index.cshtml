@@ -2,9 +2,22 @@
 @{
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
+
     var recentFeasibilities = ViewBag.RecentFeasibilities as List<FeasibilityAmortizationListDto> ?? new();
+
     int feasibilityCount = ViewBag.FeasibilityCount ?? 0;
+    int activeCount = ViewBag.ActiveCount ?? 0;
+    int passiveCount = ViewBag.PassiveCount ?? 0;
     int userCount = ViewBag.UserCount ?? 0;
+    int locationCount = ViewBag.LocationCount ?? 0;
+    int newLast30 = ViewBag.NewLast30Days ?? 0;
+
+    decimal totalInvestment = ViewBag.TotalInvestmentUsd ?? 0m;
+    decimal avgInvestment = ViewBag.AvgInvestmentUsd ?? 0m;
+
+    var tr = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+
+    string Usd(decimal v) => "$ " + v.ToString("#,##0", tr);
 }
 
 @section Styles {
@@ -14,87 +27,121 @@
 <div class="page-header">
     <div>
         <h1>Dashboard</h1>
-        <p>Sistemdeki genel istatistikler.</p>
+        <p>Sistemin genel görünümü ve son hareketler.</p>
     </div>
+    <a href="/FeasibilityAmortization/Create" class="btn btn-primary">
+        <span class="material-symbols-outlined">add</span> Yeni Fizibilite
+    </a>
 </div>
 
 <div class="dash-stats">
     <a href="/FeasibilityAmortization/Index" class="dash-stat">
         <div class="dash-stat-icon"><span class="material-symbols-outlined">calculate</span></div>
-        <div>
-            <span class="dash-stat-label">Fizibilite</span>
-            <span class="dash-stat-value">@feasibilityCount</span>
+        <div class="dash-stat-body">
+            <span class="dash-stat-label">Toplam Fizibilite</span>
+            <span class="dash-stat-value">@feasibilityCount.ToString("#,##0", tr)</span>
+            <span class="dash-stat-meta">
+                <span class="dot dot-active"></span>@activeCount aktif
+                <span class="dot dot-passive"></span>@passiveCount pasif
+            </span>
         </div>
     </a>
+
+    <div class="dash-stat dash-stat--static">
+        <div class="dash-stat-icon dash-stat-icon--success"><span class="material-symbols-outlined">payments</span></div>
+        <div class="dash-stat-body">
+            <span class="dash-stat-label">Toplam Yatırım</span>
+            <span class="dash-stat-value" title="@Usd(totalInvestment)">@Usd(totalInvestment)</span>
+            <span class="dash-stat-meta">Ortalama @Usd(avgInvestment)</span>
+        </div>
+    </div>
+
+    <div class="dash-stat dash-stat--static">
+        <div class="dash-stat-icon dash-stat-icon--warning"><span class="material-symbols-outlined">distance</span></div>
+        <div class="dash-stat-body">
+            <span class="dash-stat-label">Lokasyon</span>
+            <span class="dash-stat-value">@locationCount.ToString("#,##0", tr)</span>
+            <span class="dash-stat-meta">Son 30 günde @newLast30 yeni kayıt</span>
+        </div>
+    </div>
+
     <a href="/User/Index" class="dash-stat">
-        <div class="dash-stat-icon"><span class="material-symbols-outlined">group</span></div>
-        <div>
+        <div class="dash-stat-icon dash-stat-icon--muted"><span class="material-symbols-outlined">group</span></div>
+        <div class="dash-stat-body">
             <span class="dash-stat-label">Kullanıcı</span>
-            <span class="dash-stat-value">@userCount</span>
-        </div>
-    </a>
-    <a href="/ActivityLog/Index" class="dash-stat">
-        <div class="dash-stat-icon"><span class="material-symbols-outlined">history</span></div>
-        <div>
-            <span class="dash-stat-label">Aktivite Logları</span>
-            <span class="dash-stat-value">Görüntüle</span>
+            <span class="dash-stat-value">@userCount.ToString("#,##0", tr)</span>
+            <span class="dash-stat-meta">Aktif kullanıcılar</span>
         </div>
     </a>
 </div>
 
-<div class="card" style="margin-top:24px;">
+<div class="card dash-recent" style="margin-top:22px;">
     <div class="card-header">
         <h2>Son Eklenen Fizibiliteler</h2>
         <a href="/FeasibilityAmortization/Index" class="btn btn-ghost btn-sm">Tümünü Gör</a>
     </div>
-    <div class="table-wrapper">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Fizibilite Adı</th>
-                    <th>Versiyon</th>
-                    <th>Lokasyon</th>
-                    <th class="text-right">Toplam Yatırım ($)</th>
-                    <th>Durum</th>
-                    <th>Oluşturan</th>
-                    <th>Tarih</th>
-                    <th style="text-align:right;">İşlemler</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!recentFeasibilities.Any())
-                {
-                    <tr><td colspan="8"><div class="empty-state"><span class="material-symbols-outlined">calculate</span>Henüz fizibilite eklenmemiş.</div></td></tr>
-                }
-                @foreach (var item in recentFeasibilities)
-                {
+        <div class="table-wrapper">
+            <table class="table dash-table">
+                <thead>
                     <tr>
-                        <td><strong>@item.FeasibilityName</strong></td>
-                        <td><span class="badge badge-info">v@item.Version</span></td>
-                        <td title="@item.LocationName">@(string.IsNullOrWhiteSpace(item.LocationName) ? "-" : item.LocationName)</td>
-                        <td class="text-right">$ @item.TotalInvestmentUsd.ToString("#,##0", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</td>
-                        <td>
-                            @if (item.IsDeleted)
-                            {
-                                <span class="badge badge-passive">Pasif</span>
-                            }
-                            else
-                            {
-                                <span class="badge badge-active">Aktif</span>
-                            }
-                        </td>
-                        <td>@(item.CreatedByName ?? "-")</td>
-                        <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                        <td>
-                            <div class="row-actions" style="justify-content:flex-end;">
-                                <a href="/FeasibilityAmortization/View/@item.Id" class="row-action-btn">
-                                    <span class="material-symbols-outlined">visibility</span> Görüntüle
-                                </a>
-                            </div>
-                        </td>
+                        <th>Fizibilite</th>
+                        <th>Lokasyon</th>
+                        <th class="text-right">Yatırım ($)</th>
+                        <th>Durum</th>
+                        <th>Tarih</th>
+                        <th></th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @if (!recentFeasibilities.Any())
+                    {
+                        <tr><td colspan="6"><div class="empty-state"><span class="material-symbols-outlined">calculate</span>Henüz fizibilite eklenmemiş.</div></td></tr>
+                    }
+                    @foreach (var item in recentFeasibilities)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/FeasibilityAmortization/View/@item.Id" class="dash-feas-name">
+                                    <span class="dash-feas-title">@item.FeasibilityName</span>
+                                    <span class="dash-feas-sub">
+                                        <span class="badge badge-info">v@(item.Version)</span>
+                                        @if (item.CreatedByName is not null)
+                                        {
+                                            <span class="dash-feas-author">@item.CreatedByName</span>
+                                        }
+                                    </span>
+                                </a>
+                            </td>
+                            <td title="@item.LocationName">
+                                @if (string.IsNullOrWhiteSpace(item.LocationName))
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                                else
+                                {
+                                    <span class="dash-loc"><span class="material-symbols-outlined">location_on</span>@item.LocationName</span>
+                                }
+                            </td>
+                            <td class="text-right mono">$ @item.TotalInvestmentUsd.ToString("#,##0", tr)</td>
+                            <td>
+                                @if (item.IsDeleted)
+                                {
+                                    <span class="badge badge-passive">Pasif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-active">Aktif</span>
+                                }
+                            </td>
+                            <td class="text-muted dash-date">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                            <td class="text-right">
+                                <a href="/FeasibilityAmortization/View/@item.Id" class="row-action-btn" title="Görüntüle">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>

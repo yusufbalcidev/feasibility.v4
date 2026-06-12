@@ -6,7 +6,6 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/role/details/style.css" />
-    <link rel="stylesheet" href="~/css/location/details/style.css" />
 }
 
 <div class="page-header">
@@ -55,10 +54,10 @@
             <thead>
                 <tr>
                     <th>Sayfa</th>
-                    <th>Görüntüle</th>
-                    <th>Ekle</th>
-                    <th>Düzenle</th>
-                    <th>Sil</th>
+                    <th class="text-center">Görüntüle</th>
+                    <th class="text-center">Ekle</th>
+                    <th class="text-center">Düzenle</th>
+                    <th class="text-center">Sil</th>
                 </tr>
             </thead>
             <tbody>
@@ -66,10 +65,10 @@
                 {
                     <tr>
                         <td><strong>@p.PageName</strong></td>
-                        <td>@(p.CanView ? "✔" : "—")</td>
-                        <td>@(p.CanCreate ? "✔" : "—")</td>
-                        <td>@(p.CanEdit ? "✔" : "—")</td>
-                        <td>@(p.CanDelete ? "✔" : "—")</td>
+                        <td class="text-center">@if (p.CanView) { <span class="perm-yes" title="Var">✔</span> } else { <span class="perm-no" title="Yok">—</span> }</td>
+                        <td class="text-center">@if (p.CanCreate) { <span class="perm-yes" title="Var">✔</span> } else { <span class="perm-no" title="Yok">—</span> }</td>
+                        <td class="text-center">@if (p.CanEdit) { <span class="perm-yes" title="Var">✔</span> } else { <span class="perm-no" title="Yok">—</span> }</td>
+                        <td class="text-center">@if (p.CanDelete) { <span class="perm-yes" title="Var">✔</span> } else { <span class="perm-no" title="Yok">—</span> }</td>
                     </tr>
                 }
             </tbody>

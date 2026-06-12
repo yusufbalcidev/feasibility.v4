@@ -112,6 +112,15 @@
 .res-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 @media(max-width:700px){ .res-summary-grid { grid-template-columns: 1fr; } }
 
+/* Hat kartı başlığı: "04" kutusu ve "AC" rozeti, başlık satırının (h2) ortasına
+   hizalansın; alt özet satırı ("Hat yatırımı...") ikinci satır olarak akar.
+   Metin bloğu iki satır olduğu için varsayılan dikey-ortalama "04"ü aşağı kaydırıyordu. */
+.res-section .fiz-card-header { align-items: flex-start; }
+.res-section .fiz-card-header > div:nth-child(2) { min-width: 0; }
+.res-section .fiz-card-header h2 { flex-wrap: wrap; min-height: 28px; }
+.res-section .fiz-card-header h2 .hat-badge { align-self: center; }
+.res-section .fiz-ix { align-self: flex-start; }
+
 .res-section .fiz-ix {
     background: var(--surface-2) !important;
     color: var(--primary) !important;

@@ -39,6 +39,12 @@ public class FeasibilityAmortizationDetailDto
     public int LoanTermMonths { get; set; }
     public decimal AnnualLoanPaymentTl { get; set; }
 
+    public decimal LoanTotalInterestTl { get; set; }
+    public decimal LoanTotalBsmTl { get; set; }
+    public decimal LoanTotalRepaymentTl { get; set; }
+    public decimal LoanMonthlyPaymentTl { get; set; }
+    public List<LoanScheduleRowDto> LoanSchedule { get; set; } = new();
+
     public List<DeviceLineDetailDto> DeviceLines { get; set; } = new();
     public List<YearSummaryDto> YearSummaries { get; set; } = new();
 
@@ -51,6 +57,17 @@ public class FeasibilityAmortizationDetailDto
     public decimal SunkInvestmentUsd { get; set; }
     public decimal SunkPaybackYears { get; set; }
     public List<SunkAmortizationRowDto> SunkAmortization { get; set; } = new();
+}
+
+
+public class LoanScheduleRowDto
+{
+    public int Month { get; set; }
+    public decimal PrincipalTl { get; set; }
+    public decimal InterestTl { get; set; }
+    public decimal BsmTl { get; set; }
+    public decimal InstallmentTl { get; set; }
+    public decimal RemainingPrincipalTl { get; set; }
 }
 
 public class SunkAmortizationRowDto

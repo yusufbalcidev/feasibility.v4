@@ -7,15 +7,15 @@
         faizOran:       { min: 0,    max: 100,         label: 'Yıllık faiz oranı',       unit: '%' },
         enflasyon:      { min: 0,    max: 100,         label: 'Enflasyon',               unit: '%' },
         zam:            { min: 0,    max: 100,         label: 'Otomatik zam',            unit: '%' },
-        kur:            { min: 0,    max: 10000,       label: 'Döviz kuru',              unit: '', exclusiveMin: true },
-        tutar:          { min: 0,    max: 999999999,   label: 'Tutar',                   unit: '' },
-        fiyat:          { min: 0,    max: 999999999,   label: 'Fiyat',                   unit: '', exclusiveMin: true },
-        adet:           { min: 1,    max: 9999,        label: 'Adet',                    unit: '', integer: true },
-        soket:          { min: 1,    max: 9999,        label: 'Soket adeti',             unit: '', integer: true },
+        kur:            { min: 0,    max: 500,         label: 'Döviz kuru',              unit: '', exclusiveMin: true },
+        tutar:          { min: 0,    max: 100000000,   label: 'Tutar',                   unit: '' },
+        fiyat:          { min: 0,    max: 1000,        label: 'Birim fiyat (TL/kWh)',    unit: '', exclusiveMin: true },
+        adet:           { min: 1,    max: 1000,        label: 'Adet',                    unit: '', integer: true },
+        soket:          { min: 1,    max: 1000,        label: 'Soket adeti',             unit: '', integer: true },
         sozlesmeAy:     { min: 1,    max: 600,         label: 'Sözleşme süresi',         unit: 'ay', integer: true },
         vadeAy:         { min: 1,    max: 600,         label: 'Vade',                    unit: 'ay', integer: true },
-        gunlukSarj:     { min: 0,    max: 1000,        label: 'Günlük soket başı şarjlanma', unit: '', exclusiveMin: true },
-        ortKwh:         { min: 0,    max: 100000,      label: 'Ortalama şarjlanma (kWh)',    unit: '', exclusiveMin: true }
+        gunlukSarj:     { min: 0,    max: 50,          label: 'Günlük soket başı şarjlanma', unit: '', exclusiveMin: true },
+        ortKwh:         { min: 0,    max: 500,         label: 'Ortalama şarjlanma (kWh)',    unit: '', exclusiveMin: true }
     };
 
     function fmtLimit(n) {

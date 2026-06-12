@@ -5,8 +5,8 @@ namespace feasibility.Business.Validators;
 
 public class FeasibilityAmortizationSaveDtoValidator : AbstractValidator<FeasibilityAmortizationSaveDto>
 {
-    private const decimal MaxAmount = 999_999_999m;
-    private const decimal MaxRate = 10_000m;
+    private const decimal MaxAmount = 100_000_000m;
+    private const decimal MaxRate = 500m;
 
     public FeasibilityAmortizationSaveDtoValidator()
     {
@@ -77,30 +77,61 @@ public class FeasibilityAmortizationSaveDtoValidator : AbstractValidator<Feasibi
 
 public class DeviceLineSaveDtoValidator : AbstractValidator<DeviceLineSaveDto>
 {
-    private const decimal MaxAmount = 999_999_999m;
+    private const decimal MaxAmount = 100_000_000m;
+    private const decimal MaxUnitPrice = 1_000m;
 
     public DeviceLineSaveDtoValidator()
     {
         RuleFor(x => x.DeviceCount)
-            .InclusiveBetween(1, 9999).WithMessage("İstasyon adeti 1 ile 9999 arasında olmalıdır.");
+            .InclusiveBetween(1, 1000).WithMessage("İstasyon adeti 1 ile 1.000 arasında olmalıdır.");
         RuleFor(x => x.SocketCount)
-            .InclusiveBetween(1, 9999).WithMessage("Soket adeti 1 ile 9999 arasında olmalıdır.");
+            .InclusiveBetween(1, 1000).WithMessage("Soket adeti 1 ile 1.000 arasında olmalıdır.");
         RuleFor(x => x.DailyChargesPerSocket)
             .GreaterThan(0m).WithMessage("Günlük soket başı şarjlanma 0'dan büyük olmalıdır.")
-            .LessThanOrEqualTo(1000m).WithMessage("Günlük soket başı şarjlanma en fazla 1000 olabilir.");
+            .LessThanOrEqualTo(50m).WithMessage("Günlük soket başı şarjlanma en fazla 50 olabilir.");
         RuleFor(x => x.AvgKwh)
             .GreaterThan(0m).WithMessage("Ortalama şarjlanma (kWh) 0'dan büyük olmalıdır.")
-            .LessThanOrEqualTo(100000m).WithMessage("Ortalama şarjlanma (kWh) en fazla 100.000 olabilir.");
+            .LessThanOrEqualTo(500m).WithMessage("Ortalama şarjlanma (kWh) en fazla 500 olabilir.");
         RuleFor(x => x.SalePriceTl)
             .GreaterThan(0m).WithMessage("Satış fiyatı 0'dan büyük olmalıdır.")
-            .LessThanOrEqualTo(MaxAmount).WithMessage("Satış fiyatı geçerli aralıkta olmalıdır.");
+            .LessThanOrEqualTo(MaxUnitPrice).WithMessage($"Satış fiyatı en fazla {MaxUnitPrice:N0} TL/kWh olabilir.");
         RuleFor(x => x.PurchasePriceTl)
             .GreaterThan(0m).WithMessage("Alış fiyatı 0'dan büyük olmalıdır.")
-            .LessThanOrEqualTo(MaxAmount).WithMessage("Alış fiyatı geçerli aralıkta olmalıdır.");
+            .LessThanOrEqualTo(MaxUnitPrice).WithMessage($"Alış fiyatı en fazla {MaxUnitPrice:N0} TL/kWh olabilir.");
+        RuleFor(x => x)
+            .Must(x => x.PurchasePriceTl <= x.SalePriceTl)
+            .WithMessage("Alış fiyatı, satış fiyatından yüksek olamaz.")
+            .WithName(nameof(DeviceLineSaveDto.PurchasePriceTl));
         RuleFor(x => x.UnitLocationCost)
-            .InclusiveBetween(0m, MaxAmount).WithMessage("İstasyon bedeli geçerli aralıkta olmalıdır.");
+            .InclusiveBetween(0m, MaxAmount).WithMessage($"İstasyon bedeli 0 ile {MaxAmount:N0} arasında olmalıdır.");
 
         RuleFor(x => x.AgreementRate)
             .InclusiveBetween(0m, 0.99m).WithMessage("Sözleşme komisyon oranı %0 ile %99 arasında olmalıdır.");
+
+        RuleForEach(x => x.YearProjections).SetValidator(new YearProjectionSaveDtoValidator());
+    }
+}
+
+public class YearProjectionSaveDtoValidator : AbstractValidator<YearProjectionSaveDto>
+{
+    private const decimal MaxUnitPrice = 1_000m;
+    private const decimal MaxRate = 500m;
+
+    public YearProjectionSaveDtoValidator()
+    {
+        RuleFor(x => x.Year)
+            .InclusiveBetween(2000, 2100).WithMessage("Projeksiyon yılı 2000 ile 2100 arasında olmalıdır.");
+        RuleFor(x => x.DailyChargePerSocket)
+            .InclusiveBetween(0m, 50m).WithMessage("Günlük soket başı şarjlanma 0 ile 50 arasında olmalıdır.");
+        RuleFor(x => x.SalePriceH1)
+            .InclusiveBetween(0m, MaxUnitPrice).WithMessage($"Satış fiyatı (Ocak) en fazla {MaxUnitPrice:N0} TL/kWh olabilir.");
+        RuleFor(x => x.SalePriceH2)
+            .InclusiveBetween(0m, MaxUnitPrice).WithMessage($"Satış fiyatı (Haziran) en fazla {MaxUnitPrice:N0} TL/kWh olabilir.");
+        RuleFor(x => x.PurchasePriceH1)
+            .InclusiveBetween(0m, MaxUnitPrice).WithMessage($"Alış fiyatı (Ocak) en fazla {MaxUnitPrice:N0} TL/kWh olabilir.");
+        RuleFor(x => x.PurchasePriceH2)
+            .InclusiveBetween(0m, MaxUnitPrice).WithMessage($"Alış fiyatı (Haziran) en fazla {MaxUnitPrice:N0} TL/kWh olabilir.");
+        RuleFor(x => x.UsdRate)
+            .InclusiveBetween(0m, MaxRate).WithMessage($"USD kuru 0 ile {MaxRate:N0} arasında olmalıdır.");
     }
 }

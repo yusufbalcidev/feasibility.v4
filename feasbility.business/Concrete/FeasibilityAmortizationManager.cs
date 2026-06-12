@@ -206,14 +206,36 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
         bool   hasLoan          = s.HasLoan && s.LoanAmount > 0 && s.LoanTermMonths > 0;
         decimal monthlyLoanPayment = 0, annualLoanPayment = 0;
+        decimal loanTotalInterest = 0, loanTotalBsm = 0, loanTotalRepay = 0;
+        var loanSchedule = new List<LoanScheduleRowDto>();
         if (hasLoan)
         {
             var loanDays      = s.LoanTermMonths * 30m;
-            var totalInterest = s.LoanAmount * s.LoanAnnualInterestRate * loanDays / 36000m;
-            var totalBsm      = totalInterest * 0.05m;
-            var totalRepay    = s.LoanAmount + totalInterest + totalBsm;
-            monthlyLoanPayment = totalRepay / s.LoanTermMonths;
+            loanTotalInterest = s.LoanAmount * s.LoanAnnualInterestRate * loanDays / 36000m;
+            loanTotalBsm      = loanTotalInterest * 0.05m;
+            loanTotalRepay    = s.LoanAmount + loanTotalInterest + loanTotalBsm;
+            monthlyLoanPayment = loanTotalRepay / s.LoanTermMonths;
             annualLoanPayment  = monthlyLoanPayment * Math.Min(12, s.LoanTermMonths);
+
+            var principalPerMonth = s.LoanAmount / s.LoanTermMonths;
+            var interestPerMonth  = loanTotalInterest / s.LoanTermMonths;
+            var bsmPerMonth       = loanTotalBsm / s.LoanTermMonths;
+            var installmentMonth  = principalPerMonth + interestPerMonth + bsmPerMonth;
+            var remaining         = s.LoanAmount;
+            for (int m = 1; m <= s.LoanTermMonths; m++)
+            {
+                remaining -= principalPerMonth;
+                if (remaining < 0.005m) remaining = 0m;
+                loanSchedule.Add(new LoanScheduleRowDto
+                {
+                    Month                = m,
+                    PrincipalTl          = principalPerMonth,
+                    InterestTl           = interestPerMonth,
+                    BsmTl                = bsmPerMonth,
+                    InstallmentTl        = installmentMonth,
+                    RemainingPrincipalTl = remaining,
+                });
+            }
         }
 
         const decimal h1Days = 151m;
@@ -285,6 +307,11 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                     };
                 }).ToList();
 
+            // Kredi taksidi, hattın yatırım büyüklüğü oranında dağıtılır (pahalı DC daha çok taşır;
+            // cihaz adedine eşit bölünmez). Bu pay aylık brüt kârdan düşülür; toplam net kâr/ROI değişmez.
+            var lineLoanWeight = hasLoan && deviceTl > 0 ? lineInvestment / deviceTl : 0m;
+            var lineMonthlyLoanShare = monthlyLoanPayment * lineLoanWeight;
+
             var monthlyYears = d.YearProjections
                 .Where(y => !y.IsDeleted)
                 .OrderBy(y => y.Year)
@@ -292,6 +319,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 {
                     var yUsd = ProjectedUsdRate(y.Year);
                     var (mDaily, mSH1, mSH2, mPH1, mPH2) = EffectivePrices(d, y);
+                    var yearOffset = baseProjYear > 0 ? y.Year - baseProjYear : 0;
                     var rows = new List<MonthlyBreakdownRowDto>();
                     for (int m = 1; m <= 12; m++)
                     {
@@ -310,7 +338,11 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                             ? d.AgreementRate * revTl
                             : d.AgreementRate * gmTl;
                         var rentTl     = monthlyRentPerDevice;
-                        var grossTl    = revTl - commTl - rentTl - elecTl;
+                        // Kredi yalnızca vade süresince ödenir; global ay indeksi vade içindeyse hattın payı düşülür.
+                        var globalMonthIndex = yearOffset >= 0 ? yearOffset * 12 + m : -1;
+                        var loanTl     = (hasLoan && globalMonthIndex >= 1 && globalMonthIndex <= s.LoanTermMonths)
+                            ? lineMonthlyLoanShare : 0m;
+                        var grossTl    = revTl - commTl - rentTl - elecTl - loanTl;
 
                         decimal toUsd(decimal tl) => yUsd > 0 ? tl / yUsd : 0m;
 
@@ -518,6 +550,11 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             LoanAnnualInterestRate     = s.LoanAnnualInterestRate,
             LoanTermMonths             = s.LoanTermMonths,
             AnnualLoanPaymentTl        = annualLoanPayment,
+            LoanTotalInterestTl        = loanTotalInterest,
+            LoanTotalBsmTl             = loanTotalBsm,
+            LoanTotalRepaymentTl       = loanTotalRepay,
+            LoanMonthlyPaymentTl       = monthlyLoanPayment,
+            LoanSchedule               = loanSchedule,
             DeviceLines                = linesDtos,
             YearSummaries              = yearSummaries,
             AnnualNetProfitTl          = Math.Round(annualNetTl,  0),

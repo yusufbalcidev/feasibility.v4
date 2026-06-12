@@ -2,6 +2,44 @@
 @{
     ViewData["Title"] = "Aktivite Logları";
     Layout = "~/Views/Shared/_BaseLayout.cshtml";
+
+    // Controller adını okunabilir Türkçe modül adına çevirir.
+    string SayfaAdi(string? controller) => controller switch
+    {
+        "FeasibilityAmortization" => "Fizibilite",
+        "Feasibility"             => "Fizibilite",
+        "Study"                   => "Çalışma",
+        "Location"                => "Lokasyon",
+        "LocationTypeMaintenance" => "Lokasyon Tipi",
+        "User"                    => "Kullanıcı",
+        "Role"                    => "Rol",
+        "Login"                   => "Oturum",
+        "Dashboard"               => "Panel",
+        "ActivityLog"             => "Aktivite Logları",
+        null or ""                => "-",
+        _                         => controller
+    };
+
+    // Controller action adını okunabilir Türkçe aksiyona çevirir.
+    string AksiyonAdi(string? action) => action switch
+    {
+        "Index"          => "Listeleme",
+        "Details" or "View" => "Görüntüleme",
+        "Create"         => "Ekleme",
+        "Edit" or "Update" => "Güncelleme",
+        "Save"           => "Kaydetme",
+        "Delete"         => "Silme",
+        "Restore"        => "Geri Alma",
+        "Calculate" or "CalcTest" => "Hesaplama",
+        "Logout"         => "Çıkış",
+        "ForgotPassword" => "Şifremi Unuttum",
+        "ResetPassword"  => "Şifre Sıfırlama",
+        "VerifyCode"     => "Kod Doğrulama",
+        "ResendCode"     => "Kod Tekrar Gönderme",
+        "AccessDenied"   => "Erişim Reddi",
+        null or ""       => "-",
+        _                => action
+    };
 }
 
 @section Styles {
@@ -16,71 +54,76 @@
 </div>
 
 <div class="card">
-    <div class="card-header">
-        <h2>İşlem Kayıtları</h2>
-        <span class="badge badge-info">@Model.TotalCount kayıt (son 500 içinden)</span>
-    </div>
     <div class="card-header list-toolbar">
         @await Html.PartialAsync("_SearchBar", Model.Search, new ViewDataDictionary(ViewData) { { "Placeholder", "Kullanıcı, sayfa, IP veya tip ara..." } })
+        <span class="badge badge-info">@Model.TotalCount kayıt (son 500 içinden)</span>
     </div>
     <div class="table-wrapper">
-        <table class="table">
+        <table class="table activity-table">
             <thead>
                 <tr>
-                    <th>Tarih</th>
+                    <th>Tarih &amp; Saat</th>
                     <th>Kullanıcı</th>
-                    <th>IP</th>
-                    <th>Method</th>
-                    <th>Sayfa</th>
-                    <th>Aksiyon</th>
+                    <th>İşlem</th>
                     <th>Fizibilite</th>
-                    <th>Tip</th>
-                    <th>Durum</th>
-                    <th>Süre</th>
-                    <th style="text-align:right;">İşlem</th>
+                    <th>Tür</th>
+                    <th class="th-center">Durum</th>
+                    <th class="th-center">Süre</th>
+                    <th class="th-right">İşlem</th>
                 </tr>
             </thead>
             <tbody>
                 @if (!Model.Items.Any())
                 {
-                    <tr><td colspan="11"><div class="empty-state"><span class="material-symbols-outlined">history</span>@(string.IsNullOrWhiteSpace(Model.Search) ? "Henüz kayıt bulunmuyor." : $"\"{Model.Search}\" için sonuç bulunamadı.")</div></td></tr>
+                    <tr><td colspan="8"><div class="empty-state"><span class="material-symbols-outlined">history</span>@(string.IsNullOrWhiteSpace(Model.Search) ? "Henüz kayıt bulunmuyor." : $"\"{Model.Search}\" için sonuç bulunamadı.")</div></td></tr>
                 }
                 @foreach (var log in Model.Items)
                 {
+                    var local = log.CreatedAt.ToLocalTime();
                     <tr>
-                        <td>@log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td>
-                        <td>@(string.IsNullOrEmpty(log.UserName) ? "<anonim>" : log.UserName)</td>
-                        <td>@(log.IpAddress ?? "-")</td>
-                        <td><span class="badge badge-warning">@log.HttpMethod</span></td>
-                        <td>@(log.Controller ?? "-")</td>
-                        <td>@(log.Action ?? "-")</td>
+                        <td class="cell-date">
+                            <span class="cell-primary">@local.ToString("dd.MM.yyyy")</span>
+                            <span class="cell-meta">@local.ToString("HH:mm:ss")</span>
+                        </td>
+                        <td class="cell-user">
+                            <span class="cell-primary">@(string.IsNullOrEmpty(log.UserName) ? "Anonim" : log.UserName)</span>
+                            <span class="cell-meta">@(log.IpAddress ?? "-")</span>
+                        </td>
+                        <td class="cell-op">
+                            <span class="cell-primary">
+                                <span class="http-tag http-@log.HttpMethod.ToLowerInvariant()">@log.HttpMethod</span>
+                                @AksiyonAdi(log.Action)
+                            </span>
+                            <span class="cell-meta">@SayfaAdi(log.Controller)</span>
+                        </td>
                         <td>
                             @if (log.StudyId.HasValue)
                             {
-                                <a href="/FeasibilityAmortization/View/@log.StudyId" class="row-action-btn" style="font-size:12px;">
+                                <a href="/FeasibilityAmortization/View/@log.StudyId" class="study-link">
+                                    <span class="material-symbols-outlined">calculate</span>
                                     @(string.IsNullOrEmpty(log.StudyName) ? log.StudyId.Value.ToString()[..8] + "…" : log.StudyName)
                                 </a>
                             }
-                            else { <span style="color:var(--text-muted);">-</span> }
+                            else { <span class="cell-empty">—</span> }
                         </td>
                         <td>
                             @{
                                 var (actionLabel, actionBadgeClass) = log.ActionType switch
                                 {
-                                    "Create"        => ("Ekledi",      "badge-active"),
-                                    "Update"        => ("Güncelledi",  "badge-info"),
-                                    "Delete"        => ("Sildi",       "badge-passive"),
-                                    "Login"         => ("Giriş Yaptı","badge-active"),
-                                    "Logout"        => ("Çıkış Yaptı","badge-info"),
-                                    "LoginFailed"   => ("Giriş Başarısız","badge-warning"),
-                                    "PasswordReset" => ("Şifre Sıfırladı","badge-info"),
-                                    "Error"         => ("Hata",        "badge-passive"),
-                                    _               => (log.ActionType,"badge-info")
+                                    "Create"        => ("Ekledi",          "badge-active"),
+                                    "Update"        => ("Güncelledi",      "badge-info"),
+                                    "Delete"        => ("Sildi",           "badge-passive"),
+                                    "Login"         => ("Giriş Yaptı",     "badge-active"),
+                                    "Logout"        => ("Çıkış Yaptı",     "badge-info"),
+                                    "LoginFailed"   => ("Giriş Başarısız", "badge-warning"),
+                                    "PasswordReset" => ("Şifre Sıfırladı", "badge-info"),
+                                    "Error"         => ("Hata",            "badge-passive"),
+                                    _               => (log.ActionType,    "badge-info")
                                 };
                             }
                             <span class="badge @actionBadgeClass">@actionLabel</span>
                         </td>
-                        <td>
+                        <td class="th-center">
                             @{
                                 var statusClass = log.StatusCode switch
                                 {
@@ -92,8 +135,8 @@
                             }
                             <span class="badge @statusClass">@log.StatusCode</span>
                         </td>
-                        <td>@log.ElapsedMs ms</td>
-                        <td style="text-align:right;">
+                        <td class="th-center cell-duration">@log.ElapsedMs<span class="unit">ms</span></td>
+                        <td class="th-right">
                             <a asp-action="Details" asp-route-id="@log.Id" class="row-action-btn">
                                 <span class="material-symbols-outlined">visibility</span> Görüntüle
                             </a>
