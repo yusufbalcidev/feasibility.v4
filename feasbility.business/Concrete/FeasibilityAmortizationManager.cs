@@ -448,7 +448,10 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             prevCum = ys.CumulativeBalanceUsd;
         }
 
-        var stationUsd      = s.UsdRate > 0 ? Math.Round(s.StationUnitCostTl / s.UsdRate, 0) : 0m;
+        // Taşınabilir / geri kazanılabilir şarj istasyonu donanımı: hem üst formdaki tek seferlik
+        // "İstasyon Birim Bedeli" hem de cihaz satırlarında girilen istasyon bedelleri (UnitLocationCost × adet).
+        var stationTl       = s.StationUnitCostTl + deviceTl;
+        var stationUsd      = s.UsdRate > 0 ? Math.Round(stationTl / s.UsdRate, 0) : 0m;
         var sunkUsd         = Math.Round(totalUsd, 0) - stationUsd;
         if (sunkUsd < 0) sunkUsd = 0m;
 
