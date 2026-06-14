@@ -12,12 +12,7 @@
     int locationCount = ViewBag.LocationCount ?? 0;
     int newLast30 = ViewBag.NewLast30Days ?? 0;
 
-    decimal totalInvestment = ViewBag.TotalInvestmentUsd ?? 0m;
-    decimal avgInvestment = ViewBag.AvgInvestmentUsd ?? 0m;
-
     var tr = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
-
-    string Usd(decimal v) => "$ " + v.ToString("#,##0", tr);
 }
 
 @section Styles {
@@ -47,13 +42,14 @@
         </div>
     </a>
 
-    <div class="dash-stat dash-stat--static">
-        <div class="dash-stat-icon dash-stat-icon--success"><span class="material-symbols-outlined">payments</span></div>
+    <a href="/ActivityLog/Index" class="dash-stat">
+        <div class="dash-stat-icon dash-stat-icon--success"><span class="material-symbols-outlined">history</span></div>
         <div class="dash-stat-body">
-            <span class="dash-stat-label">Toplam Yatırım</span>
-            <span class="dash-stat-value" title="@Usd(totalInvestment)">@Usd(totalInvestment)</span>
+            <span class="dash-stat-label">Aktivite Log</span>
+            <span class="dash-stat-value">Görüntüle</span>
+            <span class="dash-stat-meta">Sistem hareketleri</span>
         </div>
-    </div>
+    </a>
 
     <div class="dash-stat dash-stat--static">
         <div class="dash-stat-icon dash-stat-icon--warning"><span class="material-symbols-outlined">distance</span></div>

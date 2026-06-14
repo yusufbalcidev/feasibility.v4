@@ -32,11 +32,6 @@ public class DashboardController : Controller
         ViewBag.ActiveCount = active.Count;
         ViewBag.PassiveCount = allFeasibilities.Count - active.Count;
 
-        ViewBag.TotalInvestmentUsd = active.Sum(f => f.TotalInvestmentUsd);
-        ViewBag.AvgInvestmentUsd = active.Count > 0
-            ? active.Average(f => f.TotalInvestmentUsd)
-            : 0m;
-
         ViewBag.LocationCount = active
             .Where(f => !string.IsNullOrWhiteSpace(f.LocationName))
             .Select(f => f.LocationName.Trim())

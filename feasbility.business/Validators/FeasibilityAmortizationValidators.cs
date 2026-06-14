@@ -109,6 +109,18 @@ public class DeviceLineSaveDtoValidator : AbstractValidator<DeviceLineSaveDto>
             .InclusiveBetween(0m, 0.99m).WithMessage("Sözleşme komisyon oranı %0 ile %99 arasında olmalıdır.");
 
         RuleForEach(x => x.YearProjections).SetValidator(new YearProjectionSaveDtoValidator());
+        RuleFor(x => x)
+            .Must(x => x.YearProjections.All(p =>
+                (p.PurchasePriceH1 > 0 ? p.PurchasePriceH1 : x.PurchasePriceTl)
+                <= (p.SalePriceH1 > 0 ? p.SalePriceH1 : x.SalePriceTl)))
+            .WithMessage("Yıllık Ocak alış fiyatı, etkin Ocak satış fiyatından yüksek olamaz.")
+            .WithName(nameof(DeviceLineSaveDto.YearProjections));
+        RuleFor(x => x)
+            .Must(x => x.YearProjections.All(p =>
+                (p.PurchasePriceH2 > 0 ? p.PurchasePriceH2 : x.PurchasePriceTl)
+                <= (p.SalePriceH2 > 0 ? p.SalePriceH2 : x.SalePriceTl)))
+            .WithMessage("Yıllık Haziran alış fiyatı, etkin Haziran satış fiyatından yüksek olamaz.")
+            .WithName(nameof(DeviceLineSaveDto.YearProjections));
     }
 }
 

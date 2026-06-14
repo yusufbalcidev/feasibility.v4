@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using feasibility.DataAccess.Context;
 
@@ -11,9 +12,11 @@ using feasibility.DataAccess.Context;
 namespace feasibility.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260614131826_AddPricingFeasibility")]
+    partial class AddPricingFeasibility
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -906,6 +909,9 @@ namespace feasibility.DataAccess.Migrations
                     b.Property<int>("Kind")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -928,6 +934,8 @@ namespace feasibility.DataAccess.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
 
                     b.ToTable("PricingStudies", (string)null);
                 });
@@ -1525,6 +1533,17 @@ namespace feasibility.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("PricingStudy");
+                });
+
+            modelBuilder.Entity("feasibility.Entity.Entities.FeasibilityPricing.PricingStudy", b =>
+                {
+                    b.HasOne("feasibility.Entity.Entities.Locations.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Location");
                 });
 
             modelBuilder.Entity("feasibility.Entity.Entities.Locations.Location", b =>

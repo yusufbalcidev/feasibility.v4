@@ -1,0 +1,128 @@
+@model PagedResult<FeasibilityPricingListDto>
+@{
+    ViewData["Title"] = "Tarife Fizibiliteleri";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/feasibility/amortization/index/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <div class="crumb">Fizibiliteler &middot; <strong>Tarife</strong></div>
+        <h1>Tarife Fizibiliteleri</h1>
+    </div>
+    <div class="header-actions">
+        <a href="/Feasibility/Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        <a href="/FeasibilityPricing/Create" class="btn btn-primary">
+            <span class="material-symbols-outlined">add_chart</span> Fizibilite Ekle
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header list-toolbar">
+        @await Html.PartialAsync("_SearchBar", Model.Search, new ViewDataDictionary(ViewData) { { "Placeholder", "Ad veya istasyon türü ara..." } })
+        <span class="badge badge-info">@Model.TotalCount kayıt</span>
+    </div>
+
+    <div>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Fizibilite Adı</th>
+                        <th>Versiyon</th>
+                        <th>İstasyon Türleri</th>
+                        <th>Durum</th>
+                        <th>Oluşturan</th>
+                        <th>Tarih</th>
+                        <th style="text-align:right;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="listBody">
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <span class="material-symbols-outlined">ev_station</span>
+                                    @(string.IsNullOrWhiteSpace(Model.Search)
+                                        ? "Henüz fizibilite eklenmemiş. \"Fizibilite Ekle\" butonuna tıklayarak başlayın."
+                                        : $"\"{Model.Search}\" için sonuç bulunamadı.")
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model.Items)
+                        {
+                            <tr>
+                                <td><strong>@row.FeasibilityName</strong></td>
+                                <td><span class="version-tag">v@(row.Version)</span></td>
+                                <td>
+                                    @foreach (var t in row.DeviceTypes)
+                                    {
+                                        <span class="type-badge type-@t.ToLower()">@t</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (row.IsDeleted)
+                                    {
+                                        <span class="badge badge-passive">Pasif</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-active">Aktif</span>
+                                    }
+                                </td>
+                                <td>@(row.CreatedByName ?? "-")</td>
+                                <td>@row.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    <div class="row-actions" style="justify-content:flex-end;">
+                                        @if (row.IsDeleted)
+                                        {
+                                            <form asp-action="Restore" method="post" style="display:inline;"
+                                                  data-confirm="@row.FeasibilityName fizibilitesini aktif hale getirmek istediğinize emin misiniz?">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@row.Id" />
+                                                <button type="submit" class="row-action-btn">
+                                                    <span class="material-symbols-outlined">check_circle</span> Aktif Et
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <a asp-action="View" asp-route-id="@row.Id" class="row-action-btn">
+                                                <span class="material-symbols-outlined">visibility</span> Görüntüle
+                                            </a>
+                                            @if (row.IsLatest)
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@row.Id" class="row-action-btn">
+                                                    <span class="material-symbols-outlined">edit</span> Düzenle
+                                                </a>
+                                            }
+                                            <form asp-action="Delete" method="post" style="display:inline;"
+                                                  data-confirm="@row.FeasibilityName fizibilitesini silmek istediğinize emin misiniz?">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@row.Id" />
+                                                <button type="submit" class="row-action-btn danger">
+                                                    <span class="material-symbols-outlined">delete</span> Sil
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="@((IPagedResult)Model)" />
+    </div>
+</div>

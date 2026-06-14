@@ -1,0 +1,238 @@
+@model FeasibilityPricingDetailDto
+@{
+    ViewData["Title"] = Model.FeasibilityName + " — Tarife Fizibilitesi";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var tr = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+    var hasData = Model.Stations != null && Model.Stations.Any();
+    string Ccy(feasibility.Entity.Entities.Enums.CurrencyType c) => c switch
+    {
+        feasibility.Entity.Entities.Enums.CurrencyType.USD => "$",
+        feasibility.Entity.Entities.Enums.CurrencyType.EUR => "€",
+        _ => "TL"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/feasibility/create/style.css" />
+    <link rel="stylesheet" href="~/css/feasibility/amortization/result/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <div class="crumb">Fizibiliteler &middot; Tarife &middot; <strong>Görüntüle</strong></div>
+        <h1>@Model.FeasibilityName <span class="version-tag">v@(Model.Version)</span></h1>
+        <p>Türkiye geneli tarife fizibilitesi</p>
+    </div>
+    <div class="header-actions">
+        <a href="/FeasibilityPricing/Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        @if (!Model.IsDeleted)
+        {
+            <a href="/FeasibilityPricing/Edit/@Model.Id" class="btn btn-primary">
+                <span class="material-symbols-outlined">edit</span> Düzenle
+            </a>
+        }
+    </div>
+</div>
+
+<div class="fiz-tabbar">
+    <button class="fiz-tab active" data-tab="form" onclick="switchTab('form')">
+        <span class="material-symbols-outlined">edit_note</span> Veri Girişleri
+    </button>
+    <button class="fiz-tab" data-tab="results" onclick="switchTab('results')">
+        <span class="material-symbols-outlined">bar_chart</span> Fizibilite Sonuçları
+    </button>
+</div>
+
+<div class="fiz-pane active" id="pane-form">
+
+    <div class="card fiz-card" id="card-01">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">01</div>
+                <div><h2 style="font-size:14px;font-weight:600;margin:0;">Temel Bilgiler</h2></div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-01')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="fiz-two">
+                <div class="fiz-field">
+                    <label>Fizibilite Adı</label>
+                    <div class="fiz-ctl" style="background:var(--surface-2);">@Model.FeasibilityName</div>
+                </div>
+                <div class="fiz-field">
+                    <label>Kapsam</label>
+                    <div class="fiz-ctl" style="background:var(--surface-2);">Türkiye geneli</div>
+                </div>
+            </div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
+                Oluşturan: <strong>@(Model.CreatedByName ?? "-")</strong> &middot; @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-02">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">02</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Kur &amp; Enflasyon Bilgileri</h2>
+                    <div class="fiz-sub">TCMB referans değerleri</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-02')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="fiz-fx-split">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead><tr><th>Döviz</th><th class="text-right">Kur (Satış)</th></tr></thead>
+                        <tbody>
+                            <tr><td>USD/TRY</td><td class="text-right mono">@Model.UsdRate.ToString("#,##0.0000", tr)</td></tr>
+                            <tr><td>EUR/TRY</td><td class="text-right mono">@Model.EurRate.ToString("#,##0.0000", tr)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead><tr><th>Para Birimi</th><th class="text-right">Yıllık Enflasyon %</th></tr></thead>
+                        <tbody>
+                            <tr><td>TL</td><td class="text-right mono">@Model.InflationTl.ToString("#,##0.00", tr)</td></tr>
+                            <tr><td>EUR</td><td class="text-right mono">@Model.InflationEur.ToString("#,##0.00", tr)</td></tr>
+                            <tr><td>USD</td><td class="text-right mono">@Model.InflationUsd.ToString("#,##0.00", tr)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-pricing">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">02b</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Fiyatlandırma Sabitleri</h2>
+                    <div class="fiz-sub">KDV ve banka/eMSP komisyon oranı</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-pricing')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="table-wrapper" style="max-width:480px;">
+                <table class="table">
+                    <thead><tr><th>Parametre</th><th class="text-right">Oran %</th></tr></thead>
+                    <tbody>
+                        <tr><td>KDV Oranı</td><td class="text-right mono">%@Model.VatRate.ToString("#,##0.##", tr)</td></tr>
+                        <tr><td>Banka / eMSP Komisyon Oranı</td><td class="text-right mono">%@Model.CommissionRate.ToString("#,##0.##", tr)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-03">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">03</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">İstasyon Bilgileri &amp; Yatırım Maliyetleri</h2>
+                    <div class="fiz-sub">Girdi verileri ve CAPEX/OPEX kalemleri</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-03')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>İstasyon Türü</th>
+                            <th class="text-right">Soket Adeti</th>
+                            <th class="text-right">Soket Başı Günlük (kWh)</th>
+                            <th class="text-right">Ekonomik Ömür</th>
+                            <th class="text-right">İskonto %</th>
+                            <th class="text-right">Hedef Kâr Marjı / ROI %</th>
+                            <th class="text-right">Donanım</th>
+                            <th class="text-right">Altyapı</th>
+                            <th class="text-right">Toplam CAPEX (TL)</th>
+                            <th class="text-right">Yıllık OPEX</th>
+                            <th class="text-right">EBM (Ort.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!hasData)
+                        {
+                            <tr><td colspan="11"><div class="fiz-empty"><span class="material-symbols-outlined">table_rows</span><p>İstasyon kaydı yok.</p></div></td></tr>
+                        }
+                        else
+                        {
+                            foreach (var s in Model.Stations)
+                            {
+                                <tr>
+                                    <td><span class="hat-badge">@s.DeviceType</span></td>
+                                    <td class="text-right mono">@s.SocketCount</td>
+                                    <td class="text-right mono">@s.DailyKwhPerSocket.ToString("#,##0.00", tr)</td>
+                                    <td class="text-right mono">@s.EconomicLifeYears yıl</td>
+                                    <td class="text-right mono">%@s.DiscountRate.ToString("#,##0.00", tr)</td>
+                                    <td class="text-right mono">%@s.TargetProfitMargin.ToString("#,##0.00", tr)</td>
+                                    <td class="text-right mono">@Ccy(s.HardwareCostCurrency) @s.HardwareCost.ToString("#,##0", tr)</td>
+                                    <td class="text-right mono">@Ccy(s.InfrastructureCostCurrency) @s.InfrastructureCost.ToString("#,##0", tr)</td>
+                                    <td class="text-right mono"><strong>TL @s.TotalCapexTl.ToString("#,##0", tr)</strong></td>
+                                    <td class="text-right mono">@Ccy(s.AnnualOpexCurrency) @s.AnnualOpex.ToString("#,##0", tr)</td>
+                                    <td class="text-right mono">$@s.GridElectricityCost.ToString("#,##0.0000", tr)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /pane-form -->
+
+<div class="fiz-pane" id="pane-results">
+    @if (hasData)
+    {
+        <partial name="_ResultContent" model="Model" />
+    }
+    else
+    {
+        <div class="fiz-results-empty">
+            <div class="fiz-glyph">
+                <span class="material-symbols-outlined">bar_chart</span>
+            </div>
+            <h3>Sonuç bulunmuyor</h3>
+            <p>Bu fizibilite için istasyon verisi girilmemiş; sonuç raporu görüntülenemiyor.</p>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function switchTab(t) {
+            document.querySelectorAll('.fiz-tab').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === t); });
+            document.getElementById('pane-form').classList.toggle('active', t === 'form');
+            document.getElementById('pane-results').classList.toggle('active', t === 'results');
+        }
+        function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
+    </script>
+}

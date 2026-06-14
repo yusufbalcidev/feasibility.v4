@@ -273,9 +273,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
             var (annualRev, annualElec) = ComputeLineYear(d, y1, h1Days, h2Days, uptimeFactor);
 
             var grossMargin = annualRev - annualElec;
-            var commission  = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
-                ? d.AgreementRate * annualRev
-                : d.AgreementRate * grossMargin;
+            var commission = CalculateCommission(d, annualRev, grossMargin);
 
             totalRevTl  += annualRev;
             totalElecTl += annualElec;
@@ -288,9 +286,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                 {
                     var (revTl, elecTl) = ComputeLineYear(d, y, h1Days, h2Days, uptimeFactor);
                     var gm   = revTl - elecTl;
-                    var comm = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
-                        ? d.AgreementRate * revTl
-                        : d.AgreementRate * gm;
+                    var comm = CalculateCommission(d, revTl, gm);
                     var (eDaily, eSH1, eSH2, ePH1, ePH2) = EffectivePrices(d, y);
                     return new YearProjectionDetailDto
                     {
@@ -334,9 +330,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
                         var revTl      = saleKwh * salePrice;
                         var elecTl     = saleKwh * buyPrice;
                         var gmTl       = revTl - elecTl;
-                        var commTl     = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
-                            ? d.AgreementRate * revTl
-                            : d.AgreementRate * gmTl;
+                        var commTl = CalculateCommission(d, revTl, gmTl);
                         var rentTl     = monthlyRentPerDevice;
                         // Kredi yalnızca vade süresince ödenir; global ay indeksi vade içindeyse hattın payı düşülür.
                         var globalMonthIndex = yearOffset >= 0 ? yearOffset * 12 + m : -1;
@@ -400,7 +394,11 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         var annualFixedCosts = annualRent + annualMaintenance - annualAdvertising + annualLoanPayment;
         var annualNetTl      = totalRevTl - totalElecTl - totalCommTl - annualFixedCosts;
         var annualNetUsd     = s.UsdRate > 0 ? annualNetTl / s.UsdRate : 0m;
-        var roi              = totalUsd > 0 ? Math.Round(annualNetUsd / totalUsd * 100, 1) : 0m;
+        // Özkaynak ROI: net kârdan kredi taksiti (annualLoanPayment) zaten düşülüyor,
+        // bu yüzden payda toplam yatırım değil özkaynak (toplam - kredi) olmalıdır.
+        decimal loanUsd    = hasLoan && s.UsdRate > 0 ? s.LoanAmount / s.UsdRate : 0m;
+        decimal equityUsd  = Math.Round(totalUsd, 0) - Math.Round(loanUsd, 0);
+        var roi              = equityUsd > 0 ? Math.Round(annualNetUsd / equityUsd * 100, 1) : 0m;
 
         var allYears = activeLines
             .SelectMany(d => d.YearProjections.Where(y => !y.IsDeleted).Select(y => y.Year))
@@ -420,8 +418,6 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         }
 
         var yearSummaries  = new List<YearSummaryDto>();
-        decimal loanUsd    = hasLoan && s.UsdRate > 0 ? s.LoanAmount / s.UsdRate : 0m;
-        decimal equityUsd  = Math.Round(totalUsd, 0) - Math.Round(loanUsd, 0);
         decimal cumUsd     = -equityUsd;
 
         foreach (var year in allYears)
@@ -436,9 +432,7 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
 
                 var (rev, elec) = ComputeLineYear(d, y, h1Days, h2Days, uptimeFactor);
                 var gm   = rev - elec;
-                var comm = d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
-                    ? d.AgreementRate * rev
-                    : d.AgreementRate * gm;
+                var comm = CalculateCommission(d, rev, gm);
 
                 yRevTl  += rev;
                 yElecTl += elec;
@@ -735,8 +729,16 @@ public class FeasibilityAmortizationManager : IFeasibilityAmortizationService
         DeviceLine d, YearProjection? y, decimal h1Days, decimal h2Days, decimal uptimeFactor)
     {
         var (daily, sH1, sH2, pH1, pH2) = EffectivePrices(d, y);
-        var eH1 = d.SocketCount * daily * h1Days * d.AvgKwh * uptimeFactor;
-        var eH2 = d.SocketCount * daily * h2Days * d.AvgKwh * uptimeFactor;
+        // Cihaz adedi çarpanı: bir hatta birden fazla cihaz varsa gelir/elektrik
+        // tüm cihazların toplamıdır (yatırım da DeviceCount ile çarpılıyor).
+        var count = d.DeviceCount > 0 ? d.DeviceCount : 1;
+        var eH1 = d.SocketCount * daily * h1Days * d.AvgKwh * uptimeFactor * count;
+        var eH2 = d.SocketCount * daily * h2Days * d.AvgKwh * uptimeFactor * count;
         return (eH1 * sH1 + eH2 * sH2, eH1 * pH1 + eH2 * pH2);
     }
+
+    private static decimal CalculateCommission(DeviceLine d, decimal revenue, decimal grossMargin)
+        => d.AgreementGenre == Entity.Entities.Enums.AgreementGenre.Revenue
+            ? d.AgreementRate * revenue
+            : d.AgreementRate * Math.Max(0m, grossMargin);
 }

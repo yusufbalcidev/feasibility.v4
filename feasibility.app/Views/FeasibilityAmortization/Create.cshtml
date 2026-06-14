@@ -747,6 +747,21 @@
         }
         function saveModal() {
             if (modalIdx < 0) return;
+            var station = stations[modalIdx];
+            var invalid = modalDraft.find(function(p) {
+                var saleH1 = +p.sH1 > 0 ? +p.sH1 : +station.pTL;
+                var saleH2 = +p.sH2 > 0 ? +p.sH2 : +station.pTL;
+                var purchaseH1 = +p.pH1 > 0 ? +p.pH1 : +station.alisKwh;
+                var purchaseH2 = +p.pH2 > 0 ? +p.pH2 : +station.alisKwh;
+                return purchaseH1 > saleH1 || purchaseH2 > saleH2;
+            });
+            if (invalid) {
+                var effectiveSaleH1 = +invalid.sH1 > 0 ? +invalid.sH1 : +station.pTL;
+                var effectivePurchaseH1 = +invalid.pH1 > 0 ? +invalid.pH1 : +station.alisKwh;
+                var period = effectivePurchaseH1 > effectiveSaleH1 ? 'Ocak' : 'Haziran';
+                showToast(invalid.year + ' ' + period + ' alış fiyatı, satış fiyatından yüksek olamaz.', true);
+                return;
+            }
             stations[modalIdx].proj    = modalDraft.map(function(p) { return { year: p.year, daily: p.daily, sH1: p.sH1||0, sH2: p.sH2||0, pH1: p.pH1||0, pH2: p.pH2||0, usd: p.usd||USD() }; });
             stations[modalIdx].touched = true;
             closeModal(); renderStations(); showToast('Yıllık değerler kaydedildi.');

@@ -23,6 +23,7 @@ public static class BusinessServiceRegistration
         services.AddHttpClient<IWorldBankService, WorldBankService>();
         services.AddHttpClient<IEvdsInflationService, EvdsInflationService>();
         services.AddScoped<IFeasibilityAmortizationService, FeasibilityAmortizationManager>();
+        services.AddScoped<IFeasibilityPricingService, FeasibilityPricingManager>();
         services.AddScoped(typeof(IGenericService<>), typeof(GenericManager<>));
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IEmailService, EmailService>();

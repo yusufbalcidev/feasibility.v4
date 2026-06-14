@@ -1,0 +1,511 @@
+@using System.Globalization
+@model FeasibilityPricingDetailDto
+@{
+    var tr  = CultureInfo.GetCultureInfo("tr-TR");
+    var inv = CultureInfo.InvariantCulture;
+    Func<decimal, int, string> USD = (v, d) => "$ " + v.ToString("#,##0." + new string('0', d), tr);
+    Func<decimal, string> PCT = v => "%" + v.ToString("#,##0.##", tr);
+    Func<decimal, string> RAW = v => v.ToString("0.########", inv);
+
+    string Ccy(feasibility.Entity.Entities.Enums.CurrencyType c) => c switch
+    {
+        feasibility.Entity.Entities.Enums.CurrencyType.USD => "$",
+        feasibility.Entity.Entities.Enums.CurrencyType.EUR => "€",
+        _ => "₺"
+    };
+
+    var stations = Model.Stations;
+    // Özet KPI'ları için referans istasyon (ilk eklenen) — birden fazla istasyon olabilir.
+    var lead = stations.FirstOrDefault();
+    var totalCapexTl  = stations.Sum(s => s.TotalCapexTl);
+    var totalAnnualKwh = stations.Sum(s => s.AnnualSalesKwh);
+}
+
+<div class="res-print-header" aria-hidden="true">
+    <div class="res-print-brand">
+        <img src="~/images/eka-logo-Photoroom.png" alt="EKA Enerji ve Teknoloji A.Ş." class="res-print-logo" />
+    </div>
+    <div class="res-print-meta">
+        <div class="res-print-doc">Tarife Fizibilite Raporu</div>
+        <div class="res-print-title">@Model.FeasibilityName</div>
+        <div class="res-print-sub">
+            <span>Türkiye geneli</span>
+            <span class="res-print-dot">•</span>
+            <span>Rapor tarihi: @DateTime.Now.ToString("dd.MM.yyyy", tr)</span>
+            @if (!string.IsNullOrWhiteSpace(Model.CreatedByName))
+            {
+                <span class="res-print-dot">•</span>
+                <span>Hazırlayan: @Model.CreatedByName</span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="res-cur-bar">
+    <div class="fiz-cur-wrap">
+        <label>Para Birimi</label>
+        <select class="fiz-cur-select" onchange="fizSelectCurrency(this)">
+            <option value="USD" selected>$ USD</option>
+            <option value="TRY">₺ TRY</option>
+            <option value="EUR">€ EUR</option>
+        </select>
+    </div>
+    <button type="button" class="btn btn-primary res-pdf-btn" style="margin-left:auto;" onclick="resDownloadPdf()">
+        <span class="material-symbols-outlined">picture_as_pdf</span> PDF olarak indir
+    </button>
+</div>
+
+<div class="res-tabbar" id="resTabbar">
+    <button type="button" class="res-tab active" data-restab="summary" onclick="resSwitchTab('summary')">
+        <span class="material-symbols-outlined">summarize</span> Özet
+    </button>
+    <button type="button" class="res-tab" data-restab="cost" onclick="resSwitchTab('cost')">
+        <span class="material-symbols-outlined">receipt_long</span> Birim Maliyet &amp; Fiyat
+    </button>
+    <button type="button" class="res-tab" data-restab="scenario" onclick="resSwitchTab('scenario')">
+        <span class="material-symbols-outlined">stacked_line_chart</span> EBM Senaryoları
+    </button>
+    <button type="button" class="res-tab" data-restab="lines" onclick="resSwitchTab('lines')">
+        <span class="material-symbols-outlined">ev_station</span> İstasyon Bilgileri
+    </button>
+</div>
+
+@* ===================== ÖZET ===================== *@
+<div class="res-tabpane active" data-respane="summary">
+
+    <div class="res-kpi-row">
+        <div class="res-kpi">
+            <div class="res-kpi-header">
+                <div class="res-kpi-icon"><span class="material-symbols-outlined">sell</span></div>
+                <span class="res-kpi-badge">@(lead?.DeviceType ?? "—")</span>
+            </div>
+            <div>
+                <div class="res-kpi-value pos">@if (lead is null) {<text>—</text>} else {<span class="js-money" data-usd="@RAW(lead.RecommendedPrice)" data-dec="4">@USD(lead.RecommendedPrice, 4)</span>}<span style="font-size:12px;font-weight:600;color:var(--text-muted);">/kWh</span></div>
+                <div class="res-kpi-label">Önerilen Satış Fiyatı (KDV dahil)</div>
+            </div>
+        </div>
+        <div class="res-kpi">
+            <div class="res-kpi-header">
+                <div class="res-kpi-icon"><span class="material-symbols-outlined">shield</span></div>
+                <span class="res-kpi-badge">Taban</span>
+            </div>
+            <div>
+                <div class="res-kpi-value">@if (lead is null) {<text>—</text>} else {<span class="js-money" data-usd="@RAW(lead.BaseCost)" data-dec="4">@USD(lead.BaseCost, 4)</span>}<span style="font-size:12px;font-weight:600;color:var(--text-muted);">/kWh</span></div>
+                <div class="res-kpi-label">Taban Maliyet (zarar etmeme sınırı)</div>
+            </div>
+        </div>
+        <div class="res-kpi">
+            <div class="res-kpi-header">
+                <div class="res-kpi-icon"><span class="material-symbols-outlined">bolt</span></div>
+                <span class="res-kpi-badge">Yıllık</span>
+            </div>
+            <div>
+                <div class="res-kpi-value">@totalAnnualKwh.ToString("#,##0", tr)<span style="font-size:12px;font-weight:600;color:var(--text-muted);"> kWh</span></div>
+                <div class="res-kpi-label">Toplam Yıllık Satış Hacmi</div>
+            </div>
+        </div>
+        <div class="res-kpi">
+            <div class="res-kpi-header">
+                <div class="res-kpi-icon"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+                <span class="res-kpi-badge">CAPEX</span>
+            </div>
+            <div>
+                <div class="res-kpi-value"><span class="js-money" data-tl="@RAW(totalCapexTl)" data-dec="0">@totalCapexTl.ToString("#,##0", tr) ₺</span></div>
+                <div class="res-kpi-label">Toplam Yatırım (CAPEX)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card res-section">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">01</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">İstasyon Türü Bazında Önerilen Fiyatlar</h2>
+                    <div class="fiz-sub">KDV @PCT(Model.VatRate) &middot; Komisyon @PCT(Model.CommissionRate) &middot; 1 USD = @Model.UsdRate.ToString("#,##0.0000", tr) ₺</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="table-wrapper collapse-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>İstasyon Türü</th>
+                        <th class="text-right">Yıllık Satış (kWh)</th>
+                        <th class="text-right">Taban Maliyet (/kWh)</th>
+                        <th class="text-right">KDV Hariç Fiyat (/kWh)</th>
+                        <th class="text-right">Önerilen Fiyat (/kWh)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!stations.Any())
+                    {
+                        <tr><td colspan="5"><div class="res-tab-empty"><span class="material-symbols-outlined">table_rows</span><p>İstasyon kaydı yok.</p></div></td></tr>
+                    }
+                    else
+                    {
+                        foreach (var s in stations)
+                        {
+                            <tr>
+                                <td><span class="hat-badge">@s.DeviceType</span></td>
+                                <td class="text-right c-neu">@s.AnnualSalesKwh.ToString("#,##0", tr)</td>
+                                <td class="text-right"><span class="js-money" data-usd="@RAW(s.BaseCost)" data-dec="4">@USD(s.BaseCost, 4)</span></td>
+                                <td class="text-right"><span class="js-money" data-usd="@RAW(s.SalePriceExVat)" data-dec="4">@USD(s.SalePriceExVat, 4)</span></td>
+                                <td class="text-right c-pos"><strong><span class="js-money" data-usd="@RAW(s.RecommendedPrice)" data-dec="4">@USD(s.RecommendedPrice, 4)</span></strong></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /summary -->
+
+@* ===================== BİRİM MALİYET & FİYAT ===================== *@
+<div class="res-tabpane" data-respane="cost">
+
+    @if (!stations.Any())
+    {
+        <div class="res-tab-empty"><span class="material-symbols-outlined">receipt_long</span><p>Birim maliyet verisi bulunmuyor.</p></div>
+    }
+    else
+    {
+        var costNo = 1;
+        foreach (var s in stations)
+        {
+            <div class="card fiz-card res-section">
+                <div class="card-header">
+                    <div class="fiz-card-header">
+                        <div class="fiz-ix">@costNo.ToString("00")</div>
+                        <div>
+                            <h2 style="font-size:14px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;">
+                                <span class="hat-badge">@s.DeviceType</span> Birim Maliyet &amp; Satış Fiyatı
+                            </h2>
+                            <div class="fiz-sub">Yıllık satış: @s.AnnualSalesKwh.ToString("#,##0", tr) kWh &middot; ROI @PCT(s.TargetProfitMargin)</div>
+                        </div>
+                        <div class="fiz-card-tools">
+                            <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                                <span class="material-symbols-outlined">expand_more</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body collapse-body">
+                    <div class="res-row"><span class="rl">Amortisman Payı</span><span class="rv"><span class="js-money" data-usd="@RAW(s.DepreciationShare)" data-dec="4">@USD(s.DepreciationShare, 4)</span> <span style="font-size:11px;color:var(--text-muted);">/kWh</span></span></div>
+                    <div class="res-row"><span class="rl">İşletme OPEX Payı</span><span class="rv"><span class="js-money" data-usd="@RAW(s.OpexShare)" data-dec="4">@USD(s.OpexShare, 4)</span> <span style="font-size:11px;color:var(--text-muted);">/kWh</span></span></div>
+                    <div class="res-row"><span class="rl">Elektrik Enerji Payı (EBM, ort.)</span><span class="rv"><span class="js-money" data-usd="@RAW(s.EnergyShare)" data-dec="4">@USD(s.EnergyShare, 4)</span> <span style="font-size:11px;color:var(--text-muted);">/kWh</span></span></div>
+                    <div class="res-row total"><span class="rl">Taban Maliyet (zarar etmeme sınırı)</span><span class="rv"><span class="js-money" data-usd="@RAW(s.BaseCost)" data-dec="4">@USD(s.BaseCost, 4)</span> <span style="font-size:11px;color:var(--text-muted);">/kWh</span></span></div>
+                    <div class="res-row"><span class="rl">KDV Hariç Satış Fiyatı</span><span class="rv"><span class="js-money" data-usd="@RAW(s.SalePriceExVat)" data-dec="4">@USD(s.SalePriceExVat, 4)</span> <span style="font-size:11px;color:var(--text-muted);">/kWh</span></span></div>
+                    <div class="res-row total"><span class="rl">Önerilen Satış Fiyatı (KDV dahil)</span><span class="rv c-pos"><span class="js-money" data-usd="@RAW(s.RecommendedPrice)" data-dec="4">@USD(s.RecommendedPrice, 4)</span> <span style="font-size:11px;color:var(--text-muted);">/kWh</span></span></div>
+                </div>
+            </div>
+            costNo++;
+        }
+    }
+
+</div><!-- /cost -->
+
+@* ===================== EBM SENARYOLARI ===================== *@
+<div class="res-tabpane" data-respane="scenario">
+
+    @if (!stations.Any())
+    {
+        <div class="res-tab-empty"><span class="material-symbols-outlined">stacked_line_chart</span><p>Senaryo verisi bulunmuyor.</p></div>
+    }
+    else
+    {
+        var scNo = 1;
+        foreach (var s in stations)
+        {
+            <div class="card fiz-card res-section">
+                <div class="card-header">
+                    <div class="fiz-card-header">
+                        <div class="fiz-ix">@scNo.ToString("00")</div>
+                        <div>
+                            <h2 style="font-size:14px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;">
+                                <span class="hat-badge">@s.DeviceType</span> EBM Senaryolu Satış Fiyatları
+                            </h2>
+                            <div class="fiz-sub">Şebeke elektrik birim maliyetine (EBM) göre KDV dahil satış fiyatı</div>
+                        </div>
+                        <div class="fiz-card-tools">
+                            <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                                <span class="material-symbols-outlined">expand_more</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-wrapper collapse-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Senaryo</th>
+                                <th class="text-right">EBM (/kWh)</th>
+                                <th class="text-right">Satış Fiyatı (/kWh)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="hat-badge" style="background:var(--success-50);color:var(--success);">En Düşük</span></td>
+                                <td class="text-right c-neu"><span class="js-money" data-usd="@RAW(s.GridElectricityCostLow)" data-dec="4">@USD(s.GridElectricityCostLow, 4)</span></td>
+                                <td class="text-right"><span class="js-money" data-usd="@RAW(s.PriceLowEbm)" data-dec="4">@USD(s.PriceLowEbm, 4)</span></td>
+                            </tr>
+                            <tr class="tfoot-row">
+                                <td><span class="hat-badge">Ortalama</span></td>
+                                <td class="text-right c-neu"><span class="js-money" data-usd="@RAW(s.GridElectricityCost)" data-dec="4">@USD(s.GridElectricityCost, 4)</span></td>
+                                <td class="text-right c-pos"><strong><span class="js-money" data-usd="@RAW(s.PriceAvgEbm)" data-dec="4">@USD(s.PriceAvgEbm, 4)</span></strong></td>
+                            </tr>
+                            <tr>
+                                <td><span class="hat-badge" style="background:var(--danger-50);color:var(--danger);">En Yüksek</span></td>
+                                <td class="text-right c-neu"><span class="js-money" data-usd="@RAW(s.GridElectricityCostHigh)" data-dec="4">@USD(s.GridElectricityCostHigh, 4)</span></td>
+                                <td class="text-right"><span class="js-money" data-usd="@RAW(s.PriceHighEbm)" data-dec="4">@USD(s.PriceHighEbm, 4)</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            scNo++;
+        }
+    }
+
+</div><!-- /scenario -->
+
+@* ===================== İSTASYON BİLGİLERİ ===================== *@
+<div class="res-tabpane" data-respane="lines">
+
+    @if (!stations.Any())
+    {
+        <div class="res-tab-empty"><span class="material-symbols-outlined">ev_station</span><p>İstasyon bilgisi bulunmuyor.</p></div>
+    }
+    else
+    {
+        <div class="card fiz-card res-section">
+            <div class="card-header">
+                <div class="fiz-card-header">
+                    <div class="fiz-ix">01</div>
+                    <div>
+                        <h2 style="font-size:14px;font-weight:600;margin:0;">İstasyon Bilgileri &amp; Yatırım Maliyetleri</h2>
+                        <div class="fiz-sub">Girdi verileri ve CAPEX/OPEX kalemleri</div>
+                    </div>
+                    <div class="fiz-card-tools">
+                        <button type="button" class="fiz-collapse-btn" onclick="resToggleCard(this)">
+                            <span class="material-symbols-outlined">expand_more</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-wrapper collapse-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>İstasyon Türü</th>
+                            <th class="text-right">Soket Adeti</th>
+                            <th class="text-right">Soket Başı Günlük (kWh)</th>
+                            <th class="text-right">Ekonomik Ömür</th>
+                            <th class="text-right">İskonto %</th>
+                            <th class="text-right">Hedef Kâr Marjı / ROI %</th>
+                            <th class="text-right">Donanım</th>
+                            <th class="text-right">Altyapı</th>
+                            <th class="text-right">Toplam CAPEX</th>
+                            <th class="text-right">Yıllık OPEX</th>
+                            <th class="text-right">EBM (Ort., /kWh)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in stations)
+                        {
+                            <tr>
+                                <td><span class="hat-badge">@s.DeviceType</span></td>
+                                <td class="text-right c-neu">@s.SocketCount</td>
+                                <td class="text-right c-neu">@s.DailyKwhPerSocket.ToString("#,##0.00", tr)</td>
+                                <td class="text-right c-neu">@s.EconomicLifeYears yıl</td>
+                                <td class="text-right c-neu">@PCT(s.DiscountRate)</td>
+                                <td class="text-right c-neu">@PCT(s.TargetProfitMargin)</td>
+                                <td class="text-right">@Ccy(s.HardwareCostCurrency) @s.HardwareCost.ToString("#,##0", tr)</td>
+                                <td class="text-right">@Ccy(s.InfrastructureCostCurrency) @s.InfrastructureCost.ToString("#,##0", tr)</td>
+                                <td class="text-right"><strong><span class="js-money" data-tl="@RAW(s.TotalCapexTl)" data-dec="0">@s.TotalCapexTl.ToString("#,##0", tr) ₺</span></strong></td>
+                                <td class="text-right">@Ccy(s.AnnualOpexCurrency) @s.AnnualOpex.ToString("#,##0", tr)</td>
+                                <td class="text-right"><span class="js-money" data-usd="@RAW(s.GridElectricityCost)" data-dec="4">@USD(s.GridElectricityCost, 4)</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div><!-- /lines -->
+
+<style>
+    .res-print-header { display: none; }
+
+    .res-pdf-btn { padding: 5px 12px; font-size: 12px; font-weight: 600; gap: 5px; }
+    .res-pdf-btn .material-symbols-outlined { font-size: 15px; }
+
+    .res-cur-bar { display: flex; align-items: center; margin-bottom: 12px; }
+    .fiz-cur-wrap { display: flex; align-items: center; gap: 6px; }
+    .fiz-cur-wrap label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .fiz-cur-select {
+        padding: 3px 6px; height: auto; width: auto; min-width: 64px; font-size: 11px; font-weight: 600;
+        border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text); cursor: pointer;
+    }
+
+    /* Sonuç ekranı alt sekmeleri */
+    .res-tabbar {
+        display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px; padding: 5px;
+        background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    }
+    .res-tab {
+        display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px;
+        background: transparent; border: 1px solid transparent; border-radius: 9px;
+        font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-muted);
+        cursor: pointer; transition: background .15s, color .15s, border-color .15s; white-space: nowrap;
+    }
+    .res-tab .material-symbols-outlined { font-size: 18px; }
+    .res-tab:hover { color: var(--text); background: var(--surface); }
+    .res-tab.active { color: var(--primary); background: var(--surface); border-color: var(--border); box-shadow: var(--shadow); }
+    .res-tabpane { display: none; }
+    .res-tabpane.active { display: block; }
+    .res-tab-empty { padding: 48px 20px; text-align: center; color: var(--text-muted); }
+    .res-tab-empty .material-symbols-outlined { font-size: 40px; opacity: .35; display: block; margin: 0 auto 10px; }
+    .res-tab-empty p { font-size: 13px; font-weight: 500; }
+    @@media (max-width: 700px) { .res-tab { flex: 1 1 auto; justify-content: center; } }
+
+    .card.collapsed > .collapse-body { display: none !important; }
+
+    @@page { size: A4 portrait; margin: 0; }
+    @@media print {
+        html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: #fff !important; }
+        body * { visibility: hidden; }
+        #pane-results, #pane-results * { visibility: visible; }
+        #pane-results {
+            position: absolute; left: 0; top: 0; width: 100% !important; max-width: 100% !important;
+            padding: 22mm 10mm 12mm 10mm !important; margin: 0 !important; display: block !important; font-size: 9pt;
+        }
+        #pane-results .card, #pane-results .res-section {
+            box-shadow: none !important; border: 1px solid #d0d5dd !important; margin: 0 0 8px 0 !important;
+            border-radius: 6px !important; width: 100% !important;
+        }
+        .res-print-header {
+            display: flex !important; align-items: center; gap: 14px; position: fixed; top: 0; left: 0; right: 0;
+            padding: 5mm 10mm 2.5mm 10mm; margin: 0 !important; background: #fff; border-bottom: 2px solid #1560b0;
+            width: 100% !important; box-sizing: border-box; page-break-inside: avoid; break-inside: avoid;
+        }
+        .res-print-logo { height: 34px; width: auto; display: block; }
+        .res-print-meta { margin-left: auto; text-align: right; line-height: 1.25; }
+        .res-print-doc { font-size: 7.5pt; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #1560b0; }
+        .res-print-title { font-size: 14pt; font-weight: 800; color: #0f172a; margin: 1px 0; line-height: 1.15; }
+        .res-print-sub { font-size: 7.5pt; color: #475569; font-weight: 500; }
+        .res-print-dot { margin: 0 5px; color: #cbd5e1; }
+        .res-cur-bar, .fiz-collapse-btn, .fiz-results-actions, .fiz-results-hint, .fiz-card-tools, .res-tabbar { display: none !important; }
+        .res-tabpane { display: block !important; }
+        .res-tab-empty { display: none !important; }
+        .card.collapsed > .collapse-body { display: block !important; }
+        .res-kpi-row { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 6px !important; }
+        .res-kpi { padding: 8px !important; }
+        .res-kpi-value { font-size: 12pt !important; }
+        .res-kpi-label { font-size: 7.5pt !important; }
+        #pane-results table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; font-size: 8pt !important; }
+        #pane-results th, #pane-results td { padding: 3px 4px !important; overflow: hidden; text-overflow: ellipsis; word-break: break-word; }
+        h2 { font-size: 11pt !important; }
+        .fiz-sub { font-size: 7.5pt !important; }
+        .res-section, .card, .res-kpi-row, table, thead, tr { page-break-inside: avoid; break-inside: avoid; }
+        thead { display: table-header-group; }
+    }
+</style>
+
+<script>
+    function resToggleCard(el) {
+        var card = el.closest('.fiz-card') || el.closest('.card');
+        if (card) card.classList.toggle('collapsed');
+    }
+    function resSwitchTab(name) {
+        document.querySelectorAll('.res-tab').forEach(function (b) {
+            b.classList.toggle('active', b.getAttribute('data-restab') === name);
+        });
+        document.querySelectorAll('.res-tabpane').forEach(function (p) {
+            p.classList.toggle('active', p.getAttribute('data-respane') === name);
+        });
+    }
+    function resDownloadPdf() {
+        var prevTitle = document.title;
+        document.title = 'EkaEnerjiVeTeknoloji';
+        var restore = function () { document.title = prevTitle; };
+        if (window.matchMedia) {
+            var mql = window.matchMedia('print');
+            var once = function (e) { if (!e.matches) { restore(); mql.removeListener(once); } };
+            mql.addListener(once);
+        }
+        window.addEventListener('afterprint', function handler() { restore(); window.removeEventListener('afterprint', handler); });
+        window.print();
+        setTimeout(restore, 1500);
+    }
+
+    (function () {
+        var FXR = { TRY: 1, USD: 0, EUR: 0 };
+        var SYM = { TRY: '₺', USD: '$', EUR: '€' };
+        var CUR = 'USD';
+        var BASE_USD_RATE = @RAW(Model.UsdRate);
+
+        function fmt(n, dec) {
+            return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n);
+        }
+
+        function renderMoney() {
+            var cur = CUR, sym = SYM[cur];
+            var baseUsd = BASE_USD_RATE > 0 ? BASE_USD_RATE : (FXR.USD || 0);
+            if (cur === 'USD' && baseUsd <= 0) return;
+            if (cur === 'EUR' && (baseUsd <= 0 || (FXR.USD || 0) <= 0 || (FXR.EUR || 0) <= 0)) return;
+            document.querySelectorAll('.js-money').forEach(function (el) {
+                var dec = parseInt(el.getAttribute('data-dec') || '0', 10);
+                var aTl = el.getAttribute('data-tl');
+                var tl, usd;
+                if (aTl !== null) {
+                    tl = parseFloat(aTl);
+                    if (isNaN(tl)) return;
+                    var pr = parseFloat(el.getAttribute('data-rate'));
+                    var rate = (!isNaN(pr) && pr > 0) ? pr : baseUsd;
+                    usd = rate > 0 ? tl / rate : 0;
+                } else {
+                    usd = parseFloat(el.getAttribute('data-usd'));
+                    if (isNaN(usd)) return;
+                    tl = usd * baseUsd;
+                }
+                var val;
+                if (cur === 'TRY')      val = tl;
+                else if (cur === 'USD') val = usd;
+                else                    val = (FXR.USD > 0 && FXR.EUR > 0) ? usd * FXR.USD / FXR.EUR : 0;
+                var neg = val < 0, abs = Math.abs(val);
+                var body = (cur === 'TRY') ? (fmt(abs, dec) + ' ' + sym) : (sym + ' ' + fmt(abs, dec));
+                el.textContent = (neg ? '-' : '') + body;
+            });
+        }
+
+        function applyRates(d) {
+            if (d && d.usdSell > 0) FXR.USD = d.usdSell;
+            if (d && d.eurSell > 0) FXR.EUR = d.eurSell;
+        }
+
+        window.fizSelectCurrency = function (sel) {
+            CUR = sel.value;
+            document.querySelectorAll('.fiz-cur-select').forEach(function (s) { s.value = CUR; });
+            renderMoney();
+        };
+
+        function boot() {
+            renderMoney();
+            fetch('/FeasibilityPricing/GetRates')
+                .then(function (r) { return r.json(); })
+                .then(function (d) { applyRates(d); renderMoney(); })
+                .catch(function () { });
+        }
+
+        if (document.readyState !== 'loading') { boot(); }
+        else { document.addEventListener('DOMContentLoaded', boot); }
+    })();
+</script>

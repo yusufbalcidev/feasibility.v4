@@ -153,6 +153,19 @@
                 rowMsgs.push('Alış fiyatı (TL/kWh), satış fiyatından (' + satis.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL) yüksek olamaz.');
             }
 
+            (s.proj || []).forEach(function (p) {
+                var saleH1 = parseFloat('' + p.sH1) > 0 ? parseFloat('' + p.sH1) : satis;
+                var saleH2 = parseFloat('' + p.sH2) > 0 ? parseFloat('' + p.sH2) : satis;
+                var purchaseH1 = parseFloat('' + p.pH1) > 0 ? parseFloat('' + p.pH1) : alis;
+                var purchaseH2 = parseFloat('' + p.pH2) > 0 ? parseFloat('' + p.pH2) : alis;
+                if (isFinite(saleH1) && isFinite(purchaseH1) && purchaseH1 > saleH1) {
+                    rowMsgs.push(p.year + ' Ocak alış fiyatı, Ocak satış fiyatından yüksek olamaz.');
+                }
+                if (isFinite(saleH2) && isFinite(purchaseH2) && purchaseH2 > saleH2) {
+                    rowMsgs.push(p.year + ' Haziran alış fiyatı, Haziran satış fiyatından yüksek olamaz.');
+                }
+            });
+
             if (rowMsgs.length) {
                 errors.push({ type: 'cell', row: i });
                 markCard('card-03');

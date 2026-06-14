@@ -1,0 +1,269 @@
+@model FeasibilityPricingDetailDto
+@{
+    ViewData["Title"] = "Tarife Fizibilitesi Düzenle";
+    Layout = "~/Views/Shared/_BaseLayout.cshtml";
+    var studyId = ViewBag.StudyId?.ToString() ?? Model?.Id.ToString();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/feasibility/create/style.css" />
+    <link rel="stylesheet" href="~/css/feasibility/amortization/result/style.css" />
+}
+
+<div class="page-header">
+    <div>
+        <div class="crumb">Fizibiliteler &middot; Tarife &middot; <strong>Düzenle</strong></div>
+        <h1>Tarife Fizibilitesi Düzenle</h1>
+        <p>@(Model?.FeasibilityName) <span class="version-tag">v@(Model?.Version)</span></p>
+    </div>
+</div>
+
+<div class="fiz-tabbar">
+    <button class="fiz-tab active" data-tab="form" onclick="switchTab('form')">
+        <span class="material-symbols-outlined">edit_note</span> Veri Girişleri
+    </button>
+    <button class="fiz-tab" data-tab="results" onclick="switchTab('results')">
+        <span class="material-symbols-outlined">bar_chart</span> Fizibilite Sonuçları
+    </button>
+</div>
+
+<div class="fiz-pane active" id="pane-form">
+
+    <div class="card fiz-card" id="card-01">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">01</div>
+                <div><h2 style="font-size:14px;font-weight:600;margin:0;">Temel Bilgiler</h2></div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-01')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="fiz-two">
+                <div class="fiz-field" id="f-name">
+                    <label>
+                        Fizibilite Adı <span class="fiz-req">*</span>
+                        <span class="fiz-ct"><span id="nameCt">0</span>/50</span>
+                    </label>
+                    <input class="fiz-ctl" id="fname" maxlength="50" placeholder="Örn. Türkiye Geneli Tarife-1"
+                           oninput="document.getElementById('nameCt').textContent=this.value.length; this.closest('.fiz-field').classList.remove('bad')" />
+                    <span class="fiz-err">Fizibilite adı zorunludur.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-02">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">02</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Kur &amp; Enflasyon Bilgileri</h2>
+                    <div class="fiz-sub">TCMB referans değerleri</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="btn btn-secondary btn-sm" onclick="refreshFx()" title="TCMB resmi kuru günde 1 kez (~09:30) yayınlanır">
+                        <span class="material-symbols-outlined">sync</span> Verileri Yenile
+                    </button>
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-02')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="fiz-fx-split">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Döviz Kodu</th>
+                                <th class="text-center">Birim</th>
+                                <th>Döviz Cinsi</th>
+                                <th class="text-right">Alış</th>
+                                <th class="text-right">Satış</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fxBody"></tbody>
+                    </table>
+                </div>
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Para Birimi</th>
+                                <th class="text-right">Yıllık Enflasyon %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="infBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-pricing">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">02b</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Fiyatlandırma Sabitleri</h2>
+                    <div class="fiz-sub">KDV ve banka/eMSP komisyon oranı</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-pricing')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="table-wrapper" style="max-width:480px;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Parametre</th>
+                            <th class="text-right">Oran %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pricingBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-03">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">03</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">İstasyon Bilgileri</h2>
+                    <div class="fiz-sub">Her tür için tek satır</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <span class="fiz-hint"><span class="fiz-dot"></span><span id="stCount">0</span>/2 tür</span>
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-03')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div id="stWrap" class="table-wrapper"></div>
+            <button class="fiz-add-row" id="addSt" onclick="addStation()">
+                <span class="material-symbols-outlined">add</span> İstasyon Türü Ekle
+            </button>
+        </div>
+    </div>
+
+    <div class="card fiz-card" id="card-04">
+        <div class="card-header">
+            <div class="fiz-card-header">
+                <div class="fiz-ix">04</div>
+                <div>
+                    <h2 style="font-size:14px;font-weight:600;margin:0;">Yatırım & İşletme Maliyetleri (CAPEX / OPEX)</h2>
+                    <div class="fiz-sub">Tutarlar seçili para biriminden girilir; diğer karşılıkları otomatik gösterilir</div>
+                </div>
+                <div class="fiz-card-tools">
+                    <span class="fiz-hint"><span class="fiz-dot"></span>Oto. dönüşüm</span>
+                    <button class="fiz-collapse-btn" onclick="toggleCard('card-04')">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="fiz-card-body">
+            <div class="fiz-fin-grid" id="capexGrid"></div>
+        </div>
+    </div>
+
+    <div class="fiz-form-actions">
+        <a href="/FeasibilityPricing/Index" class="btn btn-secondary">
+            <span class="material-symbols-outlined">arrow_back</span> Geri
+        </a>
+        <button class="btn btn-primary" id="saveBtn" onclick="openSaveModal()">
+            <span class="material-symbols-outlined">save</span> Değişiklikleri Kaydet
+        </button>
+    </div>
+
+</div>
+
+<div class="fiz-overlay" id="save-overlay">
+    <div class="fiz-modal" style="max-width:520px;">
+        <div class="fiz-modal-header">
+            <div class="fiz-modal-icon">
+                <span class="material-symbols-outlined">save_as</span>
+            </div>
+            <div>
+                <div class="fiz-modal-title">Kaydetme Yöntemi</div>
+                <div class="fiz-modal-sub">Değişiklikleri nasıl kaydetmek istersiniz?</div>
+            </div>
+            <button class="fiz-modal-close" onclick="closeSaveModal()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="fiz-modal-body">
+            <div class="fiz-save-opts">
+                <label class="fiz-save-opt">
+                    <input type="radio" name="saveMode" value="update" checked>
+                    <div class="fiz-save-opt-body">
+                        <div class="fiz-save-opt-title">
+                            <span class="material-symbols-outlined">edit</span> Mevcut fizibilitede düzenle
+                        </div>
+                        <div class="fiz-save-opt-desc">Bu fizibilitenin üzerine yazılır; ayrı bir kayıt oluşmaz.</div>
+                    </div>
+                </label>
+                <label class="fiz-save-opt">
+                    <input type="radio" name="saveMode" value="new">
+                    <div class="fiz-save-opt-body">
+                        <div class="fiz-save-opt-title">
+                            <span class="material-symbols-outlined">add_chart</span> Yeni bir fizibilite versiyonu oluştur
+                        </div>
+                        <div class="fiz-save-opt-desc">Mevcut fizibilite korunur; girdiğiniz verilerle yeni bir versiyon (<strong>v2, v3…</strong>) olarak ayrı kayıt açılır.</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <div class="fiz-modal-footer">
+            <button class="btn btn-secondary" onclick="closeSaveModal()">Vazgeç</button>
+            <button class="btn btn-primary" id="confirmSaveBtn" onclick="confirmSave()">
+                <span class="material-symbols-outlined">check</span> Kaydet
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="fiz-pane" id="pane-results">
+    <div class="fiz-results-actions">
+        <button class="btn btn-primary" onclick="calculate()">
+            <span class="material-symbols-outlined">calculate</span> Fizibilite Hesapla
+        </button>
+        <span class="fiz-results-hint">Girdiğiniz verilerle sonuçları hesaplar (kaydetmez).</span>
+    </div>
+
+    <div class="fiz-results-empty" id="resultsEmpty">
+        <div class="fiz-glyph">
+            <span class="material-symbols-outlined">bar_chart</span>
+        </div>
+        <h3>Fizibilite Sonuçları</h3>
+        <p>Veri girişlerini tamamladıktan sonra <strong>Fizibilite Hesapla</strong> butonuna basın; taban maliyet, önerilen satış fiyatı ve EBM senaryoları burada görüntülenir.</p>
+    </div>
+
+    <div id="resultsContent"></div>
+</div>
+
+@section Scripts {
+    <script>
+        var _fx   = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.FxJson as string) ? "{\"usdBuy\":0,\"usdSell\":0,\"eurBuy\":0,\"eurSell\":0}" : ViewBag.FxJson);
+        var _tlInf  = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.TlInfJson  as string) ? "null" : ViewBag.TlInfJson);
+        var _usdInf = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.UsdInfJson as string) ? "null" : ViewBag.UsdInfJson);
+        var _eurInf = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.EurInfJson as string) ? "null" : ViewBag.EurInfJson);
+        var _mode = 'edit';
+        var _studyId = '@studyId';
+        var _preload = @Html.Raw(string.IsNullOrWhiteSpace(ViewBag.PreloadJson as string) ? "null" : ViewBag.PreloadJson);
+    </script>
+    <script src="~/js/feasibility/pricing/form.js"></script>
+}

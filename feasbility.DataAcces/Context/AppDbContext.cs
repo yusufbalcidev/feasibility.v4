@@ -2,6 +2,7 @@ using feasibility.DataAccess.Seeds;
 using feasibility.Entity.Entities.Authorization;
 using feasibility.Entity.Entities.Common;
 using feasibility.Entity.Entities.FeasibilityAmortization;
+using feasibility.Entity.Entities.FeasibilityPricing;
 using feasibility.Entity.Entities.Identity;
 using feasibility.Entity.Entities.Locations;
 using feasibility.Entity.Entities.Logging;
@@ -31,6 +32,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, Guid>
     public DbSet<Study> Studies => Set<Study>();
     public DbSet<DeviceLine> DeviceLines => Set<DeviceLine>();
     public DbSet<YearProjection> YearProjections => Set<YearProjection>();
+    public DbSet<PricingStudy> PricingStudies => Set<PricingStudy>();
+    public DbSet<PricingStation> PricingStations => Set<PricingStation>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -57,6 +60,8 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, Guid>
         builder.Entity<Study>().HasQueryFilter(e => !e.IsDeleted);
         builder.Entity<DeviceLine>().HasQueryFilter(e => !e.IsDeleted);
         builder.Entity<YearProjection>().HasQueryFilter(e => !e.IsDeleted);
+        builder.Entity<PricingStudy>().HasQueryFilter(e => !e.IsDeleted);
+        builder.Entity<PricingStation>().HasQueryFilter(e => !e.IsDeleted);
         builder.Entity<AppUser>().HasQueryFilter(e => !e.IsDeleted);
         builder.Entity<AppRole>().HasQueryFilter(e => !e.IsDeleted);
     }
